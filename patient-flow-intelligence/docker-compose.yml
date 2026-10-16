@@ -1,0 +1,204 @@
+# docker-compose.yml
+# Patient Flow Intelligence — Stack unificada
+# Uso: docker compose up -d
+# Uso seletivo: docker compose up -d keycloak postgresql hapi-fhir-server
+
+name: patient-flow-intelligence
+
+services:
+  # ============================================================
+  # 1. BASE DE DADOS PRINCIPAL (Gateway + microserviços)
+  # ============================================================
+  postgresql:
+    image: postgres:16-alpine
+    container_name: pfi-postgresql
+    environment:
+      POSTGRES_USER: pfi
+      POSTGRES_PASSWORD: pfi
+      POSTGRES_DB: pfi
+    ports:
+      - "5432:5432"
+    volumes:
+      - pfi-postgres-data:/var/lib/postgresql/data
+      - ./src/main/docker/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pfi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pfi-network
+
+  # ============================================================
+  # 2. KEYCLOAK (IdP — OAuth2/OIDC)
+  # ============================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: pfi-keycloak
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgresql:5432/keycloak
+      KC_DB_USERNAME: pfi
+      KC_DB_PASSWORD: pfi
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 9080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "9080:8080"
+    volumes:
+      - ./src/main/docker/realm-config:/opt/keycloak/data/import
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - pfi-network
+
+  # ============================================================
+  # 3. JHIPSTER REGISTRY (Eureka — service discovery)
+  # ============================================================
+  jhipster-registry:
+    image: jhipster/jhipster-registry:v7.4.0
+    container_name: pfi-jhipster-registry
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      JHIPSTER_REGISTRY_PASSWORD: admin
+      SPRING_SECURITY_USER_PASSWORD: admin
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://admin:admin@jhipster-registry:8761/eureka
+      SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_TYPE: native
+      SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_SEARCH_LOCATIONS: file:./central-config
+    ports:
+      - "8761:8761"
+    networks:
+      - pfi-network
+
+  # ============================================================
+  # 4. RABBITMQ (message broker)
+  # ============================================================
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: pfi-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: pfi
+      RABBITMQ_DEFAULT_PASS: pfi
+    ports:
+      - "5672:5672"       # AMQP
+      - "15672:15672"     # Management UI
+    volumes:
+      - pfi-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pfi-network
+
+  # ============================================================
+  # 5. REDIS (cache de KPIs)
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: pfi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - pfi-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pfi-network
+
+  # ============================================================
+  # 6. HAPI FHIR — BASE DE DADOS DEDICADA
+  # ============================================================
+  hapi-fhir-postgres:
+    image: postgres:16-alpine
+    container_name: pfi-hapi-postgres
+    environment:
+      POSTGRES_USER: hapi
+      POSTGRES_PASSWORD: hapi
+      POSTGRES_DB: hapi
+    ports:
+      - "5433:5432"       # porta diferente para não colidir
+    volumes:
+      - pfi-hapi-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pfi-network
+
+  # ============================================================
+  # 7. HAPI FHIR SERVER (fonte de dados para KPIs)
+  # ============================================================
+  hapi-fhir-server:
+    image: hapiproject/hapi:latest
+    container_name: pfi-hapi-fhir
+    ports:
+      - "8081:8080"       # porta diferente para não colidir com o Gateway
+    environment:
+      spring.datasource.url: jdbc:postgresql://hapi-fhir-postgres:5432/hapi
+      spring.datasource.username: hapi
+      spring.datasource.password: hapi
+      spring.datasource.driverClassName: org.postgresql.Driver
+      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
+      hapi.fhir.fhir_version: R4
+      hapi.fhir.default_encoding: json
+      hapi.fhir.allow_multiple_delete: "true"
+      hapi.fhir.expunge_enabled: "true"
+    depends_on:
+      hapi-fhir-postgres:
+        condition: service_healthy
+    networks:
+      - pfi-network
+
+  # ============================================================
+  # 8. MINIO (data lake simulado)
+  # ============================================================
+  minio:
+    image: pgsty/silo:latest
+    container_name: pfi-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: pfi
+      MINIO_ROOT_PASSWORD: pfi12345
+    ports:
+      - "9000:9000"       # API S3
+      - "9001:9001"       # Console
+    volumes:
+      - pfi-minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pfi-network
+
+# ============================================================
+# VOLUMES
+# ============================================================
+volumes:
+  pfi-postgres-data:
+  pfi-hapi-data:
+  pfi-rabbitmq-data:
+  pfi-redis-data:
+  pfi-minio-data:
+
+# ============================================================
+# NETWORK
+# ============================================================
+networks:
+  pfi-network:
+    driver: bridge
