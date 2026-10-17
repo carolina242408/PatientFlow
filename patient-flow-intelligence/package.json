@@ -91,6 +91,7 @@
     "axios": "1.20.0",
     "bootstrap": "5.3.8",
     "dayjs": "1.11.23",
+    "keycloak-js": "^26.2.4",
     "react": "19.3.0",
     "react-bootstrap": "2.10.10",
     "react-dom": "19.3.0",

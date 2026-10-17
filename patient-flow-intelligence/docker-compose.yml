@@ -33,11 +33,12 @@ services:
   # 2. KEYCLOAK (IdP — OAuth2/OIDC)
   # ============================================================
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0
+    image: quay.io/keycloak/keycloak:26.4
     container_name: pfi-keycloak
     command:
       - start-dev
       - --import-realm
+      - --verbose
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
@@ -49,10 +50,15 @@ services:
       KC_HOSTNAME_PORT: 9080
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+      JAVA_OPTS_APPEND: "-Dkeycloak.migration.strategy=OVERWRITE_EXISTING"
+      KC_SPI_THEME_CACHE_THEMES: "false"
+      KC_SPI_THEME_CACHE_TEMPLATES: "false"
+      KC_SPI_THEME_STATIC_MAX_AGE: "-1"
     ports:
       - "9080:8080"
     volumes:
       - ./src/main/docker/realm-config:/opt/keycloak/data/import
+      - ./src/main/docker/keycloak-theme:/opt/keycloak/themes
     depends_on:
       postgresql:
         condition: service_healthy
@@ -72,6 +78,7 @@ services:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://admin:admin@jhipster-registry:8761/eureka
       SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_TYPE: native
       SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_SEARCH_LOCATIONS: file:./central-config
+      JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET: bXktc2VjcmV0LWtleS13aGljaC1zaG91bGQtYmUtY2hhbmdlZC1pbi1wcm9kdWN0aW9uLWFuZC1iZS1iYXNlNjQtZW5jb2RlZA==
     ports:
       - "8761:8761"
     networks:
