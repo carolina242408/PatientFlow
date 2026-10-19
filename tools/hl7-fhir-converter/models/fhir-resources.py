@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -329,7 +329,7 @@ class MessageHeader(FHIRModel):
 
 class BundleEntry(FHIRModel):
     full_url: Optional[str] = Field(default=None, alias="fullUrl")
-    resource: FHIRModel
+    resource: Any
 
 
 class Bundle(FHIRModel):
@@ -339,4 +339,9 @@ class Bundle(FHIRModel):
     timestamp: Optional[datetime] = None  # noqa: UP045
     identifier: Optional[Identifier] = None  # noqa: UP045
     entry: list[BundleEntry] = Field(default_factory=list)
+
+
+Identifier.model_rebuild()
+Reference.model_rebuild()
+ContactPoint.model_rebuild()
     
