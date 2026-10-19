@@ -1,0 +1,900 @@
+{
+  "resourceType": "Bundle",
+  "id": "1792425633280820456.98dbfed1-93fd-4bd6-b300-c43c7fcdfd1f",
+  "meta": {
+    "lastUpdated": "2026-10-19T16:00:33.352+00:00"
+  },
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "Condition/1792425634590158827.bfd328b7-b468-471b-911c-c9b889ceb0e7",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "1792425634590158827.bfd328b7-b468-471b-911c-c9b889ceb0e7",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:34+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN",
+                  "display": "Visit number"
+                }
+              ]
+            },
+            "system": "urn:id:HOS",
+            "value": "99000999"
+          },
+          {
+            "system": "urn:id:extID",
+            "value": "0811-ICD10"
+          }
+        ],
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ],
+            "text": "Encounter Diagnosis"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "0811",
+              "display": "DOENCA DE BRILL"
+            },
+            {
+              "code": "HOS"
+            }
+          ],
+          "text": "DOENCA DE BRILL"
+        },
+        "subject": {
+          "reference": "Patient/1792425634396987847.7a3f9878-7549-428b-be66-59be2c8a2735"
+        },
+        "encounter": {
+          "reference": "Encounter/1792425634539875473.c3eabc4b-0b98-45e4-8847-85a472e091a2"
+        },
+        "onsetDateTime": "2015-03-27T15:19:00+08:00"
+      }
+    },
+    {
+      "fullUrl": "Procedure/1792425635715863654.cc204b4f-68cd-425f-b01e-70f4cd9ea596",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "1792425635715863654.cc204b4f-68cd-425f-b01e-70f4cd9ea596",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:35+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "urn:id:extID",
+            "value": "20160418150441"
+          },
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN",
+                  "display": "Visit number"
+                }
+              ]
+            },
+            "system": "urn:id:HOS",
+            "value": "99000999"
+          }
+        ],
+        "status": "unknown",
+        "subject": {
+          "reference": "Patient/1792425634396987847.7a3f9878-7549-428b-be66-59be2c8a2735"
+        }
+      }
+    },
+    {
+      "fullUrl": "Procedure/1792425635719781571.f126925a-e2ff-457a-b8c9-0ada57e0311b",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "1792425635719781571.f126925a-e2ff-457a-b8c9-0ada57e0311b",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:35+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "urn:id:extID",
+            "value": "20160418150441"
+          },
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN",
+                  "display": "Visit number"
+                }
+              ]
+            },
+            "system": "urn:id:HOS",
+            "value": "99000999"
+          }
+        ],
+        "status": "unknown",
+        "subject": {
+          "reference": "Patient/1792425634396987847.7a3f9878-7549-428b-be66-59be2c8a2735"
+        }
+      }
+    },
+    {
+      "fullUrl": "Coverage/1792425635729357789.99067edc-7af4-4f4b-8699-f74f432a76c4",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "1792425635729357789.99067edc-7af4-4f4b-8699-f74f432a76c4",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:35+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "XV",
+                  "display": "Health Plan Identifier"
+                }
+              ]
+            },
+            "system": "urn:id:HOS",
+            "value": "935601"
+          }
+        ],
+        "status": "active",
+        "beneficiary": {
+          "reference": "Patient/1792425634396987847.7a3f9878-7549-428b-be66-59be2c8a2735"
+        },
+        "order": 1
+      }
+    },
+    {
+      "fullUrl": "Patient/1792425634396987847.7a3f9878-7549-428b-be66-59be2c8a2735",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "1792425634396987847.7a3f9878-7549-428b-be66-59be2c8a2735",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:34+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "type": {
+              "text": "NS"
+            },
+            "system": "urn:id:HOS",
+            "value": "99999"
+          },
+          {
+            "type": {
+              "text": "SNS"
+            },
+            "system": "urn:id:HAS",
+            "value": "999999999"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "text": "FIRST_NAME MIDDLE_NAME LAST_NAMES",
+            "family": "LAST_NAMES",
+            "given": [
+              "FIRST_NAME",
+              "MIDDLE_NAME"
+            ]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "999999999",
+            "use": "home"
+          },
+          {
+            "system": "email",
+            "value": "email@email.pt",
+            "use": "home"
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1999-01-01",
+        "address": [
+          {
+            "line": [
+              "RUA DA MORADA"
+            ],
+            "city": "CIDADE",
+            "district": "999999",
+            "state": "DISTRITO",
+            "postalCode": "000-0",
+            "country": "PRT"
+          }
+        ],
+        "maritalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+              "display": "Invalid input: code 'ESTADO CIVIL' could not be mapped to values in system 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus' with original display 'null' and version 'null'."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "Encounter/1792425634539875473.c3eabc4b-0b98-45e4-8847-85a472e091a2",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "1792425634539875473.c3eabc4b-0b98-45e4-8847-85a472e091a2",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:34+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN",
+                  "display": "Visit number"
+                }
+              ]
+            },
+            "system": "urn:id:HOS",
+            "value": "99000999"
+          }
+        ],
+        "status": "arrived",
+        "class": {
+          "code": "INT"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0007",
+                "code": "U",
+                "display": "Urgent"
+              }
+            ]
+          }
+        ],
+        "serviceType": {
+          "coding": [
+            {
+              "code": "30004"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/1792425634396987847.7a3f9878-7549-428b-be66-59be2c8a2735"
+        },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "ADM",
+                    "display": "admitter"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "Practitioner/1792425634520473496.d6d7980f-30d1-42c0-bbe4-ca5cc6ef46b1",
+              "display": "TESTE MEDICA"
+            }
+          },
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "ADM",
+                    "display": "admitter"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "Practitioner/1792425634528090405.1be3a080-0833-468c-a173-3c679dd6ccd1",
+              "display": "TESTE MEDICA"
+            }
+          },
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "ADM",
+                    "display": "admitter"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "Practitioner/1792425634534111812.f97defb9-9315-465f-822f-884b44875c11",
+              "display": "TESTE MEDICA"
+            }
+          }
+        ],
+        "period": {
+          "start": "2019-01-18T15:04:00+08:00"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "code": "A"
+              }
+            ]
+          }
+        ],
+        "reasonReference": [
+          {
+            "reference": "Condition/1792425634590158827.bfd328b7-b468-471b-911c-c9b889ceb0e7"
+          }
+        ],
+        "diagnosis": [
+          {
+            "condition": {
+              "reference": "Condition/1792425634590158827.bfd328b7-b468-471b-911c-c9b889ceb0e7"
+            },
+            "rank": 1
+          }
+        ],
+        "hospitalization": {
+          "admitSource": {
+            "coding": [
+              {
+                "code": "1"
+              }
+            ]
+          }
+        },
+        "serviceProvider": {
+          "reference": "Organization/3147134"
+        }
+      }
+    },
+    {
+      "fullUrl": "Practitioner/1792425634520473496.d6d7980f-30d1-42c0-bbe4-ca5cc6ef46b1",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "1792425634520473496.d6d7980f-30d1-42c0-bbe4-ca5cc6ef46b1",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:34+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "urn:id:HOS",
+            "value": "99999"
+          }
+        ],
+        "name": [
+          {
+            "text": "TESTE MEDICA",
+            "family": "MEDICA",
+            "given": [
+              "TESTE"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Practitioner/1792425634528090405.1be3a080-0833-468c-a173-3c679dd6ccd1",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "1792425634528090405.1be3a080-0833-468c-a173-3c679dd6ccd1",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:34+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "urn:id:N.Ordem",
+            "value": "99999"
+          }
+        ],
+        "name": [
+          {
+            "text": "TESTE MEDICA",
+            "family": "MEDICA",
+            "given": [
+              "TESTE"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Practitioner/1792425634534111812.f97defb9-9315-465f-822f-884b44875c11",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "1792425634534111812.f97defb9-9315-465f-822f-884b44875c11",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:34+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "urn:id:N.Mecanogr\\XE1\\fico",
+            "value": "99999"
+          }
+        ],
+        "name": [
+          {
+            "text": "TESTE MEDICA",
+            "family": "MEDICA",
+            "given": [
+              "TESTE"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Organization/3147134",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "3147134",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-timestamp",
+              "valueDateTime": "2026-10-19T16:00:34+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-trigger",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+                    "code": "A01"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-type",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0076",
+                    "code": "ADT"
+                  }
+                ]
+              }
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-event-timestamp",
+              "valueDateTime": "2016-04-18T15:04:41+08:00"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-record-id",
+              "valueString": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/source-data-model-version",
+              "valueString": "2.5"
+            },
+            {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/process-client-id",
+              "valueString": "HOS"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "urn:id:extID",
+            "value": "3147134"
+          }
+        ],
+        "name": "3147134"
+      }
+    }
+  ]
+}

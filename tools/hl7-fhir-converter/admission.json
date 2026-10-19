@@ -1,0 +1,390 @@
+{
+  "resourceType": "Bundle",
+  "id": "D",
+  "type": "message",
+  "timestamp": "2026-10-19T15:29:53.296533Z",
+  "identifier": {
+    "system": "urn:hl7v2:message-control-id",
+    "value": "D"
+  },
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:D",
+      "resource": {
+        "resourceType": "MessageHeader",
+        "id": "D",
+        "eventCoding": {
+          "system": "urn:hl7v2:message-type",
+          "code": "A01",
+          "display": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+        },
+        "destination": [
+          {
+            "name": "INST",
+            "endpoint": "20160418150441"
+          }
+        ],
+        "sender": {
+          "reference": "Organization/sending-facility"
+        },
+        "source": {
+          "name": "INST",
+          "version": "",
+          "endpoint": "HL7_DEFAULT"
+        },
+        "focus": [
+          {
+            "reference": "Patient/99999"
+          },
+          {
+            "reference": "Encounter/99000999-HOS"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:99999",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "99999",
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "HOS",
+            "value": "99999"
+          },
+          {
+            "use": "official",
+            "system": "HAS",
+            "value": "999999999"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "family": "LAST_NAMES",
+            "given": [
+              "FIRST_NAME",
+              "MIDDLE_NAME"
+            ],
+            "prefix": [],
+            "suffix": []
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "999999999",
+            "use": "home"
+          },
+          {
+            "system": "phone",
+            "value": "email@email.pt",
+            "use": "home"
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1999-01-01T00:00:00",
+        "address": [
+          {
+            "use": "home",
+            "line": [
+              "RUA DA MORADA"
+            ],
+            "city": "CIDADE",
+            "district": "DISTRITO",
+            "postalCode": "000-0",
+            "country": "PRT"
+          }
+        ],
+        "maritalStatus": {
+          "coding": [
+            {
+              "code": "ESTADO CIVIL"
+            }
+          ]
+        },
+        "communication": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:99000999-HOS",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "99000999-HOS",
+        "identifier": [
+          {
+            "system": "urn:hl7v2:visit",
+            "value": "99000999^^^HOS"
+          }
+        ],
+        "status": "in-progress",
+        "statusHistory": [],
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "INT"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "code": "206c3831-164c-4ce6-a8bd-1a25093fd756"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "Patient/99999"
+        },
+        "episodeOfCare": [],
+        "basedOn": [],
+        "participant": [],
+        "appointment": [],
+        "period": {
+          "start": "2019-01-18T15:04:00"
+        },
+        "reasonCode": [],
+        "diagnosis": [],
+        "account": [],
+        "hospitalization": {
+          "admitSource": {
+            "coding": [
+              {
+                "code": "1"
+              }
+            ]
+          },
+          "dietPreference": [],
+          "specialCourtesy": [],
+          "specialArrangement": [],
+          "dischargeDisposition": {
+            "coding": []
+          }
+        },
+        "location": [
+          {
+            "location": {
+              "reference": "Location/30004-7005-MAC-3147134-6-Maca-1-7-SALA5-HOS"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:sending-facility",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "sending-facility",
+        "identifier": [],
+        "active": true,
+        "name": "HL7_DEFAULT",
+        "type": [],
+        "telecom": [],
+        "address": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:insurer-1",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "insurer-1",
+        "identifier": [
+          {
+            "value": ""
+          }
+        ],
+        "active": true,
+        "type": [],
+        "telecom": [],
+        "address": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:99999",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "99999",
+        "identifier": [
+          {
+            "value": "99999"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "family": "MEDICA",
+            "given": [
+              "TESTE"
+            ],
+            "prefix": [],
+            "suffix": []
+          }
+        ],
+        "telecom": [],
+        "address": [],
+        "qualification": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:30004-7005-MAC-3147134-6-Maca-1-7-SALA5-HOS",
+      "resource": {
+        "resourceType": "Location",
+        "id": "30004-7005-MAC-3147134-6-Maca-1-7-SALA5-HOS",
+        "identifier": [],
+        "status": "active",
+        "name": "30004^7005^MAC^3147134&6^Maca^1^7^SALA5^^HOS",
+        "mode": "instance",
+        "type": [
+          {
+            "coding": [
+              {
+                "code": "30004"
+              }
+            ]
+          }
+        ],
+        "telecom": [],
+        "physicalType": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/location-physical-type",
+              "code": "bd"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:condition-1",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-1",
+        "identifier": [],
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [],
+        "code": {
+          "coding": [
+            {
+              "system": "ICD10",
+              "code": "0811",
+              "display": "DOENCA DE BRILL"
+            }
+          ],
+          "text": "DOENCA DE BRILL"
+        },
+        "bodySite": [],
+        "subject": {
+          "reference": "Patient/99999"
+        },
+        "encounter": {
+          "reference": "Encounter/99000999-HOS"
+        },
+        "onsetDateTime": "2015-03-27T15:19:00",
+        "note": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:procedure-1",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "procedure-1",
+        "identifier": [],
+        "instantiatesCanonical": [],
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "code": "Z99991",
+              "display": "PROCEDIMENTO1"
+            }
+          ],
+          "text": "PROCEDIMENTO1"
+        },
+        "subject": {
+          "reference": "Patient/99999"
+        },
+        "encounter": {
+          "reference": "Encounter/99000999-HOS"
+        },
+        "performedDateTime": "2015-03-27T15:19:00",
+        "performer": [],
+        "reasonCode": [],
+        "note": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:procedure-2",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "procedure-2",
+        "identifier": [],
+        "instantiatesCanonical": [],
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "code": "Z99992",
+              "display": "PROCEDIMENTO2"
+            }
+          ],
+          "text": "PROCEDIMENTO2"
+        },
+        "subject": {
+          "reference": "Patient/99999"
+        },
+        "encounter": {
+          "reference": "Encounter/99000999-HOS"
+        },
+        "performedDateTime": "2015-03-27T15:19:00",
+        "performer": [],
+        "reasonCode": [],
+        "note": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:coverage-1",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "coverage-1",
+        "identifier": [],
+        "status": "active",
+        "subscriberId": "379037999^^^HOS",
+        "beneficiary": {
+          "reference": "Patient/99999"
+        },
+        "payor": [
+          {
+            "reference": "Organization/insurer-1"
+          }
+        ],
+        "class": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "code": "plan"
+                }
+              ]
+            },
+            "value": "935601^SNS^HOS"
+          }
+        ]
+      }
+    }
+  ]
+}
