@@ -299,6 +299,49 @@ class Coverage(FHIRModel):
     network: Optional[str] = None  # noqa: UP045
 
 
+class AllergyReaction(FHIRModel):
+    manifestation: list[CodeableConcept] = Field(default_factory=list)
+
+
+class AllergyIntolerance(FHIRModel):
+    resource_type: str = Field(default="AllergyIntolerance", alias="resourceType")
+    id: Optional[str] = None  # noqa: UP045
+    clinical_status: Optional[CodeableConcept] = Field(
+        default=None, alias="clinicalStatus"
+    )
+    verification_status: Optional[CodeableConcept] = Field(
+        default=None, alias="verificationStatus"
+    )
+    category: list[str] = Field(default_factory=list)
+    code: CodeableConcept
+    patient: Reference
+    encounter: Optional[Reference] = None  # noqa: UP045
+    reaction: list[AllergyReaction] = Field(default_factory=list)
+
+
+class RelatedPerson(FHIRModel):
+    resource_type: str = Field(default="RelatedPerson", alias="resourceType")
+    id: Optional[str] = None  # noqa: UP045
+    active: Optional[bool] = None  # noqa: UP045
+    patient: Reference
+    relationship: list[CodeableConcept] = Field(default_factory=list)
+    name: list[HumanName] = Field(default_factory=list)
+    telecom: list[ContactPoint] = Field(default_factory=list)
+    address: list[Address] = Field(default_factory=list)
+
+
+class Observation(FHIRModel):
+    resource_type: str = Field(default="Observation", alias="resourceType")
+    id: Optional[str] = None  # noqa: UP045
+    status: str
+    code: CodeableConcept
+    subject: Reference
+    encounter: Optional[Reference] = None  # noqa: UP045
+    value_string: Optional[str] = Field(default=None, alias="valueString")
+    value_quantity: Optional[Quantity] = Field(default=None, alias="valueQuantity")
+    effective_date_time: Optional[str] = Field(default=None, alias="effectiveDateTime")
+
+
 class MessageHeaderSource(FHIRModel):
     name: Optional[str] = None  # noqa: UP045
     software: Optional[str] = None  # noqa: UP045

@@ -70,6 +70,7 @@ class PV1Segment(BaseModel):
     discharge_disposition: Optional[str] = None  # noqa: UP045
     admit_datetime: Optional[str] = None  # noqa: UP045
     discharge_datetime: Optional[str] = None  # noqa: UP045
+    account_status: Optional[str] = None  # noqa: UP045
 
 
 class PV2Segment(BaseModel):
@@ -146,24 +147,75 @@ class IN1Segment(BaseModel):
     policy_number: Optional[str] = None  # noqa: UP045
     insured_id_number: Optional[str] = None  # noqa: UP045
     coverage_type: Optional[str] = None  # noqa: UP045
+
+
+class NK1Segment(BaseModel):
+    set_id: Optional[str] = None  # noqa: UP045
+    name: Optional[str] = None  # noqa: UP045
+    relationship: Optional[str] = None  # noqa: UP045
+    address: Optional[str] = None  # noqa: UP045
+    phone_number: Optional[str] = None  # noqa: UP045
+    business_phone_number: Optional[str] = None  # noqa: UP045
+    date_of_birth: Optional[str] = None  # noqa: UP045
+
+
+class AL1Segment(BaseModel):
+    set_id: Optional[str] = None  # noqa: UP045
+    allergen_type_code: Optional[str] = None  # noqa: UP045
+    allergen_code: Optional[str] = None  # noqa: UP045
+    allergy_severity: Optional[str] = None  # noqa: UP045
+    allergy_reaction: Optional[str] = None  # noqa: UP045
+
+
+class GT1Segment(BaseModel):
+    set_id: Optional[str] = None  # noqa: UP045
+    guarantor_number: Optional[str] = None  # noqa: UP045
+    guarantor_name: Optional[str] = None  # noqa: UP045
+
+
+class OBXSegment(BaseModel):
+    set_id: Optional[str] = None  # noqa: UP045
+    value_type: Optional[str] = None  # noqa: UP045
+    observation_identifier: Optional[str] = None  # noqa: UP045
+    observation_sub_id: Optional[str] = None  # noqa: UP045
+    observation_value: Optional[str] = None  # noqa: UP045
+    units: Optional[str] = None  # noqa: UP045
+    observation_result_status: Optional[str] = None  # noqa: UP045
+    date_last_observed: Optional[str] = None  # noqa: UP045
+
+
+class IN2Segment(BaseModel):
+    insured_employee_id: Optional[str] = None  # noqa: UP045
+    insured_social_security_number: Optional[str] = None  # noqa: UP045
+
+
+class ACCSegment(BaseModel):
+    accident_datetime: Optional[str] = None  # noqa: UP045
+    accident_code: Optional[str] = None  # noqa: UP045
+    accident_location: Optional[str] = None  # noqa: UP045
+    accident_state: Optional[str] = None  # noqa: UP045
+    auto_accident: Optional[str] = None  # noqa: UP045
+    police_notified: Optional[str] = None  # noqa: UP045
+    entered_by: Optional[str] = None  # noqa: UP045
+    description: Optional[str] = None  # noqa: UP045
     
     
 
     
 def parse_msh(msh_list: list) -> MSHSegment:
     return MSHSegment(
-        field_separator=msh_list[1],
-        encoding_characters=msh_list[2],
-        sending_application=msh_list[3] or None,
-        sending_facility=msh_list[4] or None,
-        receiving_application=msh_list[5] or None,
-        receiving_facility=msh_list[6] or None,
-        message_datetime=msh_list[7],
-        security=msh_list[8] or None,
-        message_type=msh_list[9],
-        message_control_id=msh_list[10],
-        processing_id=msh_list[11],
-        version_id=msh_list[12]
+        field_separator="|",
+        encoding_characters=msh_list[1],
+        sending_application=msh_list[2] or None,
+        sending_facility=msh_list[3] or None,
+        receiving_application=msh_list[4] or None,
+        receiving_facility=msh_list[5] or None,
+        message_datetime=msh_list[6],
+        security=msh_list[7] or None,
+        message_type=msh_list[8],
+        message_control_id=msh_list[9],
+        processing_id=msh_list[10],
+        version_id=msh_list[11]
     )
 
 
@@ -214,7 +266,7 @@ def parse_pv1(segment: list) -> PV1Segment:
         14: "admit_source", 15: "ambulatory_status", 16: "vip_indicator",
         17: "admitting_doctor", 18: "patient_type", 19: "visit_number",
         20: "financial_class", 36: "discharge_disposition",
-        44: "admit_datetime", 45: "discharge_datetime",
+        41: "account_status", 44: "admit_datetime", 45: "discharge_datetime",
     }.items()})
 
 
@@ -266,4 +318,47 @@ def parse_in1(segment: list) -> IN1Segment:
         17: "insured_relationship", 18: "insured_date_of_birth",
         19: "insured_address", 20: "assignment_of_benefits",
         36: "policy_number", 49: "insured_id_number", 50: "coverage_type",
+    }.items()})
+
+
+def parse_nk1(segment: list) -> NK1Segment:
+    return NK1Segment(**{name: _field(segment, index) for index, name in {
+        1: "set_id", 2: "name", 3: "relationship", 4: "address",
+        5: "phone_number", 6: "business_phone_number", 8: "date_of_birth",
+    }.items()})
+
+
+def parse_al1(segment: list) -> AL1Segment:
+    return AL1Segment(**{name: _field(segment, index) for index, name in {
+        1: "set_id", 2: "allergen_type_code", 3: "allergen_code",
+        4: "allergy_severity", 5: "allergy_reaction",
+    }.items()})
+
+
+def parse_gt1(segment: list) -> GT1Segment:
+    return GT1Segment(**{name: _field(segment, index) for index, name in {
+        1: "set_id", 2: "guarantor_number", 3: "guarantor_name",
+    }.items()})
+
+
+def parse_obx(segment: list) -> OBXSegment:
+    return OBXSegment(**{name: _field(segment, index) for index, name in {
+        1: "set_id", 2: "value_type", 3: "observation_identifier",
+        4: "observation_sub_id", 5: "observation_value", 6: "units",
+        11: "observation_result_status", 14: "date_last_observed",
+    }.items()})
+
+
+def parse_in2(segment: list) -> IN2Segment:
+    return IN2Segment(
+        insured_employee_id=_field(segment, 1),
+        insured_social_security_number=_field(segment, 2),
+    )
+
+
+def parse_acc(segment: list) -> ACCSegment:
+    return ACCSegment(**{name: _field(segment, index) for index, name in {
+        1: "accident_datetime", 2: "accident_code", 3: "accident_location",
+        4: "accident_state", 5: "auto_accident", 6: "police_notified",
+        7: "entered_by", 9: "description",
     }.items()})
