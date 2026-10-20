@@ -14,6 +14,7 @@ docker-compose.yml  infraestrutura de desenvolvimento
 Pré-requisitos: Docker, Node 20+, JDK 21+ (`export JAVA_HOME=$(/usr/libexec/java_home -v 21)` no macOS).
 
 ```bash
+cp .env.example .env               # credenciais de desenvolvimento
 docker compose up -d                 # Postgres, Keycloak, RabbitMQ, Redis, HAPI FHIR, MinIO, algorithms
 cd backend && ./mvnw spring-boot:run # http://localhost:8080
 cd frontend && npm install && npm run dev   # http://localhost:5173
@@ -31,4 +32,4 @@ Abre `http://localhost:5173` e entra com `admin/admin` (ROLE_ADMIN) ou `user/use
 | RabbitMQ UI | http://localhost:15672 (pfi/pfi) |
 | MinIO console | http://localhost:9001 (pfi/pfi12345) |
 
-Credenciais de desenvolvimento em `.env`.
+Credenciais de desenvolvimento em `.env` (criado a partir de `.env.example`, não vai para o git).
