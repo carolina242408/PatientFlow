@@ -1,0 +1,19 @@
+# Node
+node_modules/
+dist/
+*.local
+
+# Java
+target/
+*.class
+*.log
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
