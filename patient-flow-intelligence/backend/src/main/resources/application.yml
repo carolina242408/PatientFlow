@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: patientflow
+  datasource:
+    url: jdbc:postgresql://localhost:5432/patientflow
+    username: pfi
+    password: pfi
+  jpa:
+    hibernate:
+      ddl-auto: validate   # o schema é gerido pelo Flyway (src/main/resources/db/migration)
+    open-in-view: false
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9080/realms/patientflow
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
