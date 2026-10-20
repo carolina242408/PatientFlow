@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { getApplicationUrl, KeycloakContext, type KeycloakUser } from './context'
-import keycloak from './keycloak'
+import keycloak, { initKeycloak } from './keycloak'
 
 export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   const [initialized, setInitialized] = useState(false)
@@ -8,13 +8,7 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    keycloak
-      .init({
-        onLoad: 'login-required',
-        checkLoginIframe: false,
-        pkceMethod: 'S256',
-        redirectUri: getApplicationUrl(),
-      })
+    initKeycloak()
       .then((auth) => {
         setInitialized(true)
         if (!auth || !keycloak.tokenParsed) {
