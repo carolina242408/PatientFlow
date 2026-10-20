@@ -1,0 +1,37 @@
+{
+  "app": { "name": "PatientFlow" },
+  "nav": {
+    "menu": "Menu",
+    "dashboard": "Dashboard",
+    "service": "Serviços",
+    "settings": "Definições",
+    "account": "A minha conta",
+    "support": "Suporte",
+    "help": "Centro de ajuda",
+    "administration": "Administração",
+    "admin": "Consola de administração",
+    "logout": "Terminar sessão",
+    "collapse": "Recolher",
+    "expand": "Expandir"
+  },
+  "pages": {
+    "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },
+    "service": { "title": "Serviços", "description": "Gerir os serviços do fluxo de pacientes" },
+    "admin": { "title": "Consola de administração", "description": "Gerir a administração da aplicação" },
+    "default": { "title": "PatientFlow", "description": "Visão geral do fluxo de pacientes" }
+  },
+  "topbar": { "user": "Utilizador", "admin": "Admin", "language": "Idioma" },
+  "dashboard": {
+    "welcome": "Bem-vindo de volta, {{name}}!",
+    "lastUpdate": "Última atualização: {{date}}",
+    "export": "Exportar CSV",
+    "stats": { "patients": "Total de pacientes", "doctors": "Total de médicos", "appointments": "Consultas marcadas", "rooms": "Quartos disponíveis" },
+    "chart": "Gráfico (placeholder)",
+    "recent": "Pacientes recentes",
+    "search": "Pesquisar",
+    "table": { "patient": "Paciente", "location": "Localização atual", "service": "Serviço", "discharge": "Alta prevista", "readiness": "Prontidão" }
+  },
+  "service": { "title": "Página de serviços", "body": "Conteúdo da página de serviços." },
+  "admin": { "title": "Consola de administração", "body": "Área reservada a administradores." },
+  "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" }
+}

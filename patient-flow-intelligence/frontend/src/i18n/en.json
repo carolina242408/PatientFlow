@@ -1,0 +1,37 @@
+{
+  "app": { "name": "PatientFlow" },
+  "nav": {
+    "menu": "Menu",
+    "dashboard": "Dashboard",
+    "service": "Services",
+    "settings": "Settings",
+    "account": "My Account",
+    "support": "Support",
+    "help": "Help Center",
+    "administration": "Administration",
+    "admin": "Admin Console",
+    "logout": "Logout",
+    "collapse": "Collapse",
+    "expand": "Expand"
+  },
+  "pages": {
+    "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },
+    "service": { "title": "Services", "description": "Manage patient flow services" },
+    "admin": { "title": "Admin Console", "description": "Manage application administration" },
+    "default": { "title": "PatientFlow", "description": "Patient flow overview" }
+  },
+  "topbar": { "user": "User", "admin": "Admin", "language": "Language" },
+  "dashboard": {
+    "welcome": "Welcome back, {{name}}!",
+    "lastUpdate": "Last update: {{date}}",
+    "export": "Export CSV",
+    "stats": { "patients": "Total Patients", "doctors": "Total Doctors", "appointments": "Booked Appointments", "rooms": "Room Availability" },
+    "chart": "Chart placeholder",
+    "recent": "Recent Patients",
+    "search": "Search",
+    "table": { "patient": "Patient", "location": "Current Location", "service": "Service", "discharge": "Expected Discharge", "readiness": "Readiness" }
+  },
+  "service": { "title": "Service Page", "body": "This is the service page content." },
+  "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },
+  "notFound": { "title": "Page not found", "back": "Back to dashboard" }
+}

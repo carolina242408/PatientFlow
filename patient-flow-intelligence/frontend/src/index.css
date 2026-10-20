@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3068d8;
+  --color-primary-dark: #2456b8;
+  --color-danger: #ca0404;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #fafafa;
+  color: #111827;
+}
