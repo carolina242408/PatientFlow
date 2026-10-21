@@ -139,6 +139,11 @@ Paths in `required` use dot notation. List indexes are numeric, for example `nam
 
 The test exits with code `0` when the contract matches and code `1` when sections are missing or values differ.
 
+### Results
+
+The tests are being matched with the converstion from the online tool: 
+https://majware.com/tools/hl7-to-fhir-converter
+
 ## Direct Python Usage
 
 The conversion functions can also be imported dynamically because the model filenames contain hyphens:

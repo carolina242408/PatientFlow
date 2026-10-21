@@ -1,0 +1,107 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "timestamp": "2026-10-21T14:50:10.397Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:410f8186-cec2-4e2d-9898-c0024b949374",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "410f8186-cec2-4e2d-9898-c0024b949374",
+        "identifier": [
+          {
+            "value": "99999",
+            "system": "urn:id:HOS",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "NS"
+                }
+              ]
+            }
+          },
+          {
+            "value": "999999999",
+            "system": "urn:id:HAS",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SNS"
+                }
+              ]
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "LAST_NAMES",
+            "given": [
+              "FIRST_NAME",
+              "MIDDLE_NAME"
+            ]
+          }
+        ],
+        "birthDate": "1999-01-01",
+        "gender": "male",
+        "address": [
+          {
+            "line": [
+              "RUA DA MORADA"
+            ],
+            "city": "CIDADE",
+            "state": "DISTRITO",
+            "postalCode": "9999-999",
+            "country": "PT"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "^PRN^PH^^^^^^^^^999999999",
+            "use": "home"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3a1950a5-41bd-4a13-a232-6e723fcab98f",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "3a1950a5-41bd-4a13-a232-6e723fcab98f",
+        "status": "finished",
+        "class": {
+          "code": "INT"
+        },
+        "identifier": [
+          {
+            "value": "99000999",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN"
+                }
+              ]
+            }
+          }
+        ],
+        "subject": {
+          "reference": "Patient/410f8186-cec2-4e2d-9898-c0024b949374"
+        },
+        "location": [
+          {
+            "location": {
+              "display": "Ward 30004, Room 7005, Bed MAC"
+            }
+          }
+        ],
+        "period": {
+          "start": "2019-01-18T15:04:00"
+        }
+      }
+    }
+  ]
+}
