@@ -398,6 +398,7 @@
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",
     "root": "Organization root",
+    "stats": { "levels": "Organizational levels", "spaces": "Registered spaces", "resourceGroups": "Resource groups", "operationalItems": "Operational items" },
     "columns": { "name": "Space or resource", "type": "Type", "parent": "Parent", "status": "Status" },
     "types": {
       "lhu": "LHU", "unit": "Unit", "building": "Building", "floor": "Floor", "ward": "Ward",

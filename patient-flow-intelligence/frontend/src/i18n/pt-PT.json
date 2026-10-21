@@ -398,6 +398,7 @@
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
     "root": "Raiz da organização",
+    "stats": { "levels": "Níveis organizacionais", "spaces": "Espaços registados", "resourceGroups": "Grupos de recursos", "operationalItems": "Itens operacionais" },
     "columns": { "name": "Espaço ou recurso", "type": "Tipo", "parent": "Superior", "status": "Estado" },
     "types": {
       "lhu": "ULS", "unit": "Unidade", "building": "Edifício", "floor": "Piso", "ward": "Enfermaria",
