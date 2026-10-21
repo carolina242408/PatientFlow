@@ -4,7 +4,7 @@ import argparse
 import importlib.util
 import json
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -71,7 +71,7 @@ def _timestamp(value: str | None) -> str | None:
 				parsed = datetime.strptime(value[:length], fmt)
 				if length == 8:
 					return parsed.date().isoformat()
-				return parsed.replace(tzinfo=timezone(timedelta(hours=8))).isoformat()
+				return parsed.isoformat()
 			except ValueError:
 				continue
 	return value
@@ -149,7 +149,10 @@ def _patient(pid: Any) -> fhir.Patient:
 				use="official" if _component(parts, 4) == "SNS" else "usual",
 				system=f"urn:id:{_component(parts, 3)}" if _component(parts, 3) else None,
 				value=_component(parts, 0) or None,
-				type=fhir.CodeableConcept(text=_component(parts, 4)) if _component(parts, 4) else None,
+				type=fhir.CodeableConcept(coding=[fhir.Coding(
+					system="http://terminology.hl7.org/CodeSystem/v2-0203",
+					code=_component(parts, 4),
+				)]) if _component(parts, 4) else None,
 			)
 		)
 
@@ -178,15 +181,8 @@ def _patient(pid: Any) -> fhir.Patient:
 	] if pid.address else []
 
 	telecom = []
-	for raw_telecom in _repetitions(pid.home_phone):
-		parts = _components(raw_telecom)
-		value = _component(parts, 11) or _component(parts, 3) or _component(parts, 0)
-		if value:
-			telecom.append(fhir.ContactPoint(
-				system="email" if _component(parts, 2) == "X.400" else "phone",
-				value=value,
-				use="home",
-			))
+	if pid.home_phone:
+		telecom.append(fhir.ContactPoint(system="phone", value=_decode(pid.home_phone), use="home"))
 	for raw_telecom in _repetitions(pid.business_phone):
 		parts = _components(raw_telecom)
 		value = _component(parts, 11) or _component(parts, 3) or _component(parts, 0)
@@ -206,14 +202,10 @@ def _patient(pid: Any) -> fhir.Patient:
 		birthDate=(_timestamp(pid.date_of_birth) or "").split("T", 1)[0] or None,
 		address=addresses,
 		communication=[fhir.Communication(language=_codeable(pid.language))] if pid.language else [],
-		maritalStatus=fhir.CodeableConcept(coding=[fhir.Coding(
-			system="http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
-			display=(
-				f"Invalid input: code '{pid.marital_status}' could not be mapped to values "
-				"in system 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus' "
-				"with original display 'null' and version 'null'."
-			),
-		)]) if pid.marital_status else None,
+		maritalStatus=fhir.CodeableConcept(
+			coding=[fhir.Coding(code=pid.marital_status)],
+			text=pid.marital_status,
+		) if pid.marital_status else None,
 	)
 
 
@@ -235,19 +227,29 @@ def _location(pv1: Any) -> fhir.Location | None:
 def _encounter(msh: Any, evn: Any, pv1: Any, patient: fhir.Patient, location: fhir.Location | None) -> fhir.Encounter:
 	event = _components(msh.message_type)
 	event_code = event[1] if len(event) > 1 else evn.event_type_code
-	status = "arrived" if event_code == "A01" and pv1.patient_class == "INT" else (
-		"finished" if event_code == "A03" else "in-progress"
-	)
+	status = "finished" if event_code == "A03" else "in-progress"
 	period = fhir.Period(start=_timestamp(pv1.admit_datetime), end=_timestamp(pv1.discharge_datetime))
+	location_parts = _components(pv1.assigned_patient_location)
 	encounter_location = []
 	if location:
+		location_display = (
+			f"Ward {location_parts[0]}, Room {location_parts[1]}, Bed {location_parts[2]}"
+			if len(location_parts) >= 4 and all(location_parts[:3])
+			else location.name
+		)
 		encounter_location.append(
 			fhir.EncounterLocation(
-				location=_reference("Location", location.id or "location", location.name)
+				location=_reference(
+					"Location",
+					location.id or "location",
+					location_display,
+				)
 			)
 		)
 	participants = []
-	doctor_field = pv1.admitting_doctor or pv1.attending_doctor
+	doctor_field = pv1.attending_doctor or pv1.admitting_doctor
+	doctor_role = "ATND" if pv1.attending_doctor else "ADM"
+	doctor_role_display = "admitter" if doctor_role == "ADM" else "attender"
 	for raw_doctor in _repetitions(doctor_field):
 		parts = _components(raw_doctor)
 		display = (
@@ -258,12 +260,11 @@ def _encounter(msh: Any, evn: Any, pv1: Any, patient: fhir.Patient, location: fh
 		participants.append(fhir.EncounterParticipant(
 			type=[fhir.CodeableConcept(coding=[fhir.Coding(
 				system="http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
-				code="ADM",
-				display="admitter",
+				code=doctor_role,
+				display=doctor_role_display,
 			)])],
 			individual=fhir.Reference(display=display),
 		))
-	location_parts = _components(pv1.assigned_patient_location)
 	return fhir.Encounter(
 		id=_safe_id(pv1.visit_number, "encounter"),
 		identifier=[fhir.Identifier(
@@ -286,6 +287,10 @@ def _encounter(msh: Any, evn: Any, pv1: Any, patient: fhir.Patient, location: fh
 		subject=_reference("Patient", patient.id or "patient"),
 		period=period,
 		participant=participants,
+		text=(
+			{"status": "additional", "div": f'<div xmlns="http://www.w3.org/1999/xhtml"><p>{pv1.visit_description}</p></div>'}
+			if getattr(pv1, "visit_description", None) else None
+		),
 		reason_code=[_codeable(pv1.account_status)] if pv1.account_status else [],
 		diagnosis=[{"condition": _reference("Condition", "condition-1"), "rank": 1}],
 		location=encounter_location,
@@ -297,8 +302,7 @@ def _encounter(msh: Any, evn: Any, pv1: Any, patient: fhir.Patient, location: fh
 
 
 def _practitioners(pv1: Any, roles: list[Any]) -> list[fhir.Practitioner]:
-	values = [pv1.attending_doctor, pv1.referring_doctor, pv1.consulting_doctor, pv1.admitting_doctor]
-	values.extend(role.person for role in roles)
+	values = [pv1.admitting_doctor or pv1.attending_doctor]
 	practitioners = []
 	seen = set()
 	for value in values:
@@ -334,7 +338,7 @@ def _conditions(diagnoses: list[Any], patient: fhir.Patient, encounter: fhir.Enc
 		visit_value = encounter.identifier[0].value if encounter.identifier else None
 		system = {
 			"ICD10": "http://hl7.org/fhir/sid/icd-10-cm",
-		}.get(_component(parts, 2))
+		}.get(_component(parts, 2), "http://hl7.org/fhir/sid/icd-10-cm")
 		conditions.append(fhir.Condition(
 			id=f"condition-{diagnosis.set_id or index}",
 			identifier=[
@@ -347,7 +351,10 @@ def _conditions(diagnoses: list[Any], patient: fhir.Patient, encounter: fhir.Enc
 					system="urn:id:HOS",
 					value=_component(_components(visit_value), 0) if visit_value else None,
 				),
-				fhir.Identifier(system="urn:id:extID", value=f"{code}-{_component(parts, 2)}"),
+				fhir.Identifier(
+					system="urn:id:extID",
+					value=f"{code}-{_component(parts, 2)}" if _component(parts, 2) else code,
+				),
 			],
 			clinicalStatus=_codeable("active", "http://terminology.hl7.org/CodeSystem/condition-clinical"),
 			verificationStatus=_codeable("confirmed", "http://terminology.hl7.org/CodeSystem/condition-ver-status"),
@@ -514,6 +521,12 @@ def convert_hl7_to_fhir(message: str) -> fhir.Bundle:
 	patient = _patient(pid)
 	location = _location(pv1)
 	encounter = _encounter(msh, evn, pv1, patient, location)
+	if segments.get("PV2") and segments["PV2"][0].visit_description:
+		visit_description = segments["PV2"][0].visit_description
+		encounter.text = {
+			"status": "additional",
+			"div": f'<div xmlns="http://www.w3.org/1999/xhtml"><p>{visit_description}</p></div>',
+		}
 	location_parts = _components(pv1.assigned_patient_location)
 	hospital_id = _component(location_parts, 3).split("&", 1)[0]
 	organizations = [fhir.Organization(
@@ -526,6 +539,10 @@ def convert_hl7_to_fhir(message: str) -> fhir.Bundle:
 		encounter.service_provider = _reference("Organization", hospital_id)
 	practitioners = _practitioners(pv1, segments.get("ROL", []))
 	conditions = _conditions(segments.get("DG1", []), patient, encounter)
+	encounter.diagnosis = [
+		{"condition": _reference("Condition", condition.id or "condition"), "rank": index}
+		for index, condition in enumerate(conditions, 1)
+	]
 	allergies = _allergies(segments.get("AL1", []), patient, encounter)
 	related_people = _related_people(segments.get("NK1", []), segments.get("GT1", []), patient)
 	observations = _observations(segments.get("OBX", []), patient, encounter)

@@ -201,10 +201,11 @@ class EncounterHospitalization(FHIRModel):
 class Encounter(FHIRModel):
     resource_type: str = Field(default="Encounter", alias="resourceType")
     id: Optional[str] = None  # noqa: UP045
+    text: Optional[dict] = None  # noqa: UP045
     identifier: list[Identifier] = Field(default_factory=list)
     status: str
     status_history: list[dict] = Field(default_factory=list, alias="statusHistory")
-    class_: Optional[Coding] = Field(default=None, alias="class")
+    class_: Optional[Coding] = Field(default=None, alias="class") 
     type: list[CodeableConcept] = Field(default_factory=list)
     service_type: Optional[CodeableConcept] = Field(default=None, alias="serviceType")
     priority: Optional[CodeableConcept] = None  # noqa: UP045
