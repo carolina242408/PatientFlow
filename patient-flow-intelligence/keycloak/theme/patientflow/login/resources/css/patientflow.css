@@ -1,0 +1,106 @@
+/* 1. Global Font & Light Background */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body, input, button, span, label, div, a {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+body {
+    background-color: #fafafa !important; /* Matches your dashboard background */
+    background-image: none !important;    /* Removes Keycloak's dark pattern */
+}
+
+/* 2. The Main Card */
+.pf-v5-c-login__main {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 15px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    padding: 40px !important; /* Gives the form some breathing room */
+}
+
+/* 3. Typography */
+h1#kc-page-title, .pf-v5-c-title {
+    color: #111827 !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    margin-bottom: 24px !important;
+}
+
+.pf-v5-c-form__label-text {
+    color: #374151 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    margin-bottom: 6px !important;
+}
+
+/* 4. Input Fields & Focus State */
+.pf-v5-c-form-control {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    color: #111827 !important;
+    padding: 10px 12px !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+/* Make the input border blue when clicked (focused) */
+.pf-v5-c-form-control:focus-within {
+    border-color: #3068d8 !important;
+    box-shadow: 0 0 0 2px rgba(48, 104, 216, 0.2) !important;
+}
+
+/* The "Show" text for password */
+.pf-v5-c-button.pf-m-control {
+    background-color: transparent !important;
+    color: #4b5563 !important;
+    font-weight: 500 !important;
+    border: 1px solid #d1d5db !important;
+    border-left: none !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
+/* 5. The Big Blue "Sign In" Button */
+#kc-login, .pf-v5-c-button.pf-m-primary {
+    background-color: #2563eb !important; /* Bright blue from your screenshot */
+    color: #ffffff !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    width: 100% !important;
+    transition: background-color 0.2s !important;
+}
+
+#kc-login:hover, .pf-v5-c-button.pf-m-primary:hover {
+    background-color: #1d4ed8 !important; /* Darker blue on hover */
+}
+
+/* 6. Checkbox and Links */
+.pf-v5-c-check__label {
+    color: #4b5563 !important;
+    font-size: 13px !important;
+}
+
+#kc-form-options a, .pf-v5-c-login__main-footer a {
+    color: #2563eb !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+}
+
+#kc-form-options a:hover, .pf-v5-c-login__main-footer a:hover {
+    text-decoration: underline !important;
+}
+
+/* 7. Remove the default Keycloak logo/branding */
+#kc-header-wrapper {
+    display: none !important;
+}
+
+/* 8. Hide scrollbars if any */
+::-webkit-scrollbar {
+    width: 0px;
+}
