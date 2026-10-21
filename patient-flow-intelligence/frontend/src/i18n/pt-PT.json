@@ -18,7 +18,8 @@
     "workspace": {
       "admin": "Área de Administração",
       "manager": "Área de Gestão"
-    }
+    },
+    "lhuHierarchy": "Hierarquia LHU"
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },

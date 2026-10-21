@@ -18,7 +18,8 @@
     "workspace": {
       "admin": "Admin Workspace",
       "manager": "Manager Workspace"
-    }
+    },
+    "lhuHierarchy": "LHU Hierarchy"
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },

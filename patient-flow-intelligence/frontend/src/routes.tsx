@@ -1,21 +1,26 @@
-import { Navigate, Route, Routes } from 'react-router'
-import { hasAdminRole, useKeycloak } from './auth/context'
-import AppLayout from './layout/AppLayout'
+import { Navigate, Route, Routes } from "react-router"
+import { hasAdminRole, useKeycloak } from "./auth/context"
+import AppLayout from "./layout/AppLayout"
 
-import Admin from './pages/Admin'
-import Dashboard from './pages/Dashboard'
-import Lhu from './pages/Lhu'
-import Unit from './pages/Unit'
-import Service from './pages/Service'
+import Admin from "./pages/Admin"
+import Dashboard from "./pages/Dashboard"
+import Lhu from "./pages/Lhu"
+import Unit from "./pages/Unit"
+import Service from "./pages/Service"
+import { LHUHierarchyPage } from "./features/lhu-hierarchy/pages/LHUHierarchy"
 
-import Settings from './pages/Settings'
-import Account from './pages/Account'
+import Settings from "./pages/Settings"
+import Account from "./pages/Account"
 
-import NotFound from './pages/NotFound'
+import NotFound from "./pages/NotFound"
 
 const AdminRoute = () => {
   const { user } = useKeycloak()
-  return hasAdminRole(user?.roles) ? <Admin /> : <Navigate to="/dashboard" replace />
+  return hasAdminRole(user?.roles) ? (
+    <Admin />
+  ) : (
+    <Navigate to="/dashboard" replace />
+  )
 }
 
 const AppRoutes = () => (
@@ -30,6 +35,7 @@ const AppRoutes = () => (
 
       <Route path="settings" element={<Settings />} />
       <Route path="account" element={<Account />} />
+      <Route path="lhu-hierarchy" element={<LHUHierarchyPage />} />
       <Route path="*" element={<NotFound />} />
     </Route>
   </Routes>
