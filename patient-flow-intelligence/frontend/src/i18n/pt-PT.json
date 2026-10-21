@@ -1,5 +1,5 @@
 {
-  "app": { "name": "PatientFlow" },
+  "app": { "name": "PatientFlow", "logoAlt": "Logótipo PatientFlow" },
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
@@ -29,6 +29,7 @@
     "lhu": { "title": "Unidade Local de Saúde", "description": "Gerir o fluxo da Unidade Local de Saúde" },
     "settings": { "title": "Definições", "description": "Gerir as definições e preferências da aplicação" },
     "account": { "title": "A Minha Conta", "description": "Gerir o perfil e dados da conta" },
+    "lhu-hierarchy": { "title": "Hierarquia LHU", "description": "Estrutura organizacional da Unidade Local de Saúde" },
     "default": { "title": "PatientFlow", "description": "Visão geral do fluxo de pacientes" }
   },
   "topbar": {
@@ -392,5 +393,15 @@
       "body": "{{maintenance}} verificações de manutenção e {{cleaning}} validações de limpeza."
     }
   },
-  "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" }
+  "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" },
+  "lhuHierarchy": {
+    "title": "Hierarquia da organização",
+    "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
+    "root": "Raiz da organização",
+    "columns": { "name": "Espaço ou recurso", "type": "Tipo", "parent": "Superior", "status": "Estado" },
+    "types": {
+      "lhu": "ULS", "unit": "Unidade", "building": "Edifício", "floor": "Piso", "ward": "Enfermaria",
+      "nursery": "Berçário", "room": "Quarto", "bed": "Cama", "operating-room": "Bloco operatório", "treatment-chair": "Cadeirão de tratamento"
+    }
+  }
 }

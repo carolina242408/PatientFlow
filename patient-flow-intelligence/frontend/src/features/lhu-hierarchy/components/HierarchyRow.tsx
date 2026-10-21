@@ -1,22 +1,12 @@
+import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/Badge"
 import { TableCell, TableRow } from "@/components/Table"
-import type { FlatRow, OrgNode } from "../types/tree"
+import type { FlatRow } from "../types/tree"
 import { HierarchyNodeIcon } from "./HierarchyNodeIcon"
 
-const NODE_LABELS: Record<OrgNode["type"], string> = {
-  lhu: "LHU",
-  unit: "Unit",
-  building: "Building",
-  floor: "Floor",
-  ward: "Ward",
-  nursery: "Nursery",
-  room: "Room",
-  bed: "Bed",
-  "operating-room": "Operating room",
-  "treatment-chair": "Treatment chair",
-}
-
 export function HierarchyRow({ row: { node, depth } }: { row: FlatRow }) {
+  const { t } = useTranslation()
+
   return (
     <TableRow className="bg-white">
       <TableCell
@@ -29,13 +19,13 @@ export function HierarchyRow({ row: { node, depth } }: { row: FlatRow }) {
 
       <TableCell>
         <Badge variant="secondary" className="text-xs">
-          {NODE_LABELS[node.type]}
+          {t(`lhuHierarchy.types.${node.type}`)}
         </Badge>
       </TableCell>
 
       <TableCell>
         <span className="text-xs text-gray-500">
-          {node.parentId ?? "Organization root"}
+          {node.parentId ?? t("lhuHierarchy.root")}
         </span>
       </TableCell>
 

@@ -1,5 +1,5 @@
 {
-  "app": { "name": "PatientFlow" },
+  "app": { "name": "PatientFlow", "logoAlt": "PatientFlow logo" },
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
@@ -29,6 +29,7 @@
     "lhu": { "title": "Local Health Unit", "description": "Manage Local Health Unit patient flow" },
     "settings": { "title": "Settings", "description": "Manage your application preferences and settings" },
     "account": { "title": "Account Settings", "description": "Manage your profile and account details" },
+    "lhu-hierarchy": { "title": "LHU Hierarchy", "description": "Organizational structure of the Local Health Unit" },
     "default": { "title": "PatientFlow", "description": "Patient flow overview" }
   },
   "topbar": {
@@ -392,5 +393,15 @@
       "body": "{{maintenance}} maintenance checks and {{cleaning}} cleaning validations."
     }
   },
-  "notFound": { "title": "Page not found", "back": "Back to dashboard" }
+  "notFound": { "title": "Page not found", "back": "Back to dashboard" },
+  "lhuHierarchy": {
+    "title": "Organization hierarchy",
+    "description": "Spaces and resources ordered by their organizational parent",
+    "root": "Organization root",
+    "columns": { "name": "Space or resource", "type": "Type", "parent": "Parent", "status": "Status" },
+    "types": {
+      "lhu": "LHU", "unit": "Unit", "building": "Building", "floor": "Floor", "ward": "Ward",
+      "nursery": "Nursery", "room": "Room", "bed": "Bed", "operating-room": "Operating room", "treatment-chair": "Treatment chair"
+    }
+  }
 }
