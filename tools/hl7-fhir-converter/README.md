@@ -77,7 +77,18 @@ Composite HL7 fields are split where needed. HL7 repetitions use `~`, components
 
 ## Running the Tests
 
-The comparison test uses a reference HL7 message and a JSON contract. From the repository root:
+The comparison test uses a reference HL7 message and a JSON contract. A contract
+can either be the compact `bundle`/`resources` format below or a complete
+reference FHIR Bundle. Complete reference Bundles are compared resource by
+resource; additional resources emitted by the converter are allowed, while all
+fields present in the reference must match.
+
+Dynamic `id`, `fullUrl`, `meta`, and `timestamp` fields are ignored. References
+to those IDs are checked relationally, so a reference such as
+`Patient/<reference-id>` is matched against the ID of the corresponding actual
+Patient resource.
+
+From the repository root:
 
 ```powershell
 .\venv\Scripts\python.exe tools\hl7-fhir-converter\tests\compare_reference.py

@@ -17,15 +17,15 @@ class Coding(FHIRModel):
 
 
 class CodeableConcept(FHIRModel):
-    coding: list[Coding] = Field(default_factory=list)
+    coding: Optional[list[Coding]] = None  # noqa: UP045
     text: Optional[str] = None  # noqa: UP045
 
 
 class Identifier(FHIRModel):
-    use: Optional[str] = None  # noqa: UP045
-    type: Optional[CodeableConcept] = None  # noqa: UP045
-    system: Optional[str] = None  # noqa: UP045
     value: Optional[str] = None  # noqa: UP045
+    system: Optional[str] = None  # noqa: UP045
+    type: Optional[CodeableConcept] = None  # noqa: UP045
+    use: Optional[str] = None  # noqa: UP045
     period: Optional["Period"] = None  # noqa: UP045
     assigner: Optional["Reference"] = None  # noqa: UP045
 
@@ -39,23 +39,23 @@ class Reference(FHIRModel):
 
 class HumanName(FHIRModel):
     use: Optional[str] = None  # noqa: UP045
-    text: Optional[str] = None  # noqa: UP045
     family: Optional[str] = None  # noqa: UP045
-    given: list[str] = Field(default_factory=list)
-    prefix: list[str] = Field(default_factory=list)
-    suffix: list[str] = Field(default_factory=list)
+    given: Optional[list[str]] = None  # noqa: UP045
+    text: Optional[str] = None  # noqa: UP045
+    prefix: Optional[list[str]] = None  # noqa: UP045
+    suffix: Optional[list[str]] = None  # noqa: UP045
 
 
 class Address(FHIRModel):
-    use: Optional[str] = None  # noqa: UP045
-    type: Optional[str] = None  # noqa: UP045
-    text: Optional[str] = None  # noqa: UP045
-    line: list[str] = Field(default_factory=list)
+    line: Optional[list[str]] = None  # noqa: UP045
     city: Optional[str] = None  # noqa: UP045
-    district: Optional[str] = None  # noqa: UP045
     state: Optional[str] = None  # noqa: UP045
     postal_code: Optional[str] = Field(default=None, alias="postalCode")
     country: Optional[str] = None  # noqa: UP045
+    district: Optional[str] = None  # noqa: UP045
+    use: Optional[str] = None  # noqa: UP045
+    type: Optional[str] = None  # noqa: UP045
+    text: Optional[str] = None  # noqa: UP045
 
 
 class ContactPoint(FHIRModel):
@@ -72,8 +72,8 @@ class Communication(FHIRModel):
 
 
 class Period(FHIRModel):
-    start: Optional[datetime] = None  # noqa: UP045
-    end: Optional[datetime] = None  # noqa: UP045
+    start: Optional[str | datetime] = None  # noqa: UP045
+    end: Optional[str | datetime] = None  # noqa: UP045
 
 
 class Quantity(FHIRModel):
@@ -86,18 +86,19 @@ class Quantity(FHIRModel):
 class Patient(FHIRModel):
     resource_type: str = Field(default="Patient", alias="resourceType")
     id: Optional[str] = None  # noqa: UP045
-    identifier: list[Identifier] = Field(default_factory=list)
-    active: Optional[bool] = None  # noqa: UP045
-    name: list[HumanName] = Field(default_factory=list)
-    telecom: list[ContactPoint] = Field(default_factory=list)
-    gender: Optional[str] = None  # noqa: UP045
+    text: Optional[dict] = None  # noqa: UP045
+    identifier: Optional[list[Identifier]] = None  # noqa: UP045
+    name: Optional[list[HumanName]] = None  # noqa: UP045
     birth_date: Optional[str] = Field(default=None, alias="birthDate")
-    deceased_boolean: Optional[bool] = Field(default=None, alias="deceasedBoolean")
-    address: list[Address] = Field(default_factory=list)
+    gender: Optional[str] = None  # noqa: UP045
+    address: Optional[list[Address]] = None  # noqa: UP045
+    telecom: Optional[list[ContactPoint]] = None  # noqa: UP045
     marital_status: Optional[CodeableConcept] = Field(
         default=None, alias="maritalStatus"
     )
-    communication: list[Communication] = Field(default_factory=list)
+    active: Optional[bool] = None  # noqa: UP045
+    deceased_boolean: Optional[bool] = Field(default=None, alias="deceasedBoolean")
+    communication: Optional[list[Communication]] = None  # noqa: UP045
 
 
 class Organization(FHIRModel):
@@ -141,7 +142,7 @@ class Location(FHIRModel):
     id: Optional[str] = None  # noqa: UP045
     identifier: list[Identifier] = Field(default_factory=list)
     status: Optional[str] = None  # noqa: UP045
-    operational_status: Optional[Coding] = Field(
+    operational_status: Optional[Coding] = Field( #noqa: UP045
         default=None, alias="operationalStatus"
     )
     name: Optional[str] = None  # noqa: UP045
@@ -150,13 +151,13 @@ class Location(FHIRModel):
     type: list[CodeableConcept] = Field(default_factory=list)
     telecom: list[ContactPoint] = Field(default_factory=list)
     address: Optional[Address] = None  # noqa: UP045
-    physical_type: Optional[CodeableConcept] = Field(
+    physical_type: Optional[CodeableConcept] = Field( #noqa: UP045
         default=None, alias="physicalType"
     )
-    managing_organization: Optional[Reference] = Field(
+    managing_organization: Optional[Reference] = Field( #noqa: UP045
         default=None, alias="managingOrganization"
     )
-    part_of: Optional[Reference] = Field(default=None, alias="partOf")
+    part_of: Optional[Reference] = Field(default=None, alias="partOf") #noqa: UP045
 
 
 class EncounterParticipant(FHIRModel):
@@ -168,19 +169,19 @@ class EncounterParticipant(FHIRModel):
 class EncounterLocation(FHIRModel):
     location: Reference
     status: Optional[str] = None  # noqa: UP045
-    physical_type: Optional[CodeableConcept] = Field(
+    physical_type: Optional[CodeableConcept] = Field( #noqa: UP045
         default=None, alias="physicalType"
     )
     period: Optional[Period] = None  # noqa: UP045
 
 
 class EncounterHospitalization(FHIRModel):
-    pre_admission_identifier: Optional[Identifier] = Field(
+    pre_admission_identifier: Optional[Identifier] = Field( #noqa: UP045
         default=None, alias="preAdmissionIdentifier"
     )
     origin: Optional[Reference] = None  # noqa: UP045
-    admit_source: Optional[CodeableConcept] = Field(default=None, alias="admitSource")
-    re_admission: Optional[CodeableConcept] = Field(
+    admit_source: Optional[CodeableConcept] = Field(default=None, alias="admitSource") #noqa: UP045
+    re_admission: Optional[CodeableConcept] = Field( #noqa: UP045
         default=None, alias="reAdmission"
     )
     diet_preference: list[CodeableConcept] = Field(
@@ -193,7 +194,7 @@ class EncounterHospitalization(FHIRModel):
         default_factory=list, alias="specialArrangement"
     )
     destination: Optional[Reference] = None  # noqa: UP045
-    discharge_disposition: Optional[CodeableConcept] = Field(
+    discharge_disposition: Optional[CodeableConcept] = Field( #noqa: UP045
         default=None, alias="dischargeDisposition"
     )
 
@@ -202,36 +203,37 @@ class Encounter(FHIRModel):
     resource_type: str = Field(default="Encounter", alias="resourceType")
     id: Optional[str] = None  # noqa: UP045
     text: Optional[dict] = None  # noqa: UP045
-    identifier: list[Identifier] = Field(default_factory=list)
     status: str
-    status_history: list[dict] = Field(default_factory=list, alias="statusHistory")
-    class_: Optional[Coding] = Field(default=None, alias="class") 
-    type: list[CodeableConcept] = Field(default_factory=list)
-    service_type: Optional[CodeableConcept] = Field(default=None, alias="serviceType")
-    priority: Optional[CodeableConcept] = None  # noqa: UP045
+    class_: Optional[list[CodeableConcept]] = Field(default=None, alias="class")  # noqa: UP045
+    identifier: Optional[list[Identifier]] = None  # noqa: UP045
     subject: Optional[Reference] = None  # noqa: UP045
-    episode_of_care: list[Reference] = Field(default_factory=list, alias="episodeOfCare")
-    based_on: list[Reference] = Field(default_factory=list, alias="basedOn")
-    participant: list[EncounterParticipant] = Field(default_factory=list)
-    appointment: list[Reference] = Field(default_factory=list)
+    participant: Optional[list[EncounterParticipant]] = None  # noqa: UP045
+    location: Optional[list[EncounterLocation]] = None  # noqa: UP045
+    actual_period: Optional[Period] = Field(default=None, alias="actualPeriod")  # noqa: UP045
     period: Optional[Period] = None  # noqa: UP045
+    status_history: Optional[list[dict]] = Field(default=None, alias="statusHistory")
+    type: Optional[list[CodeableConcept]] = None  # noqa: UP045
+    service_type: Optional[CodeableConcept] = Field(default=None, alias="serviceType")  # noqa: UP045
+    priority: Optional[CodeableConcept] = None  # noqa: UP045
+    episode_of_care: Optional[list[Reference]] = Field(default=None, alias="episodeOfCare")
+    based_on: Optional[list[Reference]] = Field(default=None, alias="basedOn")
+    appointment: Optional[list[Reference]] = None  # noqa: UP045
     length: Optional[Quantity] = None  # noqa: UP045
-    reason_code: list[CodeableConcept] = Field(default_factory=list, alias="reasonCode")
-    diagnosis: list[dict] = Field(default_factory=list)
-    account: list[Reference] = Field(default_factory=list)
+    reason_code: Optional[list[CodeableConcept]] = Field(default=None, alias="reasonCode")
+    diagnosis: Optional[list[dict]] = None  # noqa: UP045
+    account: Optional[list[Reference]] = None  # noqa: UP045
     hospitalization: Optional[EncounterHospitalization] = None  # noqa: UP045
-    location: list[EncounterLocation] = Field(default_factory=list)
-    service_provider: Optional[Reference] = Field(default=None, alias="serviceProvider")
+    service_provider: Optional[Reference] = Field(default=None, alias="serviceProvider")  # noqa: UP045
 
 
 class Condition(FHIRModel):
     resource_type: str = Field(default="Condition", alias="resourceType")
     id: Optional[str] = None  # noqa: UP045
     identifier: list[Identifier] = Field(default_factory=list)
-    clinical_status: Optional[CodeableConcept] = Field(
+    clinical_status: Optional[CodeableConcept] = Field( #noqa: UP045
         default=None, alias="clinicalStatus"
     )
-    verification_status: Optional[CodeableConcept] = Field(
+    verification_status: Optional[CodeableConcept] = Field( #noqa: UP045
         default=None, alias="verificationStatus"
     )
     category: list[CodeableConcept] = Field(default_factory=list)
@@ -240,7 +242,7 @@ class Condition(FHIRModel):
     body_site: list[CodeableConcept] = Field(default_factory=list, alias="bodySite")
     subject: Reference
     encounter: Optional[Reference] = None  # noqa: UP045
-    onset_date_time: Optional[str] = Field(default=None, alias="onsetDateTime")
+    onset_date_time: Optional[str] = Field(default=None, alias="onsetDateTime") #noqa: UP045
     recorded_date: Optional[str] = Field(default=None, alias="recordedDate")
     recorder: Optional[Reference] = None  # noqa: UP045
     note: list[dict] = Field(default_factory=list)
@@ -378,9 +380,9 @@ class BundleEntry(FHIRModel):
 
 class Bundle(FHIRModel):
     resource_type: str = Field(default="Bundle", alias="resourceType")
-    id: Optional[str] = None  # noqa: UP045
     type: str
-    timestamp: Optional[datetime] = None  # noqa: UP045
+    timestamp: Optional[str | datetime] = None  # noqa: UP045
+    id: Optional[str] = None  # noqa: UP045
     identifier: Optional[Identifier] = None  # noqa: UP045
     entry: list[BundleEntry] = Field(default_factory=list)
 

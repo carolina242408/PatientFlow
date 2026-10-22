@@ -39,7 +39,7 @@ def resources_by_type(bundle: dict[str, Any], resource_type: str) -> list[dict[s
     ]
 
 
-IGNORED_REFERENCE_FIELDS = {"id", "meta", "fullUrl", "reference", "timestamp"}
+IGNORED_REFERENCE_FIELDS = {"id", "meta", "fullUrl", "timestamp"}
 
 
 def stable_leaf_values(value: Any, path: str = "") -> dict[str, Any]:
@@ -73,6 +73,81 @@ def contract_from_bundle(reference: dict[str, Any]) -> dict[str, Any]:
             if path not in expectation["required"]:
                 expectation["required"][path] = value
     return {"bundle": {"type": reference.get("type")}, "resources": resources}
+
+
+def compare_reference_bundle(
+    bundle: dict[str, Any], reference: dict[str, Any]
+) -> tuple[list[str], list[str], list[str]]:
+    """Compare every resource in a reference Bundle with its matching resource.
+
+    Reference Bundles are treated as expected subsets because the converter may
+    emit additional FHIR resources (for example MessageHeader or Location).
+    Dynamic identity fields are excluded by stable_leaf_values, while references
+    are compared because they are part of the resource contract.
+    """
+    matches: list[str] = []
+    missing: list[str] = []
+    different: list[str] = []
+
+    expected_bundle_type = reference.get("type")
+    if bundle.get("type") == expected_bundle_type:
+        matches.append(f"Bundle.type = {expected_bundle_type}")
+    else:
+        different.append(
+            f"Bundle.type: expected {expected_bundle_type!r}, got {bundle.get('type')!r}"
+        )
+
+    expected_resources: dict[str, list[dict[str, Any]]] = {}
+    for entry in reference.get("entry", []):
+        resource = entry.get("resource", {})
+        resource_type = resource.get("resourceType")
+        if resource_type:
+            expected_resources.setdefault(resource_type, []).append(resource)
+
+    expected_to_actual_ids: dict[str, str] = {}
+    for resource_type, expected_items in expected_resources.items():
+        actual_items = resources_by_type(bundle, resource_type)
+        for index, expected_resource in enumerate(expected_items):
+            if index >= len(actual_items):
+                continue
+            expected_id = expected_resource.get("id")
+            actual_id = actual_items[index].get("id")
+            if expected_id and actual_id:
+                expected_to_actual_ids[f"{resource_type}/{expected_id}"] = (
+                    f"{resource_type}/{actual_id}"
+                )
+
+    for resource_type, expected_items in expected_resources.items():
+        actual_items = resources_by_type(bundle, resource_type)
+        if len(actual_items) < len(expected_items):
+            missing.append(
+                f"{resource_type} count: expected at least {len(expected_items)}, "
+                f"got {len(actual_items)}"
+            )
+        else:
+            matches.append(f"{resource_type} count >= {len(expected_items)}")
+
+        for index, expected_resource in enumerate(expected_items):
+            if index >= len(actual_items):
+                continue
+            actual_resource = actual_items[index]
+            for path, expected in stable_leaf_values(expected_resource).items():
+                if isinstance(expected, str):
+                    expected = expected_to_actual_ids.get(expected, expected)
+                try:
+                    actual = get_path(actual_resource, path)
+                except (IndexError, KeyError, TypeError, ValueError):
+                    missing.append(f"{resource_type}.{index}.{path}: missing")
+                    continue
+                if actual == expected:
+                    matches.append(f"{resource_type}.{index}.{path}")
+                else:
+                    different.append(
+                        f"{resource_type}.{index}.{path}: "
+                        f"expected {expected!r}, got {actual!r}"
+                    )
+
+    return matches, missing, different
 
 
 def scenario_files(scenario: str | None) -> tuple[Path, Path]:
@@ -153,12 +228,17 @@ def main() -> int:
     message_path, contract_path = scenario_files(args.scenario)
     message = message_path.read_text(encoding="utf-8")
     contract = json.loads(contract_path.read_text(encoding="utf-8"))
-    if "bundle" not in contract and contract.get("resourceType") == "Bundle":
+    reference_bundle = "bundle" not in contract and contract.get("resourceType") == "Bundle"
+    if reference_bundle:
+        reference = contract
         contract = contract_from_bundle(contract)
     bundle = converter.convert_hl7_to_fhir(message).model_dump(
         by_alias=True, exclude_none=True, mode="json"
     )
-    matches, missing, different = compare(bundle, contract)
+    if reference_bundle:
+        matches, missing, different = compare_reference_bundle(bundle, reference)
+    else:
+        matches, missing, different = compare(bundle, contract)
 
     print(f"FHIR comparison: {len(matches)} matching checks")
     print(f"FHIR comparison: {len(missing)} missing sections")
