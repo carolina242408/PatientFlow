@@ -164,8 +164,7 @@
 }
 
 .sidebar-icon-active {
-  filter: brightness(0) saturate(100%) invert(39%) sepia(75%) saturate(1357%)
-    hue-rotate(197deg) brightness(88%) contrast(91%);
+  filter: invert(33%) sepia(85%) saturate(2462%) hue-rotate(212deg) brightness(97%) contrast(93%);
 }
 
 .sidebar-icon-inactive {

@@ -3,16 +3,22 @@
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
+    "lhu": "ULS",
+    "unit": "Unidades",
     "service": "Serviços",
     "settings": "Definições",
     "account": "A minha conta",
     "support": "Suporte",
     "help": "Centro de ajuda",
     "administration": "Administração",
-    "admin": "Consola de administração",
+    "admin": "Consola Administrativa",
     "logout": "Terminar sessão",
     "collapse": "Recolher",
-    "expand": "Expandir"
+    "expand": "Expandir",
+    "workspace": {
+      "admin": "Área de Administração",
+      "manager": "Área de Gestão"
+    }
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },
