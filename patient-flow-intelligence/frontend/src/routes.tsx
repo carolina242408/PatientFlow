@@ -4,6 +4,8 @@ import AppLayout from './layout/AppLayout'
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
+import Lhu from './pages/Lhu'
+import Unit from './pages/Unit'
 import Service from './pages/Service'
 
 const AdminRoute = () => {
@@ -16,6 +18,8 @@ const AppRoutes = () => (
     <Route element={<AppLayout />}>
       <Route index element={<Navigate to="/dashboard" replace />} />
       <Route path="dashboard" element={<Dashboard />} />
+      <Route path="lhu" element={<Lhu />} />
+      <Route path="unit" element={<Unit />} />
       <Route path="service" element={<Service />} />
       <Route path="admin/*" element={<AdminRoute />} />
       <Route path="*" element={<NotFound />} />

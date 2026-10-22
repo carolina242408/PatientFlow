@@ -12,7 +12,11 @@
     "admin": "Admin Console",
     "logout": "Logout",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "workspace": {
+      "admin": "Admin Workspace",
+      "manager": "Manager Workspace"
+    }
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },

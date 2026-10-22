@@ -1,14 +1,207 @@
 @import "tailwindcss";
 
-@theme {
-  --color-primary: #3068d8;
-  --color-primary-dark: #2456b8;
-  --color-danger: #ca0404;
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+@font-face {
+  font-family: "Inter:Medium";
+  src: url("https://static.figma.com/font/Inter_1") format("woff2");
+  font-style: normal;
+  font-weight: 500;
 }
 
-body {
-  margin: 0;
-  background: #fafafa;
-  color: #111827;
+@font-face {
+  font-family: "Inter:Regular";
+  src: url("https://static.figma.com/font/Inter_1") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Inter:Semi Bold";
+  src: url("https://static.figma.com/font/Inter_1") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: "Inter:Bold";
+  src: url("https://static.figma.com/font/Inter_1") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    background: #ffffff;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    font-family: "Inter:Regular", sans-serif;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+}
+
+.theme-dark {
+  background: #0f172a;
+  color-scheme: dark;
+}
+
+.theme-dark main {
+  background: #0f172a;
+}
+
+.theme-dark aside,
+.theme-dark section,
+.theme-dark form,
+.theme-dark .bg-white,
+.theme-dark [role="dialog"] > div,
+.theme-dark [role="alertdialog"] > div {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+
+.theme-dark [class*="bg-[#f9fafb]"],
+.theme-dark [class*="bg-[#f3f4f6]"],
+.theme-dark thead tr {
+  background-color: #1f2937 !important;
+}
+
+.theme-dark [class*="border-[#e5e7eb]"] {
+  border-color: #374151 !important;
+}
+
+.theme-dark [class*="text-[#111827]"],
+.theme-dark .text-black {
+  color: #f9fafb !important;
+}
+
+.theme-dark [class*="text-[#374151]"],
+.theme-dark [class*="text-[#4b5563]"],
+.theme-dark [class*="text-[#6b7280]"] {
+  color: #cbd5e1 !important;
+}
+
+.theme-dark [class*="text-[#9ca3af]"],
+.theme-dark [class*="text-[#aeb4be]"] {
+  color: #94a3b8 !important;
+}
+
+.theme-dark input,
+.theme-dark select,
+.theme-dark textarea,
+.theme-dark option {
+  background-color: #1f2937 !important;
+  border-color: #475569 !important;
+  color: #f9fafb !important;
+}
+
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+.theme-dark table tbody tr:hover,
+.theme-dark table tbody tr:focus {
+  background-color: #1e293b !important;
+}
+
+.theme-dark .theme-option {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+
+.theme-dark .theme-option:hover {
+  background-color: #172033 !important;
+}
+
+.theme-dark .theme-option-selected {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.theme-dark .theme-preview-light {
+  background-color: #0f172a !important;
+  border-color: #475569 !important;
+}
+
+.theme-dark .theme-preview-dark {
+  background-color: #020617 !important;
+  border-color: #334155 !important;
+}
+
+.theme-dark .notification-panel,
+.theme-dark .notification-row {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+
+.theme-dark .notification-unread {
+  background-color: #172033 !important;
+}
+
+.theme-dark .notification-row:hover {
+  background-color: #1e293b !important;
+}
+
+.theme-dark img[src$="/notification-bell.svg"],
+.theme-dark img[src$="/0bb96.svg"],
+.theme-dark img[src$="/d6e30.svg"],
+.theme-dark img[src$="/1eb57.svg"] {
+  filter: brightness(0) invert(1);
+  opacity: 0.75;
+}
+
+.sidebar-icon-active {
+  filter: invert(33%) sepia(85%) saturate(2462%) hue-rotate(212deg) brightness(97%) contrast(93%);
+}
+
+.sidebar-icon-inactive {
+  filter: grayscale(1) saturate(0);
+  opacity: 0.68;
+}
+
+.sidebar-icon-danger {
+  filter: none;
+  opacity: 1;
+}
+
+.theme-dark button,
+.theme-dark input,
+.theme-dark select,
+.theme-dark textarea,
+.theme-dark section,
+.theme-dark aside,
+.theme-dark main {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+@media (max-width: 720px) {
+  main {
+    padding: 0 20px 40px !important;
+  }
+
+  main.admin-main {
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 620px) {
+  main form {
+    padding: 22px;
+  }
 }

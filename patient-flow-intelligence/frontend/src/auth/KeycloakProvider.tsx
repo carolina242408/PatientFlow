@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { getApplicationUrl, KeycloakContext, type KeycloakUser } from './context'
+import { extractRolesFromToken, getApplicationUrl, KeycloakContext, type KeycloakUser } from './context'
 import keycloak, { initKeycloak } from './keycloak'
 
 export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
@@ -8,6 +8,21 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const updateUserState = () => {
+      if (!keycloak.tokenParsed) return
+
+      const token = keycloak.tokenParsed as Record<string, any>
+      setUser({
+        name:
+          token.name ||
+          `${token.given_name || ''} ${token.family_name || ''}`.trim() ||
+          token.preferred_username,
+        username: token.preferred_username,
+        email: token.email,
+        roles: extractRolesFromToken(keycloak),
+      })
+    }
+
     initKeycloak()
       .then((auth) => {
         setInitialized(true)
@@ -16,15 +31,14 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
           void keycloak.login({ redirectUri: getApplicationUrl() })
           return
         }
-        const token = keycloak.tokenParsed as Record<string, any>
-        setUser({
-          name: token.name || `${token.given_name || ''} ${token.family_name || ''}`.trim() || token.preferred_username,
-          username: token.preferred_username,
-          email: token.email,
-          roles: token.realm_access?.roles || [],
-        })
+
+        updateUserState()
+
         keycloak.onTokenExpired = () => {
-          keycloak.updateToken(30).catch(() => keycloak.login({ redirectUri: getApplicationUrl() }))
+          keycloak
+            .updateToken(30)
+            .then(() => updateUserState())
+            .catch(() => void keycloak.login({ redirectUri: getApplicationUrl() }))
         }
       })
       .catch((err) => {
