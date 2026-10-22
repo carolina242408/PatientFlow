@@ -69,7 +69,7 @@ const Sidebar = () => {
     <aside
       className={`relative flex h-screen shrink-0 flex-col border-r border-gray-200 bg-white transition-[width] duration-200 ${collapsed ? 'w-16' : 'w-[230px]'}`}
     >
-      <div className={`flex items-center border-b border-gray-100 py-4 ${collapsed ? 'justify-center px-1.5' : 'gap-3 px-4'}`}>
+      <div className={`flex h-[73px] items-center border-b border-gray-200 py-4 ${collapsed ? 'justify-center px-1.5' : 'gap-3 px-4'}`}>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
           <img src={logoIcon} alt="Logo" className="h-6 w-6 object-contain brightness-0 invert" />
         </div>
