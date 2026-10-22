@@ -15,10 +15,33 @@ export interface KeycloakContextType {
 
 export const KeycloakContext = createContext<KeycloakContextType | null>(null)
 
+export const extractRolesFromToken = (keycloak: Keycloak): string[] => {
+  const tokenParsed = keycloak.tokenParsed
+  if (!tokenParsed) return []
+
+  const realmRoles: string[] = tokenParsed.realm_access?.roles || []
+
+  return Array.from(new Set([...realmRoles]))
+}
+
+
+export const buildKeycloakUser = (keycloak: Keycloak): KeycloakUser | null => {
+  if (!keycloak.authenticated || !keycloak.tokenParsed) return null
+
+  const token = keycloak.tokenParsed
+
+  return {
+    name: token.name || token.preferred_username || '',
+    username: token.preferred_username || '',
+    email: token.email || '',
+    roles: extractRolesFromToken(keycloak),
+  }
+}
+
 export const hasAdminRole = (roles: string[] = []) =>
   roles.some((role) => {
-    const r = role.toUpperCase()
-    return r === 'ADMIN' || r === 'ROLE_ADMIN'
+    const r = role.toLowerCase()
+    return r === 'admin' || r === 'role_admin'
   })
 
 export const getApplicationUrl = () => globalThis.location.href

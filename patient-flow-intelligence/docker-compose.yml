@@ -11,7 +11,7 @@ services:
   # ------------------------------------------------------------
   postgresql:
     image: postgres:16-alpine
-    container_name: pfi-postgresql
+    container_name: postgresql
     env_file: .env
     ports:
       - "5432:5432"
@@ -29,7 +29,7 @@ services:
   # ------------------------------------------------------------
   keycloak:
     image: quay.io/keycloak/keycloak:26.4
-    container_name: pfi-keycloak
+    container_name: keycloak
     command: ["start-dev", "--import-realm"]
     env_file: .env
     environment:
@@ -69,7 +69,7 @@ services:
   # ------------------------------------------------------------
   rabbitmq:
     image: rabbitmq:4-management-alpine
-    container_name: pfi-rabbitmq
+    container_name: rabbitmq
     env_file: .env
     ports:
       - "5672:5672"
@@ -87,7 +87,7 @@ services:
   # ------------------------------------------------------------
   redis:
     image: redis:7-alpine
-    container_name: pfi-redis
+    container_name: redis
     ports:
       - "6379:6379"
     volumes:
@@ -103,7 +103,7 @@ services:
   # ------------------------------------------------------------
   hapi-fhir-postgres:
     image: postgres:16-alpine
-    container_name: pfi-hapi-postgres
+    container_name: hapi-postgres
     environment:
       POSTGRES_USER: hapi
       POSTGRES_PASSWORD: hapi
@@ -120,7 +120,7 @@ services:
 
   hapi-fhir-server:
     image: hapiproject/hapi:latest
-    container_name: pfi-hapi-fhir
+    container_name: hapi-fhir
     ports:
       - "8081:8080"
     environment:
@@ -142,7 +142,7 @@ services:
   # ------------------------------------------------------------
   minio:
     image: pgsty/silo:latest
-    container_name: pfi-minio
+    container_name: minio
     command: server /data --console-address ":9001"
     env_file: .env
     ports:
@@ -155,6 +155,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ------------------------------------------------------------
+  # Frontend
+  # ------------------------------------------------------------
+  ui:
+    image: patientflow-frontend:1.0
+    container_name: ui
+    ports:
+      - "5173:80"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      keycloak:
+        condition: service_started
 
 volumes:
   pfi-postgres-data:
