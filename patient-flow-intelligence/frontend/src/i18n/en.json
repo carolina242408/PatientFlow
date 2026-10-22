@@ -29,19 +29,216 @@
   },
   "topbar": { "user": "User", "admin": "Admin", "language": "Language" },
   "dashboard": {
-    "welcome": "Welcome back, {{name}}!",
-    "lastUpdate": "Last update: {{date}}",
-    "export": "Export CSV",
-    "stats": { "patients": "Total Patients", "doctors": "Total Doctors", "appointments": "Booked Appointments", "rooms": "Room Availability" },
-    "chart": "Chart placeholder",
-    "recent": "Recent Patients",
-    "search": "Search",
-    "table": { "patient": "Patient", "location": "Current Location", "service": "Service", "discharge": "Expected Discharge", "readiness": "Readiness" }
+    "lastUpdated": "Last updated today at {{time}}",
+    "occupancyRate": "{{scope}} occupancy rate",
+    "beds": "{{occupied}} / {{total}} beds",
+    "thresholdBelow": "{{value}}% below critical capacity threshold",
+    "thresholdAbove": "{{value}}% above critical capacity threshold",
+    "scopes": {
+      "LHU": {
+        "name": "LHU",
+        "title": "LHU operational overview",
+        "description": "Current capacity and predicted patient flow across the LHU."
+      },
+      "Unit": {
+        "name": "Unit",
+        "title": "Unit operational overview",
+        "description": "Current capacity and predicted patient flow across the selected unit."
+      },
+      "Service": {
+        "name": "Service",
+        "title": "Service operational overview",
+        "description": "Current capacity and predicted patient flow for {{service}}."
+      }
+    },
+    "forecast": {
+      "badge": "Forecast",
+      "todayLabel": "Predicted discharges today",
+      "todayDetail": "{{confirmed}} confirmed · {{pending}} pending",
+      "next48Label": "Predicted next 48 hours",
+      "next48Detail_one": "Across {{count}} clinical service",
+      "next48Detail_other": "Across {{count}} clinical services",
+      "availableLabel": "Beds available after discharge",
+      "availableDetail": "Estimated by tomorrow at {{time}}"
+    },
+    "perService": {
+      "title": "Occupancy per service",
+      "body": "Percentage of staffed beds currently occupied"
+    },
+    "forecastChart": {
+      "title": "Discharge patient prediction",
+      "body": "Expected discharges over the next seven days",
+      "total": "Seven-day total",
+      "patients_one": "{{count}} patient",
+      "patients_other": "{{count}} patients"
+    },
+    "weekdays": {
+      "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu",
+      "fri": "Fri", "sat": "Sat", "sun": "Sun"
+    },
+    "days": { "today": "Today", "tomorrow": "Tomorrow" },
+    "discharges": {
+      "title": "Upcoming discharges",
+      "body": "Patients expected to leave within the next 72 hours",
+      "viewPlan": "View discharge plan",
+      "location": "Room {{room}} · Bed {{bed}}",
+      "columns": {
+        "patient": "Patient",
+        "location": "Current location",
+        "service": "Service",
+        "expected": "Expected discharge",
+        "destination": "Destination",
+        "readiness": "Readiness"
+      }
+    },
+    "destinations": {
+      "home": "Home",
+      "rehabilitation": "Rehabilitation",
+      "primaryCare": "Primary care"
+    },
+    "status": {
+      "ready": "Ready",
+      "pendingTransport": "Pending transport",
+      "medicationReview": "Medication review",
+      "clinicalReview": "Clinical review"
+    }
   },
-  "service": { "title": "Service Page", "body": "This is the service page content." },
   "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },
-  "lhu": { "title": "Local Health Unit", "body": "Management area for Local Health Unit overview." },
-  "settings": { "title": "Settings", "body": "Manage your application preferences and configurations." },
-  "account": { "title": "Account Settings", "body": "Manage your personal profile and account credentials." },
+  "settings": {
+    "title": "Interface preferences",
+    "body": "Choose how the admin console looks and which language it uses.",
+    "appearance": {
+      "title": "Appearance",
+      "body": "Select the interface color mode.",
+      "light": "Light mode",
+      "lightDesc": "Bright interface with light surfaces",
+      "dark": "Dark mode",
+      "darkDesc": "Reduced brightness with dark surfaces"
+    },
+    "language": {
+      "title": "Language",
+      "body": "Select the preferred language for the interface."
+    },
+    "save": "Save Preferences"
+  },
+  "account": {
+    "subtitle": "{{profile}} account",
+    "fullName": "Full name",
+    "email": "Institutional email",
+    "profile": "Profile",
+    "scope": "Organizational scope",
+    "status": "Account status",
+    "active": "Active",
+    "language": "Interface language",
+    "profiles": {
+      "admin": "Administrator",
+      "lhu": "LHU Manager",
+      "unit": "Unit Manager",
+      "service": "Service Manager",
+      "default": "User"
+    },
+    "scopes": {
+      "admin": "Platform",
+      "lhu": "Local Health Unit",
+      "unit": "Hospital Unit",
+      "service": "Service",
+      "default": "—"
+    },
+    "languages": { "en": "English", "pt": "Português" },
+    "access": {
+      "title": "Account access",
+      "admin": "Your Administrator profile provides access to the admin console and platform-wide configuration.",
+      "lhu": "Your LHU Manager profile provides access to LHU-wide KPIs and the healthcare-space hierarchy starting at your assigned LHU.",
+      "unit": "Your Unit Manager profile provides access to unit-wide KPIs and the healthcare-space hierarchy starting at your assigned Unit.",
+      "service": "Your Service Manager profile provides access to service KPIs and the healthcare-space hierarchy starting at your assigned Service.",
+      "default": "Your profile provides basic access to the platform."
+    }
+  },
+  "lhu": {
+    "level": "LHU",
+    "continue": "Continue to unit",
+    "selected": "Selected: {{unit}}",
+    "resources": {
+      "beds": "Beds",
+      "rooms": "Operating rooms",
+      "chairs": "Treatment chairs"
+    },
+    "status": {
+      "occupied": "{{count}} occupied",
+      "available": "{{count}} available",
+      "reserved": "{{count}} reserved",
+      "inUse": "{{count}} in use",
+      "cleaning": "{{count}} cleaning"
+    }
+  },
+  "unit": {
+    "eyebrow": "Unit access",
+    "title": "Select the unit context",
+    "body": "Select the parent LHU only to identify the unit. The resulting dashboard exposes unit-level information and does not provide access to LHU metrics or navigation.",
+    "change": "Change unit",
+    "form": {
+      "title": "Unit mapping",
+      "body": "Complete both levels to unlock the unit dashboard.",
+      "lhu": "1. LHU",
+      "unit": "2. Unit",
+      "selectLhu": "Select LHU",
+      "selectUnit": "Select unit",
+      "submit": "Open unit dashboard"
+    }
+  },
+  "service": {
+    "eyebrow": "Service access",
+    "title": "Select the service context",
+    "body": "Map the service through its parent locations. Parent selections are used only to identify the service and do not provide access to parent-level dashboards or information.",
+    "selected": "Selected service",
+    "change": "Change service",
+    "form": {
+      "title": "Service mapping",
+      "body": "Complete each level in order to unlock the service overview.",
+      "required": "Required",
+      "submit": "Open service overview",
+      "fields": {
+        "lhu": "LHU",
+        "unit": "Unit",
+        "building": "Building",
+        "floor": "Floor",
+        "service": "Service"
+      },
+      "placeholders": {
+        "lhu": "Select LHU",
+        "unit": "Select unit",
+        "building": "Select building",
+        "floor": "Select floor",
+        "service": "Select service"
+      }
+    },
+    "overview": {
+      "title": "{{service}} overview",
+      "body": "Service-level capacity, activity and resource status."
+    },
+    "stats": {
+      "occupancy": "Occupancy",
+      "occupiedBeds": "Occupied beds",
+      "discharges": "Discharges today",
+      "admissions": "Expected admissions",
+      "professionals": "Professionals on duty"
+    },
+    "areas": {
+      "title": "Service areas",
+      "body": "Occupancy within areas assigned to this service"
+    },
+    "resources": {
+      "title": "Service resources",
+      "beds": "Beds",
+      "chairs": "Treatment chairs",
+      "rooms": "Procedure rooms",
+      "stations": "Monitoring stations"
+    },
+    "review": {
+      "title_one": "{{count}} resource requires review",
+      "title_other": "{{count}} resources require review",
+      "body": "{{maintenance}} maintenance checks and {{cleaning}} cleaning validations."
+    }
+  },
   "notFound": { "title": "Page not found", "back": "Back to dashboard" }
 }

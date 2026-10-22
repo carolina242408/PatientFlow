@@ -31,16 +31,216 @@
   },
   "topbar": { "user": "Utilizador", "admin": "Admin", "language": "Idioma" },
   "dashboard": {
-    "welcome": "Bem-vindo de volta, {{name}}!",
-    "lastUpdate": "Última atualização: {{date}}",
-    "export": "Exportar CSV",
-    "stats": { "patients": "Total de pacientes", "doctors": "Total de médicos", "appointments": "Consultas marcadas", "rooms": "Quartos disponíveis" },
-    "chart": "Gráfico (placeholder)",
-    "recent": "Pacientes recentes",
-    "search": "Pesquisar",
-    "table": { "patient": "Paciente", "location": "Localização atual", "service": "Serviço", "discharge": "Alta prevista", "readiness": "Prontidão" }
+    "lastUpdated": "Última atualização hoje às {{time}}",
+    "occupancyRate": "Taxa de ocupação ({{scope}})",
+    "beds": "{{occupied}} / {{total}} camas",
+    "thresholdBelow": "{{value}}% abaixo do limite crítico de capacidade",
+    "thresholdAbove": "{{value}}% acima do limite crítico de capacidade",
+    "scopes": {
+      "LHU": {
+        "name": "ULS",
+        "title": "Visão operacional da ULS",
+        "description": "Capacidade atual e fluxo de doentes previsto em toda a ULS."
+      },
+      "Unit": {
+        "name": "Unidade",
+        "title": "Visão operacional da unidade",
+        "description": "Capacidade atual e fluxo de doentes previsto na unidade selecionada."
+      },
+      "Service": {
+        "name": "Serviço",
+        "title": "Visão operacional do serviço",
+        "description": "Capacidade atual e fluxo de doentes previsto para {{service}}."
+      }
+    },
+    "forecast": {
+      "badge": "Previsão",
+      "todayLabel": "Altas previstas hoje",
+      "todayDetail": "{{confirmed}} confirmadas · {{pending}} pendentes",
+      "next48Label": "Previsão para as próximas 48 horas",
+      "next48Detail_one": "Em {{count}} serviço clínico",
+      "next48Detail_other": "Em {{count}} serviços clínicos",
+      "availableLabel": "Camas livres após as altas",
+      "availableDetail": "Estimativa para amanhã às {{time}}"
+    },
+    "perService": {
+      "title": "Ocupação por serviço",
+      "body": "Percentagem de camas ativas atualmente ocupadas"
+    },
+    "forecastChart": {
+      "title": "Previsão de altas",
+      "body": "Altas esperadas nos próximos sete dias",
+      "total": "Total em sete dias",
+      "patients_one": "{{count}} doente",
+      "patients_other": "{{count}} doentes"
+    },
+    "weekdays": {
+      "mon": "Seg", "tue": "Ter", "wed": "Qua", "thu": "Qui",
+      "fri": "Sex", "sat": "Sáb", "sun": "Dom"
+    },
+    "days": { "today": "Hoje", "tomorrow": "Amanhã" },
+    "discharges": {
+      "title": "Próximas altas",
+      "body": "Doentes que devem sair nas próximas 72 horas",
+      "viewPlan": "Ver plano de altas",
+      "location": "Quarto {{room}} · Cama {{bed}}",
+      "columns": {
+        "patient": "Doente",
+        "location": "Localização atual",
+        "service": "Serviço",
+        "expected": "Alta prevista",
+        "destination": "Destino",
+        "readiness": "Estado"
+      }
+    },
+    "destinations": {
+      "home": "Domicílio",
+      "rehabilitation": "Reabilitação",
+      "primaryCare": "Cuidados de saúde primários"
+    },
+    "status": {
+      "ready": "Pronta",
+      "pendingTransport": "Transporte pendente",
+      "medicationReview": "Revisão de medicação",
+      "clinicalReview": "Revisão clínica"
+    }
   },
-  "service": { "title": "Página de serviços", "body": "Conteúdo da página de serviços." },
   "admin": { "title": "Consola de administração", "body": "Área reservada a administradores." },
+  "settings": {
+    "title": "Preferências da interface",
+    "body": "Escolhe o aspeto da consola de administração e o idioma que usa.",
+    "appearance": {
+      "title": "Aparência",
+      "body": "Seleciona o modo de cor da interface.",
+      "light": "Modo claro",
+      "lightDesc": "Interface luminosa com superfícies claras",
+      "dark": "Modo escuro",
+      "darkDesc": "Brilho reduzido com superfícies escuras"
+    },
+    "language": {
+      "title": "Idioma",
+      "body": "Seleciona o idioma preferido para a interface."
+    },
+    "save": "Guardar preferências"
+  },
+  "account": {
+    "subtitle": "Conta de {{profile}}",
+    "fullName": "Nome completo",
+    "email": "Email institucional",
+    "profile": "Perfil",
+    "scope": "Âmbito organizacional",
+    "status": "Estado da conta",
+    "active": "Ativa",
+    "language": "Idioma da interface",
+    "profiles": {
+      "admin": "Administrador",
+      "lhu": "Gestor da ULS",
+      "unit": "Gestor de Unidade",
+      "service": "Gestor de Serviço",
+      "default": "Utilizador"
+    },
+    "scopes": {
+      "admin": "Plataforma",
+      "lhu": "Unidade Local de Saúde",
+      "unit": "Unidade Hospitalar",
+      "service": "Serviço",
+      "default": "—"
+    },
+    "languages": { "en": "English", "pt": "Português" },
+    "access": {
+      "title": "Acesso da conta",
+      "admin": "O teu perfil de Administrador dá acesso à consola de administração e à configuração global da plataforma.",
+      "lhu": "O teu perfil de Gestor da ULS dá acesso aos KPIs de toda a ULS e à hierarquia de espaços de saúde a partir da tua ULS.",
+      "unit": "O teu perfil de Gestor de Unidade dá acesso aos KPIs da unidade e à hierarquia de espaços de saúde a partir da tua Unidade.",
+      "service": "O teu perfil de Gestor de Serviço dá acesso aos KPIs do serviço e à hierarquia de espaços de saúde a partir do teu Serviço.",
+      "default": "O teu perfil dá acesso básico à plataforma."
+    }
+  },
+  "lhu": {
+    "level": "ULS",
+    "continue": "Continuar para a unidade",
+    "selected": "Selecionada: {{unit}}",
+    "resources": {
+      "beds": "Camas",
+      "rooms": "Salas de operações",
+      "chairs": "Cadeirões de tratamento"
+    },
+    "status": {
+      "occupied": "{{count}} ocupadas",
+      "available": "{{count}} disponíveis",
+      "reserved": "{{count}} reservadas",
+      "inUse": "{{count}} em uso",
+      "cleaning": "{{count}} em limpeza"
+    }
+  },
+  "unit": {
+    "eyebrow": "Acesso à unidade",
+    "title": "Seleciona o contexto da unidade",
+    "body": "Seleciona a ULS de origem apenas para identificar a unidade. O dashboard resultante mostra informação ao nível da unidade e não dá acesso às métricas nem à navegação da ULS.",
+    "change": "Mudar de unidade",
+    "form": {
+      "title": "Mapeamento da unidade",
+      "body": "Preenche os dois níveis para desbloquear o dashboard da unidade.",
+      "lhu": "1. ULS",
+      "unit": "2. Unidade",
+      "selectLhu": "Seleciona a ULS",
+      "selectUnit": "Seleciona a unidade",
+      "submit": "Abrir dashboard da unidade"
+    }
+  },
+  "service": {
+    "eyebrow": "Acesso ao serviço",
+    "title": "Seleciona o contexto do serviço",
+    "body": "Mapeia o serviço através das localizações de origem. As seleções de origem servem apenas para identificar o serviço e não dão acesso a dashboards ou informação desses níveis.",
+    "selected": "Serviço selecionado",
+    "change": "Mudar de serviço",
+    "form": {
+      "title": "Mapeamento do serviço",
+      "body": "Preenche cada nível por ordem para desbloquear o overview do serviço.",
+      "required": "Obrigatório",
+      "submit": "Abrir overview do serviço",
+      "fields": {
+        "lhu": "ULS",
+        "unit": "Unidade",
+        "building": "Edifício",
+        "floor": "Piso",
+        "service": "Serviço"
+      },
+      "placeholders": {
+        "lhu": "Seleciona a ULS",
+        "unit": "Seleciona a unidade",
+        "building": "Seleciona o edifício",
+        "floor": "Seleciona o piso",
+        "service": "Seleciona o serviço"
+      }
+    },
+    "overview": {
+      "title": "Overview de {{service}}",
+      "body": "Capacidade, atividade e estado dos recursos do serviço."
+    },
+    "stats": {
+      "occupancy": "Ocupação",
+      "occupiedBeds": "Camas ocupadas",
+      "discharges": "Altas hoje",
+      "admissions": "Admissões previstas",
+      "professionals": "Profissionais em serviço"
+    },
+    "areas": {
+      "title": "Áreas do serviço",
+      "body": "Ocupação nas áreas atribuídas a este serviço"
+    },
+    "resources": {
+      "title": "Recursos do serviço",
+      "beds": "Camas",
+      "chairs": "Cadeirões de tratamento",
+      "rooms": "Salas de procedimentos",
+      "stations": "Postos de monitorização"
+    },
+    "review": {
+      "title_one": "{{count}} recurso requer revisão",
+      "title_other": "{{count}} recursos requerem revisão",
+      "body": "{{maintenance}} verificações de manutenção e {{cleaning}} validações de limpeza."
+    }
+  },
   "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" }
 }
