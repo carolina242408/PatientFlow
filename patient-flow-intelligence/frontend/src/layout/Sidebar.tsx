@@ -17,22 +17,21 @@ import adminIcon from '/assets/sidebar/admin.svg'
 interface SidebarItem {
   labelKey: string
   path?: string
-  icon: string 
-  selectedIcon?: string
+  icon: string
 }
 
 const getManagementSidebarItem = (roles: string[] = []): SidebarItem | null => {
-  if (roles.includes('admin')) {
-    return { labelKey: 'nav.admin', path: '/admin', icon: adminIcon, selectedIcon: adminSelectedIcon }
+  if (roles.includes('ROLE_ADMIN')) {
+    return { labelKey: 'nav.admin', path: '/admin', icon: adminIcon }
   }
-  if (roles.includes('lhuManager')) {
-    return { labelKey: 'nav.lhu', path: '/lhu', icon: managerIcon, selectedIcon: managerSelectedIcon }
+  if (roles.includes('LHU_MANAGER')) {
+    return { labelKey: 'nav.lhu', path: '/lhu', icon: managerIcon }
   }
-  if (roles.includes('unitManager')) {
-    return { labelKey: 'nav.unit', path: '/unit', icon: managerIcon, selectedIcon: managerSelectedIcon }
+  if (roles.includes('UNIT_MANAGER')) {
+    return { labelKey: 'nav.unit', path: '/unit', icon: managerIcon }
   }
-    if (roles.includes('serviceManager')) {
-    return { labelKey: 'nav.service', path: '/service', icon: managerIcon, selectedIcon: managerSelectedIcon }
+    if (roles.includes('SERVICE_MANAGER')) {
+    return { labelKey: 'nav.service', path: '/service', icon: managerIcon }
   }
   return null
 }
