@@ -22,6 +22,9 @@
     "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },
     "service": { "title": "Services", "description": "Manage patient flow services" },
     "admin": { "title": "Admin Console", "description": "Manage application administration" },
+    "lhu": { "title": "Local Health Unit", "description": "Manage Local Health Unit patient flow" },
+    "settings": { "title": "Settings", "description": "Manage your application preferences and settings" },
+    "account": { "title": "Account Settings", "description": "Manage your profile and account details" },
     "default": { "title": "PatientFlow", "description": "Patient flow overview" }
   },
   "topbar": { "user": "User", "admin": "Admin", "language": "Language" },
@@ -37,5 +40,8 @@
   },
   "service": { "title": "Service Page", "body": "This is the service page content." },
   "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },
+  "lhu": { "title": "Local Health Unit", "body": "Management area for Local Health Unit overview." },
+  "settings": { "title": "Settings", "body": "Manage your application preferences and configurations." },
+  "account": { "title": "Account Settings", "body": "Manage your personal profile and account credentials." },
   "notFound": { "title": "Page not found", "back": "Back to dashboard" }
 }

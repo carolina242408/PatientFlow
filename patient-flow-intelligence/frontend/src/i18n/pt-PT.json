@@ -24,6 +24,9 @@
     "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },
     "service": { "title": "Serviços", "description": "Gerir os serviços do fluxo de pacientes" },
     "admin": { "title": "Consola de administração", "description": "Gerir a administração da aplicação" },
+    "lhu": { "title": "Unidade Local de Saúde", "description": "Gerir o fluxo da Unidade Local de Saúde" },
+    "settings": { "title": "Definições", "description": "Gerir as definições e preferências da aplicação" },
+    "account": { "title": "A Minha Conta", "description": "Gerir o perfil e dados da conta" },
     "default": { "title": "PatientFlow", "description": "Visão geral do fluxo de pacientes" }
   },
   "topbar": { "user": "Utilizador", "admin": "Admin", "language": "Idioma" },

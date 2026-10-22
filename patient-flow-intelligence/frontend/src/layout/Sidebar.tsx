@@ -61,7 +61,7 @@ const Sidebar = () => {
     ],
     Settings: [
       { labelKey: 'nav.settings', path: '/settings', icon: Settings },
-      { labelKey: 'nav.account', path: '/user', icon: CircleUser },
+      { labelKey: 'nav.account', path: '/account', icon: CircleUser },
     ],
   }
 
