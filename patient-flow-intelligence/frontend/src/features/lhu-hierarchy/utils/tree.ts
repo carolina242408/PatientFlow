@@ -1,4 +1,4 @@
-import type { FlatRow, HierarchyStats, OrgNode } from "../types/tree"
+import type { FlatRow, HierarchyStats, OrgNode, OrgType } from "../types/tree"
 import { PREMISE_TYPES, RESOURCE_TYPES } from "./org-types"
 
 export function flattenTree(
@@ -27,4 +27,11 @@ export function getHierarchyStats(nodes: OrgNode[]): HierarchyStats {
       .length,
     operationalItems: rows.length,
   }
+}
+
+/** Nodes grouped by type, in tree order. */
+export function groupNodesByType(nodes: OrgNode[]): Partial<Record<OrgType, OrgNode[]>> {
+  const groups: Partial<Record<OrgType, OrgNode[]>> = {}
+  for (const { node } of flattenTree(nodes)) (groups[node.type] ??= []).push(node)
+  return groups
 }
