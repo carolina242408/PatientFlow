@@ -11,7 +11,7 @@ export function HierarchyRow({ row: { node, depth } }: { row: FlatRow }) {
     <TableRow className="bg-white">
       <TableCell
         style={{ paddingLeft: 16 + depth * 18 }}
-        className="flex items-center justify-centerpx-3 py-3 space-x-0.5"
+        className="flex items-center px-3 py-3 space-x-0.5"
       >
         <HierarchyNodeIcon type={node.type} />
         <span className="text-xs font-medium">{node.name}</span>
