@@ -1,8 +1,10 @@
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
+import { Skeleton } from "@/components/Skeleton"
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -11,7 +13,9 @@ import type { OrgNode } from "../types/tree"
 import { flattenTree } from "../utils/tree"
 import { HierarchyRow } from "./HierarchyRow"
 
-export function HierarchyTable({ tree }: { tree: OrgNode[] }) {
+const SKELETON_ROWS = Array.from({ length: 6 }, (_, i) => i)
+
+export function HierarchyTable({ tree, loading = false }: { tree: OrgNode[]; loading?: boolean }) {
   const { t } = useTranslation()
   const rows = useMemo(() => flattenTree(tree), [tree])
 
@@ -32,9 +36,16 @@ export function HierarchyTable({ tree }: { tree: OrgNode[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
-            <HierarchyRow key={row.node.id} row={row} />
-          ))}
+          {loading
+            ? SKELETON_ROWS.map((i) => (
+                <TableRow key={i} className="bg-white">
+                  <TableCell className="px-4 py-3"><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                </TableRow>
+              ))
+            : rows.map((row) => <HierarchyRow key={row.node.id} row={row} />)}
         </TableBody>
       </Table>
     </div>

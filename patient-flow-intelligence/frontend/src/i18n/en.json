@@ -397,6 +397,7 @@
   "lhuHierarchy": {
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",
+    "error": "Could not load the hierarchy.",
     "root": "Organization root",
     "modes": { "structure": "Structure overview", "add": "Add premise or resource" },
     "stats": { "levels": "Organizational levels", "spaces": "Registered spaces", "resourceGroups": "Resource groups", "operationalItems": "Operational items" },

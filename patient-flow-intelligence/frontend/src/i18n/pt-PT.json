@@ -397,6 +397,7 @@
   "lhuHierarchy": {
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
+    "error": "Não foi possível carregar a hierarquia.",
     "root": "Raiz da organização",
     "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
     "stats": { "levels": "Níveis organizacionais", "spaces": "Espaços registados", "resourceGroups": "Grupos de recursos", "operationalItems": "Itens operacionais" },

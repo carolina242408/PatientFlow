@@ -20,3 +20,5 @@ export type OrgNode = {
 }
 
 export type FlatRow = { node: OrgNode; depth: number; hasChildren: boolean }
+
+export type HierarchyStats = Record<"levels" | "spaces" | "resourceGroups" | "operationalItems", number>
