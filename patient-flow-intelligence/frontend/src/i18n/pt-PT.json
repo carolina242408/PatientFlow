@@ -410,6 +410,25 @@
       "resource": "Recurso",
       "hint": "Selecione um espaço ou recurso acima para continuar"
     },
+    "form": {
+      "step": "Passo 2",
+      "title": "Adicionar {{type}}",
+      "changeType": "Alterar tipo",
+      "sections": { "parentLocation": "Localização superior", "information": "Informação de {{type}}", "resourceCharacteristics": "Características do recurso" },
+      "fields": {
+        "name": "Nome ou número", "internalCode": "Código interno", "status": "Estado operacional", "service": "Serviço responsável",
+        "notes": "Notas", "subtype": "Subtipo do recurso", "connectivity": "Conectividade", "capacity": "Capacidade"
+      },
+      "placeholders": { "name": "Nome ou número de {{type}}", "internalCode": "Sugerido automaticamente se vazio", "notes": "Adicionar notas operacionais", "parent": "Selecionar {{type}}" },
+      "actions": { "clear": "Limpar", "submit": "Adicionar à hierarquia da ULS" },
+      "validation": { "required": "Este campo é obrigatório", "min": "Tem de ser pelo menos 1" }
+    },
+    "options": {
+      "status": { "operational": "Operacional", "maintenance": "Em manutenção", "inactive": "Inativo" },
+      "service": { "cardiology": "Cardiologia", "neurology": "Neurologia", "orthopedics": "Ortopedia", "general": "Medicina geral" },
+      "subtype": { "standard": "Padrão", "icu": "Cuidados intensivos", "isolation": "Isolamento" },
+      "connectivity": { "connected": "Ligado", "offline": "Desligado" }
+    },
     "typeDescriptions": {
       "lhu": "Unidade local de saúde de topo", "unit": "Unidade hospitalar ou de prestação de cuidados", "building": "Edifício físico dentro de uma unidade",
       "floor": "Piso dentro de um edifício", "ward": "Enfermaria clínica num piso", "nursery": "Área de cuidados com quartos",
