@@ -398,8 +398,23 @@
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
     "root": "Raiz da organização",
+    "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
     "stats": { "levels": "Níveis organizacionais", "spaces": "Espaços registados", "resourceGroups": "Grupos de recursos", "operationalItems": "Itens operacionais" },
     "columns": { "name": "Espaço ou recurso", "type": "Tipo", "parent": "Superior", "status": "Estado" },
+    "add": {
+      "step": "Passo 1",
+      "title": "Selecione um tipo de espaço ou recurso",
+      "description": "Escolha o que pretende introduzir na estrutura da unidade de saúde. A hierarquia e as características relevantes aparecem depois da seleção.",
+      "premise": "Espaço",
+      "resource": "Recurso",
+      "hint": "Selecione um espaço ou recurso acima para continuar"
+    },
+    "typeDescriptions": {
+      "lhu": "Unidade local de saúde de topo", "unit": "Unidade hospitalar ou de prestação de cuidados", "building": "Edifício físico dentro de uma unidade",
+      "floor": "Piso dentro de um edifício", "ward": "Enfermaria clínica num piso", "nursery": "Área de cuidados com quartos",
+      "room": "Quarto de paciente ou de tratamento", "bed": "Cama de paciente atribuída a um quarto", "operating-room": "Recurso cirúrgico de bloco operatório",
+      "treatment-chair": "Cadeirão usado em tratamento clínico"
+    },
     "types": {
       "lhu": "ULS", "unit": "Unidade", "building": "Edifício", "floor": "Piso", "ward": "Enfermaria",
       "nursery": "Berçário", "room": "Quarto", "bed": "Cama", "operating-room": "Bloco operatório", "treatment-chair": "Cadeirão de tratamento"

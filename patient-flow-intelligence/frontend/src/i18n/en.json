@@ -398,8 +398,23 @@
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",
     "root": "Organization root",
+    "modes": { "structure": "Structure overview", "add": "Add premise or resource" },
     "stats": { "levels": "Organizational levels", "spaces": "Registered spaces", "resourceGroups": "Resource groups", "operationalItems": "Operational items" },
     "columns": { "name": "Space or resource", "type": "Type", "parent": "Parent", "status": "Status" },
+    "add": {
+      "step": "Step 1",
+      "title": "Select a premise or resource type",
+      "description": "Choose what you want to introduce into the healthcare facility structure. The relevant hierarchy and characteristics will be shown after selection.",
+      "premise": "Premise",
+      "resource": "Resource",
+      "hint": "Select a premise or resource above to continue"
+    },
+    "typeDescriptions": {
+      "lhu": "Top-level local health unit", "unit": "Hospital or care delivery unit", "building": "Physical building within a unit",
+      "floor": "Floor within a building", "ward": "Clinical ward on a floor", "nursery": "Care area containing rooms",
+      "room": "Patient or treatment room", "bed": "Patient bed assigned to a room", "operating-room": "Surgical operating resource",
+      "treatment-chair": "Chair used for clinical treatment"
+    },
     "types": {
       "lhu": "LHU", "unit": "Unit", "building": "Building", "floor": "Floor", "ward": "Ward",
       "nursery": "Nursery", "room": "Room", "bed": "Bed", "operating-room": "Operating room", "treatment-chair": "Treatment chair"

@@ -1,4 +1,4 @@
-type OrgType =
+export type OrgType =
   | "lhu"
   | "unit"
   | "building"
