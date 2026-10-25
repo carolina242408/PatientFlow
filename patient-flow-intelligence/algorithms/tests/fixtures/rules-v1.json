@@ -1,0 +1,38 @@
+{
+  "rankInput": {
+    "limit": 3,
+    "candidates": [
+      {"bedId":"00000000-0000-0000-0000-000000000001","wardCode":"Ward A","roomCode":"Room A","bedCode":"Bed A","occupiedInRoom":0,"preferredWard":false},
+      {"bedId":"00000000-0000-0000-0000-000000000002","wardCode":"Ward B","roomCode":"Room B","bedCode":"Bed B","occupiedInRoom":3,"preferredWard":true},
+      {"bedId":"00000000-0000-0000-0000-000000000003","wardCode":"Ward B","roomCode":"Room C","bedCode":"Bed C","occupiedInRoom":0,"preferredWard":true}
+    ]
+  },
+  "rankOutput": {
+    "algorithmVersion":"rules-v1",
+    "recommendations":[
+      {"bedId":"00000000-0000-0000-0000-000000000003","score":120,"reasons":["SERVICE_MATCH","AVAILABLE","PREFERRED_WARD","EMPTY_ROOM"]},
+      {"bedId":"00000000-0000-0000-0000-000000000002","score":105,"reasons":["SERVICE_MATCH","AVAILABLE","PREFERRED_WARD","ROOM_OCCUPANCY_PENALTY"]},
+      {"bedId":"00000000-0000-0000-0000-000000000001","score":100,"reasons":["SERVICE_MATCH","AVAILABLE","EMPTY_ROOM"]}
+    ]
+  },
+  "forecastInput": {
+    "historyDays":10,
+    "services":[
+      {"serviceId":"00000000-0000-0000-0000-000000000001","capacity":10,"occupied":8,"historicalUnscheduledAdmissions":20,"historicalDischarges":10,"knownAdmissions24h":3,"knownAdmissions48h":4,"plannedDischarges24h":2,"plannedDischarges48h":3},
+      {"serviceId":"00000000-0000-0000-0000-000000000002","capacity":0,"occupied":0,"historicalUnscheduledAdmissions":0,"historicalDischarges":0,"knownAdmissions24h":2,"knownAdmissions48h":3,"plannedDischarges24h":0,"plannedDischarges48h":0}
+    ]
+  },
+  "forecastOutput": {
+    "algorithmVersion":"rules-v1",
+    "services":[
+      {"serviceId":"00000000-0000-0000-0000-000000000001","horizons":[
+        {"hours":24,"expectedAdmissions":5.0,"expectedDischarges":2.0,"projectedOccupied":10.0,"occupancyPercent":100.0,"unmetDemand":1.0},
+        {"hours":48,"expectedAdmissions":8.0,"expectedDischarges":3.0,"projectedOccupied":10.0,"occupancyPercent":100.0,"unmetDemand":3.0}
+      ]},
+      {"serviceId":"00000000-0000-0000-0000-000000000002","horizons":[
+        {"hours":24,"expectedAdmissions":2.0,"expectedDischarges":0.0,"projectedOccupied":0.0,"occupancyPercent":null,"unmetDemand":2.0},
+        {"hours":48,"expectedAdmissions":3.0,"expectedDischarges":0.0,"projectedOccupied":0.0,"occupancyPercent":null,"unmetDemand":3.0}
+      ]}
+    ]
+  }
+}
