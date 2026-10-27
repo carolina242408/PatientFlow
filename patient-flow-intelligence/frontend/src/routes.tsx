@@ -1,12 +1,17 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { hasAdminRole, useKeycloak } from './auth/context'
 import AppLayout from './layout/AppLayout'
+
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
-import NotFound from './pages/NotFound'
 import Lhu from './pages/Lhu'
 import Unit from './pages/Unit'
 import Service from './pages/Service'
+
+import Settings from './pages/Settings'
+import Account from './pages/Account'
+
+import NotFound from './pages/NotFound'
 
 const AdminRoute = () => {
   const { user } = useKeycloak()
@@ -22,6 +27,9 @@ const AppRoutes = () => (
       <Route path="unit" element={<Unit />} />
       <Route path="service" element={<Service />} />
       <Route path="admin/*" element={<AdminRoute />} />
+
+      <Route path="settings" element={<Settings />} />
+      <Route path="account" element={<Account />} />
       <Route path="*" element={<NotFound />} />
     </Route>
   </Routes>
