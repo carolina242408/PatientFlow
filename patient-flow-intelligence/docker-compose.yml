@@ -19,7 +19,7 @@ services:
       - pfi-postgres-data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,7 +30,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.4
     container_name: keycloak
-    command: ["start-dev", "--import-realm"]
+    command: [ "start-dev", "--import-realm" ]
     env_file: .env
     environment:
       KC_DB: postgres
@@ -76,7 +76,7 @@ services:
     volumes:
       - pfi-rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -92,7 +92,7 @@ services:
     volumes:
       - pfi-redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -112,7 +112,7 @@ services:
     volumes:
       - pfi-hapi-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hapi"]
+      test: [ "CMD-SHELL", "pg_isready -U hapi" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -150,7 +150,7 @@ services:
     volumes:
       - pfi-minio-data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: [ "CMD", "mc", "ready", "local" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -159,13 +159,18 @@ services:
   # Frontend
   # ------------------------------------------------------------
   ui:
-    image: patientflow-frontend:1.0
+    image: patientflow-ui:latest
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
     container_name: ui
     ports:
       - "5173:80"
-    build: ./frontend
+
     volumes:
       - ./frontend:/app
+      - /app/node_modules
+      - /app/dist
     depends_on:
       keycloak:
         condition: service_started
