@@ -19,6 +19,20 @@ cd backend
 No PowerShell, usar `./mvnw.cmd` em vez de `./mvnw` e configurar `JAVA_HOME`
 para a instalação do JDK. O servidor escuta em `http://localhost:8080`.
 
+A especificação OpenAPI e a interface Swagger UI ficam disponíveis em
+`http://localhost:8080/v3/api-docs` e
+`http://localhost:8080/swagger-ui.html`. Para usar o Swagger:
+
+```bash
+docker compose up -d --build
+```
+
+Depois abrir `http://localhost:8080/swagger-ui.html`, clicar em **Authorize** e
+introduzir um token JWT válido do Keycloak no esquema `bearerAuth`, no formato
+`Bearer <token>`. O Swagger não cria um login próprio nem adiciona um cliente
+ao realm; o token deve ser obtido através do cliente web da aplicação ou de
+outro cliente autorizado do realm `patientflow`.
+
 O perfil normal não insere dados de demonstração. Para experimentar os exemplos
 numa base sem hierarquia hospitalar:
 

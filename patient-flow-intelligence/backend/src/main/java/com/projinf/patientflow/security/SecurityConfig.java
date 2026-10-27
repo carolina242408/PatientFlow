@@ -25,6 +25,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health/**").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                 .requestMatchers("/ws/events").permitAll() // The handshake requires a one-use authenticated ticket.
                 .requestMatchers("/api/account", "/api/access/me").authenticated()
                 .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info").hasAuthority("ROLE_ADMIN")
