@@ -54,16 +54,16 @@
 
 .theme-dark {
   background: #0f172a;
+  color: #e2e8f0;
   color-scheme: dark;
 }
 
+.theme-dark body,
 .theme-dark main {
   background: #0f172a;
 }
 
 .theme-dark aside,
-.theme-dark section,
-.theme-dark form,
 .theme-dark .bg-white,
 .theme-dark [role="dialog"] > div,
 .theme-dark [role="alertdialog"] > div {
@@ -75,6 +75,47 @@
 .theme-dark [class*="bg-[#f3f4f6]"],
 .theme-dark thead tr {
   background-color: #1f2937 !important;
+}
+
+.theme-dark :is(.bg-gray-50, .bg-slate-50, .bg-gray-100, .bg-slate-100) {
+  background-color: #1f2937 !important;
+}
+
+.theme-dark :is(.bg-blue-50, .bg-blue-50\/60) {
+  background-color: #172554 !important;
+}
+
+.theme-dark :is(.bg-blue-100, .bg-indigo-50) {
+  background-color: #1e3a8a !important;
+}
+
+.theme-dark :is(
+  .bg-emerald-50,
+  .bg-emerald-100,
+  .bg-green-50,
+  .bg-green-100,
+  .bg-amber-50,
+  .bg-amber-100,
+  .bg-purple-50,
+  .bg-purple-100,
+  .bg-violet-50,
+  .bg-violet-100
+) {
+  background-color: #1e293b !important;
+}
+
+.theme-dark :is(
+  .border-gray-100,
+  .border-gray-200,
+  .border-gray-300,
+  .border-blue-100,
+  .border-blue-200,
+  .border-purple-200,
+  .border-emerald-200,
+  .border-amber-200,
+  .border-violet-200
+) {
+  border-color: #374151 !important;
 }
 
 .theme-dark [class*="border-[#e5e7eb]"] {
@@ -97,6 +138,48 @@
   color: #94a3b8 !important;
 }
 
+.theme-dark :is(.text-slate-900, .text-slate-800, .text-slate-700, .text-slate-600, .text-gray-700) {
+  color: #e2e8f0 !important;
+}
+
+.theme-dark :is(.text-gray-600, .text-gray-500) {
+  color: #cbd5e1 !important;
+}
+
+.theme-dark :is(.text-gray-400, .text-slate-400, .text-slate-500) {
+  color: #94a3b8 !important;
+}
+
+.theme-dark :is(.text-blue-600, .text-blue-700) {
+  color: #93c5fd !important;
+}
+
+.theme-dark :is(
+  .text-emerald-600,
+  .text-emerald-700,
+  .text-green-600,
+  .text-green-700
+) {
+  color: #86efac !important;
+}
+
+.theme-dark :is(.text-amber-600, .text-amber-700) {
+  color: #fcd34d !important;
+}
+
+.theme-dark :is(.text-purple-600, .text-purple-700, .text-violet-600, .text-violet-700) {
+  color: #c4b5fd !important;
+}
+
+.theme-dark :is(.text-red-600, .text-red-700) {
+  color: #fca5a5 !important;
+}
+
+.theme-dark button:hover,
+.theme-dark a:hover {
+  border-color: #475569;
+}
+
 .theme-dark input,
 .theme-dark select,
 .theme-dark textarea,
@@ -114,6 +197,14 @@
 .theme-dark table tbody tr:hover,
 .theme-dark table tbody tr:focus {
   background-color: #1e293b !important;
+}
+
+.theme-dark hr {
+  border-color: #374151 !important;
+}
+
+.theme-dark :focus-visible {
+  outline-color: #60a5fa;
 }
 
 .theme-dark .theme-option {

@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 type Theme = 'light' | 'dark'
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
-  { code: 'pt', label: 'Português' },
+  { code: 'pt-PT', label: 'Português' },
 ]
 
 const THEMES: { value: Theme; titleKey: string; descKey: string; iconClass: string }[] = [
@@ -27,14 +27,29 @@ const Settings = () => {
   const { t, i18n } = useTranslation()
 
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem('theme') as Theme | null) ?? 'light',
+    () => (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'),
   )
-  const [language, setLanguage] = useState(i18n.resolvedLanguage ?? 'en')
+  const savedTheme = useRef(theme)
+  const [language, setLanguage] = useState(
+    () => (i18n.resolvedLanguage?.startsWith('pt') ? 'pt-PT' : 'en'),
+  )
+
+  useEffect(
+    () => () => {
+      document.documentElement.classList.toggle('theme-dark', savedTheme.current === 'dark')
+    },
+    [],
+  )
+
+  const handleThemePreview = (selectedTheme: Theme) => {
+    setTheme(selectedTheme)
+    document.documentElement.classList.toggle('theme-dark', selectedTheme === 'dark')
+  }
 
   const handleSave = () => {
     localStorage.setItem('theme', theme)
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    i18n.changeLanguage(language)
+    savedTheme.current = theme
+    void i18n.changeLanguage(language)
   }
 
   return (
@@ -62,7 +77,7 @@ const Settings = () => {
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  onClick={() => setTheme(option.value)}
+                  onClick={() => handleThemePreview(option.value)}
                   className={`flex items-center gap-4 rounded-xl border p-5 text-left transition-colors ${
                     selected
                       ? 'border-blue-600 bg-blue-50'

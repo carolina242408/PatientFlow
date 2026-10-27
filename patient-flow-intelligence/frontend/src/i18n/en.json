@@ -3,6 +3,8 @@
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
+    "lhu": "LHU",
+    "unit": "Units",
     "service": "Services",
     "settings": "Settings",
     "account": "My Account",
@@ -21,13 +23,144 @@
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },
     "service": { "title": "Services", "description": "Manage patient flow services" },
+    "unit": { "title": "Units", "description": "Manage unit capacity, resource allocation, and patient flow." },
     "admin": { "title": "Admin Console", "description": "Manage application administration" },
     "lhu": { "title": "Local Health Unit", "description": "Manage Local Health Unit patient flow" },
     "settings": { "title": "Settings", "description": "Manage your application preferences and settings" },
     "account": { "title": "Account Settings", "description": "Manage your profile and account details" },
     "default": { "title": "PatientFlow", "description": "Patient flow overview" }
   },
-  "topbar": { "user": "User", "admin": "Admin", "language": "Language" },
+  "topbar": {
+    "user": "User",
+    "admin": "Admin",
+    "language": "Language",
+    "notifications": "Notifications",
+    "unreadCount_one": "{{count}} unread",
+    "unreadCount_other": "{{count}} unread",
+    "sampleNotifications": "Sample notifications — connect the notification service to load your alerts.",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "unread": "Unread",
+    "notificationItems": {
+      "occupancy": {
+        "title": "High occupancy alert",
+        "body": "Cardiology is at 88% staffed-bed occupancy.",
+        "time": "5 minutes ago"
+      },
+      "bed": {
+        "title": "Bed available",
+        "body": "A bed has become available in Ward 3.",
+        "time": "1 hour ago"
+      },
+      "discharge": {
+        "title": "Discharge forecast updated",
+        "body": "The discharge forecast for the next 48 hours has been updated.",
+        "time": "Today"
+      }
+    }
+  },
+  "space": {
+    "breadcrumb": "Space navigation",
+    "nurseryOccupancy": "Nursery occupancy",
+    "bedsOccupied": "{{occupied}} / {{total}} beds occupied",
+    "ofOccupied": "{{occupied}} of {{total}} occupied",
+    "percentOccupied": "{{percent}}% occupied",
+    "legendHint": "Select a room to view its detailed resource list",
+    "searchPlaceholder": "Search by patient or resource...",
+    "lastUpdate": "Updated {{date}} at {{time}}",
+    "refresh": "Refresh data",
+    "inRoom": "{{items}} in {{room}}",
+    "noResults": "No resources found for your search.",
+    "ageDiagnosis": "{{age}} years · {{diagnosis}}",
+    "admitted": "Admitted {{date}}",
+    "levels": {
+      "lhu": "LHU",
+      "unit": "Unit",
+      "building": "Building",
+      "floor": "Floor",
+      "service": "Service",
+      "ward": "Ward",
+      "nursery": "Nursery",
+      "room": "Room",
+      "bed": "Bed"
+    },
+    "continue": {
+      "unit": "Continue to unit",
+      "building": "Continue to building",
+      "floor": "Continue to floor",
+      "service": "Continue to service",
+      "ward": "Continue to ward",
+      "nursery": "Continue to nursery",
+      "room": "Continue to room"
+    },
+    "resources": {
+      "beds": "Beds",
+      "operatingRoom": "Operating rooms",
+      "chairs": "Treatment chairs"
+    },
+    "resourceLabel": {
+      "bed": "Bed {{number}}",
+      "operatingRoom": "Operating room {{number}}",
+      "chair": "Treatment chair {{number}}"
+    },
+    "counts": {
+      "bed": "{{count}} bed",
+      "bed_other": "{{count}} beds",
+      "operatingRoom": "{{count}} operating room",
+      "operatingRoom_other": "{{count}} operating rooms",
+      "chair": "{{count}} treatment chair",
+      "chair_other": "{{count}} treatment chairs"
+    },
+    "status": {
+      "occupied": "Occupied",
+      "available": "Available",
+      "reserved": "Reserved",
+      "inUse": "In use",
+      "cleaning": "Cleaning"
+    },
+    "statusInfo": {
+      "available": {
+        "title": "Bed ready for a patient",
+        "footer": "No immediate admission scheduled"
+      },
+      "reserved": {
+        "title": "Admission reservation confirmed",
+        "footer": "Waiting for the patient to arrive"
+      },
+      "inUse": {
+        "title": "Procedure in progress",
+        "footer": "Occupied by the surgical team"
+      },
+      "cleaning": {
+        "title": "Cleaning and preparation in progress",
+        "footer": "Temporarily unavailable"
+      }
+    },
+    "breakdown": {
+      "beds": {
+        "occupied": "{{count}} occupied",
+        "available": "{{count}} available",
+        "reserved": "{{count}} reserved"
+      },
+      "operatingRoom": {
+        "inUse": "{{count}} in use",
+        "available": "{{count}} available",
+        "cleaning": "{{count}} cleaning"
+      },
+      "chairs": {
+        "occupied": "{{count}} occupied",
+        "available": "{{count}} available"
+      },
+      "bed": {
+        "occupied": "{{count}} occupied",
+        "occupied_other": "{{count}} occupied",
+        "available": "{{count}} available",
+        "available_other": "{{count}} available",
+        "reserved": "{{count}} reserved",
+        "reserved_other": "{{count}} reserved"
+      }
+    }
+  },
   "dashboard": {
     "lastUpdated": "Last updated today at {{time}}",
     "occupancyRate": "{{scope}} occupancy rate",
@@ -64,6 +197,24 @@
     "perService": {
       "title": "Occupancy per service",
       "body": "Percentage of staffed beds currently occupied"
+    },
+    "perUnit": {
+      "title": "Occupancy per unit",
+      "body": "Percentage of staffed beds currently occupied"
+    },
+    "lengthOfStay": {
+      "title": "Estimated hospital stay by condition",
+      "body": "Illustrative estimates only; this table will be populated by the forecast model.",
+      "condition": "Condition",
+      "estimatedStay": "Estimated length of stay",
+      "daysRange": "{{minimum}}-{{maximum}} days",
+      "conditions": {
+        "pneumonia": "Pneumonia",
+        "heartFailure": "Heart failure",
+        "angina": "Angina",
+        "arrhythmia": "Arrhythmia",
+        "cardiacObservation": "Cardiac observation"
+      }
     },
     "forecastChart": {
       "title": "Discharge patient prediction",

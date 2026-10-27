@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Bell } from 'lucide-react'
 import { useKeycloak } from '../auth/context'
+import NotificationPopover from './NotificationPopover'
 
 interface TopBarProps {
   pageName: string
@@ -32,16 +32,7 @@ const TopBar = ({ pageName, pageDescription }: TopBarProps) => {
 
       {/* Lado Direito: Notificação + Perfil */}
       <div className="flex items-center gap-4">
-        {/* Botão de Notificação */}
-        <button
-          type="button"
-          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-gray-100 hover:text-slate-700 transition-colors"
-          title={t('topbar.notifications', 'Notificações')}
-        >
-          <Bell className="h-5 w-5" />
-          {/* Ponto Vermelho de Notificação */}
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-        </button>
+        <NotificationPopover />
 
         {/* Divisor Vertical */}
         <div className="h-8 w-px bg-gray-200" />
