@@ -159,7 +159,10 @@ services:
   # Frontend
   # ------------------------------------------------------------
   ui:
-    image: patientflow-frontend:1.0
+    image: patientflow-ui:latest
+    build: 
+      context: ./frontend
+      dockerfile: ./frontend/Dockerfile
     container_name: ui
     ports:
       - "5173:80"
