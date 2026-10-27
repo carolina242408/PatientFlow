@@ -1,0 +1,125 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "timestamp": "2026-10-21T14:45:40.812Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:8fac6f05-df9d-4894-9338-0289f6621cfd",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "8fac6f05-df9d-4894-9338-0289f6621cfd",
+        "identifier": [
+          {
+            "value": "99999",
+            "system": "urn:id:HOS",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "NS"
+                }
+              ]
+            }
+          },
+          {
+            "value": "999999999",
+            "system": "urn:id:HAS",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SNS"
+                }
+              ]
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "LAST_NAMES",
+            "given": [
+              "FIRST_NAME",
+              "MIDDLE_NAME"
+            ]
+          }
+        ],
+        "birthDate": "1999-01-01",
+        "gender": "male",
+        "address": [
+          {
+            "line": [
+              "RUA DA MORADA"
+            ],
+            "city": "CIDADE",
+            "state": "DISTRITO",
+            "postalCode": "9999-999",
+            "country": "PT"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "^PRN^PH^^^^^^^^^999999999",
+            "use": "home"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:79a343bd-03ca-4670-b9aa-e9871a31d72c",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "79a343bd-03ca-4670-b9aa-e9871a31d72c",
+        "status": "in-progress",
+        "class": {
+          "code": "INT"
+        },
+        "identifier": [
+          {
+            "value": "14000505",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN"
+                }
+              ]
+            }
+          }
+        ],
+        "subject": {
+          "reference": "Patient/8fac6f05-df9d-4894-9338-0289f6621cfd"
+        },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "ATND",
+                    "display": "attender"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "display": "TESTE MEDICA"
+            }
+          }
+        ],
+        "location": [
+          {
+            "location": {
+              "display": "Ward 30012, Room 4013, Bed 029"
+            }
+          }
+        ],
+        "period": {
+          "start": "2016-04-15T17:37:00"
+        }
+      }
+    }
+  ]
+}

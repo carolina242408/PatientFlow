@@ -1,0 +1,79 @@
+{
+  "bundle": {
+    "type": "collection"
+  },
+  "resources": {
+    "MessageHeader": {
+      "count": 1,
+      "required": {
+        "eventCoding.code": "A01",
+        "source.name": "MCM",
+        "destination.0.name": "MCM"
+      }
+    },
+    "Patient": {
+      "count": 1,
+      "required": {
+        "identifier.0.value": "PATID1234",
+        "identifier.1.value": "123456789",
+        "name.0.family": "SMITH",
+        "name.0.given.0": "WILLIAM",
+        "name.0.given.1": "A",
+        "birthDate": "1961-06-15",
+        "gender": "male",
+        "address.0.city": "JERUSALEM",
+        "address.0.state": "TN",
+        "address.0.postalCode": "99999-1020",
+        "telecom.0.value": "(999)999-1212",
+        "telecom.1.value": "(999)999-3333"
+      }
+    },
+    "Encounter": {
+      "count": 1,
+      "required": {
+        "status": "in-progress",
+        "class.code": "I",
+        "subject.reference": "Patient/PATID1234",
+        "participant.0.individual.display": "CASTRO, FRANK (ID: 004777)",
+        "hospitalization.admitSource.coding.0.code": "ADM",
+        "location.0.location.display": "2000-2012-01"
+      }
+    },
+    "AllergyIntolerance": {
+      "count": 2,
+      "required": {
+        "0.code.text": "PENICILLIN",
+        "1.code.text": "CAT DANDER",
+        "0.reaction.0.manifestation.0.text": "PRODUCES HIVES"
+      }
+    },
+    "Condition": {
+      "count": 1,
+      "required": {
+        "code.coding.0.code": "1550",
+        "code.coding.0.display": "MAL NEO LIVER, PRIMARY"
+      }
+    },
+    "Organization": {
+      "count": 1,
+      "required": {
+        "name": "BCMD",
+        "identifier.0.value": "A357"
+      }
+    },
+    "Coverage": {
+      "count": 1,
+      "required": {
+        "payor.0.display": "BCMD",
+        "order": 1
+      }
+    },
+    "RelatedPerson": {
+      "count": 2,
+      "required": {
+        "0.name.0.family": "BILL",
+        "1.name.0.family": "SMITH"
+      }
+    }
+  }
+}

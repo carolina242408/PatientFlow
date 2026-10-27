@@ -126,6 +126,23 @@
       }
     ]
   },
+  "clients": [
+    {
+      "clientId": "web_app",
+      "name": "PatientFlow Web Application",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "frontchannelLogout": true
+    }
+  ],
   "groups": [
     {
       "id": "1e2b714d-c54e-4c6d-badc-c7e79942c685",

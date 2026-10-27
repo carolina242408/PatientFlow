@@ -1,0 +1,115 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "timestamp": "2026-10-21T14:48:50.069Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:1f888a7a-6e43-4302-97ca-de409dcd5754",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "1f888a7a-6e43-4302-97ca-de409dcd5754",
+        "identifier": [
+          {
+            "value": "99999",
+            "system": "urn:id:HOS",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "NS"
+                }
+              ]
+            }
+          },
+          {
+            "value": "999999999",
+            "system": "urn:id:HAS",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SNS"
+                }
+              ]
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "LAST_NAMES",
+            "given": [
+              "FIRST_NAME",
+              "MIDDLE_NAME"
+            ]
+          }
+        ],
+        "birthDate": "1999-01-01",
+        "gender": "male",
+        "address": [
+          {
+            "line": [
+              "RUA DA MORADA"
+            ],
+            "city": "CIDADE",
+            "state": "DISTRITO",
+            "postalCode": "000-0",
+            "country": "PRT"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "^PRN^PH^^^^^^^^^999999999~^NET^X.400^email@email.pt",
+            "use": "home"
+          }
+        ],
+        "maritalStatus": {
+          "coding": [
+            {
+              "code": "ESTADO CIVIL"
+            }
+          ],
+          "text": "ESTADO CIVIL"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:004cfbb4-8121-4be8-b1a8-a4c4b438475d",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "004cfbb4-8121-4be8-b1a8-a4c4b438475d",
+        "status": "in-progress",
+        "class": {
+          "code": "INT"
+        },
+        "identifier": [
+          {
+            "value": "99000999",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN"
+                }
+              ]
+            }
+          }
+        ],
+        "subject": {
+          "reference": "Patient/1f888a7a-6e43-4302-97ca-de409dcd5754"
+        },
+        "location": [
+          {
+            "location": {
+              "display": "Ward 30004, Room 7005, Bed MAC"
+            }
+          }
+        ],
+        "period": {
+          "start": "2019-01-18T15:04:00"
+        }
+      }
+    }
+  ]
+}
