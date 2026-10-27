@@ -166,6 +166,8 @@ services:
     build: ./frontend
     volumes:
       - ./frontend:/app
+      - /app/node_modules
+      - /app/dist
     depends_on:
       keycloak:
         condition: service_started
