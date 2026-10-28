@@ -1,0 +1,195 @@
+# =============================================================================
+# Parâmetros da simulação de fluxo de doentes (editável)
+# Qualquer valor pode ser sobreposto na linha de comandos (ver README).
+# =============================================================================
+
+simulation:
+  start: "2026-10-01T00:00:00"   # hora local (Europe/Lisbon), como os sistemas PT enviam
+  days: 30
+  seed: 42
+  # Dias simulados ANTES de 'start' para o hospital já estar com lotação realista.
+  warmup_days: 14
+  # full   -> emite todas as mensagens, incluindo as do aquecimento
+  # census -> no instante 'start' emite um A01 por cada doente internado (carga inicial),
+  #           e só depois as mensagens normais. Episódios terminados antes de 'start' são omitidos.
+  warmup_output: census
+
+synthea:
+  population: auto        # 'auto' = estimado a partir das admissões esperadas; ou um inteiro
+  min_age: 18
+  max_age: 100
+  years_of_history: 2     # história clínica exportada por doente (afeta o tamanho do FHIR)
+  state: Massachusetts    # a Synthea só tem demografia dos EUA; a identidade é substituída por PT
+  jar_url: "https://github.com/synthetichealth/synthea/releases/download/master-branch-latest/synthea-with-dependencies.jar"
+
+identity:
+  homonym_rate: 0.03                  # doentes diferentes com o MESMO nome (NS diferentes)
+  homonym_same_birthdate_rate: 0.25   # destes, quantos partilham também a data de nascimento
+  email_rate: 0.4
+  ns_start: 1200000
+  processo_start: 15000000
+
+flow:
+  emergency_wait_max_hours: 10     # tempo máximo na urgência à espera de vaga antes de ir para outro serviço
+  bed_turnaround_minutes: [45, 120]   # higienização da cama após saída
+  registration_delay_minutes: [0, 20] # atraso entre o evento e o registo no sistema (EVN-2 / MSH-7)
+  weekend_discharge_factor: 0.45      # fração das altas de fim de semana que acontecem mesmo ao fim de semana
+  readmission_delay_days_mean: 11
+  # Perfil horário das admissões urgentes (0h..23h) - pico à tarde/noite após a urgência
+  urgent_hour_profile: [3, 2, 2, 1, 1, 1, 1, 2, 3, 4, 5, 6, 6, 7, 8, 8, 8, 8, 7, 7, 6, 5, 4, 3]
+  # Perfil horário das altas (0h..23h) - maioritariamente final da manhã / tarde
+  discharge_hour_profile: [0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 5, 8, 10, 10, 9, 8, 6, 4, 2, 1, 1, 0, 0, 0]
+  weekday_factor: [1.10, 1.05, 1.0, 1.0, 0.95, 0.90, 0.90]   # seg..dom (admissões urgentes)
+  # Destino após alta (PV1-36, tabela HL7 0112) e estado (PV2-12)
+  discharge_destinations:
+    - { code: "01", text: "DOMICILIO", weight: 72 }
+    - { code: "06", text: "DOMICILIO COM APOIO DOMICILIARIO", weight: 8 }
+    - { code: "03", text: "REDE NACIONAL DE CUIDADOS CONTINUADOS (RNCCI)", weight: 7 }
+    - { code: "04", text: "ESTRUTURA RESIDENCIAL PARA IDOSOS (LAR)", weight: 6 }
+    - { code: "02", text: "TRANSFERENCIA PARA OUTRO HOSPITAL", weight: 5 }
+    - { code: "07", text: "ALTA CONTRA PARECER MEDICO", weight: 2 }
+  discharge_conditions: { MELHORADO: 70, CURADO: 18, INALTERADO: 9, AGRAVADO: 3 }
+
+hl7:
+  version: "2.5"
+  processing_id: D          # MSH-11 (os exemplos usam D)
+  segment_terminator: "\r"  # padrão HL7; use "\r\n" se preferir abrir os ficheiros no Notepad
+  name_accents: true        # true -> acentos escapados (\XC3\); false -> nomes sem acentos
+
+fhir:
+  drop_resource_types: [Claim, ExplanationOfBenefit, Provenance, ImagingStudy, Media]
+  pretty: false
+
+# -----------------------------------------------------------------------------
+# Comportamento clínico por especialidade
+#   los: duração do internamento (lognormal, dias)
+#   elective_share: fração de internamentos programados (restantes vêm da urgência)
+#   age: perfil etário usado para escolher doentes da população Synthea
+#   icu_transfer: prob. de agravamento com passagem pela UCI a meio do internamento
+#   icu_postop: prob. de pós-operatório na UCI (só programados)
+#   consult_transfer: prob. de transferência para outro serviço após avaliação
+#   intra_ward_moves_per_day: mudanças de cama/quarto no mesmo serviço
+#   overflow_to: especialidades onde o doente pode ficar "internado em serviço alheio"
+#   admissions_per_day: opcional; se omitido é calculado pela lei de Little
+# -----------------------------------------------------------------------------
+specialties:
+  MED:
+    target_occupancy: 0.95
+    los: { mean: 9.5, sd: 7.0 }
+    elective_share: 0.02
+    age: { mean: 77, sd: 11 }
+    mortality: 0.09
+    readmission_30d: 0.12
+    icu_transfer: 0.03
+    consult_transfer: { prob: 0.04, to: [CAR, PNE, NEU] }
+    intra_ward_moves_per_day: 0.03
+    overflow_to: [CIR, ORT, PNE, CAR]
+    fallback_diagnoses:
+      - { icd10: "J18.9", text: "PNEUMONIA, NAO ESPECIFICADA" }
+      - { icd10: "N39.0", text: "INFECAO DO TRATO URINARIO" }
+      - { icd10: "I50.9", text: "INSUFICIENCIA CARDIACA" }
+      - { icd10: "E86.0", text: "DESIDRATACAO" }
+      - { icd10: "D64.9", text: "ANEMIA, NAO ESPECIFICADA" }
+      - { icd10: "N17.9", text: "LESAO RENAL AGUDA" }
+  CIR:
+    target_occupancy: 0.85
+    los: { mean: 5.5, sd: 4.5 }
+    elective_share: 0.55
+    age: { mean: 62, sd: 16 }
+    mortality: 0.02
+    readmission_30d: 0.07
+    icu_transfer: 0.02
+    icu_postop: 0.08
+    intra_ward_moves_per_day: 0.02
+    overflow_to: [ORT]
+    fallback_diagnoses:
+      - { icd10: "K80.20", text: "LITIASE DA VESICULA BILIAR" }
+      - { icd10: "K40.90", text: "HERNIA INGUINAL" }
+      - { icd10: "K35.80", text: "APENDICITE AGUDA" }
+      - { icd10: "K56.60", text: "OCLUSAO INTESTINAL" }
+      - { icd10: "C18.9", text: "NEOPLASIA MALIGNA DO COLON" }
+    procedures:
+      - { code: "0FT44ZZ", text: "COLECISTECTOMIA LAPAROSCOPICA" }
+      - { code: "0YQ64ZZ", text: "HERNIOPLASTIA INGUINAL" }
+      - { code: "0DTJ4ZZ", text: "APENDICECTOMIA LAPAROSCOPICA" }
+      - { code: "0DTN0ZZ", text: "HEMICOLECTOMIA" }
+  ORT:
+    target_occupancy: 0.88
+    los: { mean: 7.0, sd: 5.0 }
+    elective_share: 0.40
+    age: { mean: 72, sd: 15 }
+    mortality: 0.02
+    readmission_30d: 0.06
+    icu_transfer: 0.01
+    icu_postop: 0.03
+    intra_ward_moves_per_day: 0.02
+    overflow_to: [CIR]
+    fallback_diagnoses:
+      - { icd10: "S72.009A", text: "FRATURA DO COLO DO FEMUR" }
+      - { icd10: "M17.9", text: "GONARTROSE" }
+      - { icd10: "M16.9", text: "COXARTROSE" }
+      - { icd10: "S82.899A", text: "FRATURA DO TORNOZELO" }
+    procedures:
+      - { code: "0SRR0J9", text: "ARTROPLASTIA DA ANCA" }
+      - { code: "0SRD0J9", text: "ARTROPLASTIA DO JOELHO" }
+      - { code: "0QSB04Z", text: "OSTEOSSINTESE DO FEMUR" }
+  CAR:
+    target_occupancy: 0.88
+    los: { mean: 5.5, sd: 4.0 }
+    elective_share: 0.15
+    age: { mean: 70, sd: 12 }
+    mortality: 0.04
+    readmission_30d: 0.10
+    icu_transfer: 0.03
+    intra_ward_moves_per_day: 0.02
+    overflow_to: [PNE]
+    fallback_diagnoses:
+      - { icd10: "I21.4", text: "ENFARTE AGUDO DO MIOCARDIO SEM SUPRA ST" }
+      - { icd10: "I50.9", text: "INSUFICIENCIA CARDIACA" }
+      - { icd10: "I48.91", text: "FIBRILHACAO AURICULAR" }
+      - { icd10: "I44.2", text: "BLOQUEIO AURICULOVENTRICULAR COMPLETO" }
+  PNE:
+    target_occupancy: 0.90
+    los: { mean: 8.5, sd: 6.0 }
+    elective_share: 0.08
+    age: { mean: 72, sd: 13 }
+    mortality: 0.08
+    readmission_30d: 0.13
+    icu_transfer: 0.04
+    intra_ward_moves_per_day: 0.03
+    overflow_to: [CAR]
+    fallback_diagnoses:
+      - { icd10: "J44.1", text: "DPOC COM EXACERBACAO AGUDA" }
+      - { icd10: "J18.9", text: "PNEUMONIA, NAO ESPECIFICADA" }
+      - { icd10: "J96.00", text: "INSUFICIENCIA RESPIRATORIA AGUDA" }
+      - { icd10: "C34.90", text: "NEOPLASIA MALIGNA DO PULMAO" }
+  NEU:
+    target_occupancy: 0.88
+    los: { mean: 8.0, sd: 6.0 }
+    elective_share: 0.05
+    age: { mean: 72, sd: 13 }
+    mortality: 0.08
+    readmission_30d: 0.08
+    icu_transfer: 0.03
+    intra_ward_moves_per_day: 0.02
+    overflow_to: [MED]
+    fallback_diagnoses:
+      - { icd10: "I63.9", text: "ACIDENTE VASCULAR CEREBRAL ISQUEMICO" }
+      - { icd10: "I61.9", text: "HEMORRAGIA INTRACEREBRAL" }
+      - { icd10: "G40.909", text: "EPILEPSIA, NAO ESPECIFICADA" }
+      - { icd10: "G45.9", text: "ACIDENTE ISQUEMICO TRANSITORIO" }
+  UCI:
+    target_occupancy: 0.80
+    los: { mean: 5.0, sd: 4.0 }      # duração da passagem pela UCI
+    elective_share: 0.0
+    age: { mean: 65, sd: 15 }
+    mortality: 0.20
+    readmission_30d: 0.05
+    admissions_per_day: 0.9          # admissões diretas da urgência (as restantes chegam por transferência)
+    step_down_to: MED                # após alta da UCI o doente segue para este serviço
+    overflow_to: []
+    fallback_diagnoses:
+      - { icd10: "A41.9", text: "SEPSIS, NAO ESPECIFICADA" }
+      - { icd10: "R65.21", text: "CHOQUE SETICO" }
+      - { icd10: "J96.00", text: "INSUFICIENCIA RESPIRATORIA AGUDA" }
+      - { icd10: "I46.9", text: "PARAGEM CARDIORRESPIRATORIA" }
