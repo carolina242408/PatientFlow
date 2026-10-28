@@ -27,7 +27,6 @@ const AppRoutes = () => (
       <Route path="lhu" element={<Lhu />} />
       <Route path="unit" element={<Unit />} />
       <Route path="service" element={<Service />} />
-      <Route path="admin/*" element={<AdminRoute />} />
 
       <Route path="settings" element={<Settings />} />
       <Route path="account" element={<Account />} />
