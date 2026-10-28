@@ -1,5 +1,5 @@
 {
-  "app": { "name": "PatientFlow" },
+  "app": { "name": "PatientFlow", "logoAlt": "Logótipo PatientFlow" },
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
@@ -18,7 +18,8 @@
     "workspace": {
       "admin": "Área de Administração",
       "manager": "Área de Gestão"
-    }
+    },
+    "lhuHierarchy": "Hierarquia LHU"
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },
@@ -28,6 +29,7 @@
     "lhu": { "title": "Unidade Local de Saúde", "description": "Gerir o fluxo da Unidade Local de Saúde" },
     "settings": { "title": "Definições", "description": "Gerir as definições e preferências da aplicação" },
     "account": { "title": "A Minha Conta", "description": "Gerir o perfil e dados da conta" },
+    "lhu-hierarchy": { "title": "Hierarquia LHU", "description": "Estrutura organizacional da Unidade Local de Saúde" },
     "default": { "title": "PatientFlow", "description": "Visão geral do fluxo de pacientes" }
   },
   "topbar": {
@@ -391,5 +393,51 @@
       "body": "{{maintenance}} verificações de manutenção e {{cleaning}} validações de limpeza."
     }
   },
-  "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" }
+  "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" },
+  "lhuHierarchy": {
+    "title": "Hierarquia da organização",
+    "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
+    "error": "Não foi possível carregar a hierarquia.",
+    "root": "Raiz da organização",
+    "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
+    "stats": { "levels": "Níveis organizacionais", "spaces": "Espaços registados", "resourceGroups": "Grupos de recursos", "operationalItems": "Itens operacionais" },
+    "columns": { "name": "Espaço ou recurso", "type": "Tipo", "parent": "Superior", "status": "Estado" },
+    "add": {
+      "step": "Passo 1",
+      "title": "Selecione um tipo de espaço ou recurso",
+      "description": "Escolha o que pretende introduzir na estrutura da unidade de saúde. A hierarquia e as características relevantes aparecem depois da seleção.",
+      "premise": "Espaço",
+      "resource": "Recurso",
+      "hint": "Selecione um espaço ou recurso acima para continuar"
+    },
+    "form": {
+      "step": "Passo 2",
+      "title": "Adicionar {{type}}",
+      "changeType": "Alterar tipo",
+      "sections": { "parentLocation": "Localização superior", "information": "Informação de {{type}}", "resourceCharacteristics": "Características do recurso" },
+      "fields": {
+        "name": "Nome ou número", "internalCode": "Código interno", "status": "Estado operacional", "service": "Serviço responsável",
+        "notes": "Notas", "subtype": "Subtipo do recurso", "connectivity": "Conectividade", "capacity": "Capacidade"
+      },
+      "placeholders": { "name": "Nome ou número de {{type}}", "internalCode": "Sugerido automaticamente se vazio", "notes": "Adicionar notas operacionais", "parent": "Selecionar {{type}}" },
+      "actions": { "clear": "Limpar", "submit": "Adicionar à hierarquia da ULS" },
+      "validation": { "required": "Este campo é obrigatório", "min": "Tem de ser pelo menos 1" }
+    },
+    "options": {
+      "status": { "operational": "Operacional", "maintenance": "Em manutenção", "inactive": "Inativo" },
+      "service": { "cardiology": "Cardiologia", "neurology": "Neurologia", "orthopedics": "Ortopedia", "general": "Medicina geral" },
+      "subtype": { "standard": "Padrão", "icu": "Cuidados intensivos", "isolation": "Isolamento" },
+      "connectivity": { "connected": "Ligado", "offline": "Desligado" }
+    },
+    "typeDescriptions": {
+      "lhu": "Unidade local de saúde de topo", "unit": "Unidade hospitalar ou de prestação de cuidados", "building": "Edifício físico dentro de uma unidade",
+      "floor": "Piso dentro de um edifício", "ward": "Enfermaria clínica num piso", "nursery": "Área de cuidados com quartos",
+      "room": "Quarto de paciente ou de tratamento", "bed": "Cama de paciente atribuída a um quarto", "operating-room": "Recurso cirúrgico de bloco operatório",
+      "treatment-chair": "Cadeirão usado em tratamento clínico"
+    },
+    "types": {
+      "lhu": "ULS", "unit": "Unidade", "building": "Edifício", "floor": "Piso", "ward": "Enfermaria",
+      "nursery": "Berçário", "room": "Quarto", "bed": "Cama", "operating-room": "Bloco operatório", "treatment-chair": "Cadeirão de tratamento"
+    }
+  }
 }

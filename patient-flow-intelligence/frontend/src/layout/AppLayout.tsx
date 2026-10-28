@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 
-const PAGES = ['/dashboard', '/lhu', '/unit', '/service', '/admin', '/account', '/settings'] as const
+const PAGES = ['/dashboard', '/lhu', '/unit', '/service', '/admin', '/account', '/settings', '/lhu-hierarchy'] as const
 
 const AppLayout = () => {
   const { pathname } = useLocation()
