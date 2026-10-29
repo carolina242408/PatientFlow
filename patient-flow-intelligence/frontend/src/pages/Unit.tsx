@@ -1,11 +1,9 @@
-import { useTranslation } from 'react-i18next'
+import SpaceExplorer from './space/SpaceExplorer'
 
 const Unit = () => {
-  const { t } = useTranslation()
   return (
-    <div>
-      <h1 className="text-xl font-medium">{t('service.title')}</h1>
-      <p className="mt-2 text-sm text-gray-500">{t('service.body')}</p>
+    <div className="p-6">
+      <SpaceExplorer startLevel="unit" initialLevel="unit" />
     </div>
   )
 }

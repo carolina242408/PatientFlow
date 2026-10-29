@@ -14,7 +14,8 @@ import {
   ChevronRight,
   ChevronLeft,
   LogOut,
-  Info
+  Info,
+  Network
 } from 'lucide-react'
 
 interface SidebarItem {
@@ -23,20 +24,23 @@ interface SidebarItem {
   icon: LucideIcon
 }
 
-const getManagementSidebarItem = (roles: string[] = []): SidebarItem | null => {
+const getManagementSidebarItems = (roles: string[] = []): SidebarItem[] => {
   if (roles.includes('ROLE_ADMIN')) {
-    return { labelKey: 'nav.admin', path: '/admin', icon: House }
+    return [
+      { labelKey: 'nav.admin', path: '/admin', icon: House },
+      { labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network },
+    ]
   }
   if (roles.includes('LHU_MANAGER')) {
-    return { labelKey: 'nav.lhu', path: '/lhu', icon: House }
+    return [{ labelKey: 'nav.lhu', path: '/lhu', icon: House }]
   }
   if (roles.includes('UNIT_MANAGER')) {
-    return { labelKey: 'nav.unit', path: '/unit', icon: House }
+    return [{ labelKey: 'nav.unit', path: '/unit', icon: House }]
   }
-    if (roles.includes('SERVICE_MANAGER')) {
-    return { labelKey: 'nav.service', path: '/service', icon: House }
+  if (roles.includes('SERVICE_MANAGER')) {
+    return [{ labelKey: 'nav.service', path: '/service', icon: House }]
   }
-  return null
+  return []
 }
 
 const getWorkspaceLabel = (roles: string[] = []): string => {
@@ -50,18 +54,18 @@ const Sidebar = () => {
   const { keycloak, user } = useKeycloak()
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
-  const roleIcon = getManagementSidebarItem(user?.roles)
+  const managementItems = getManagementSidebarItems(user?.roles)
   const workspaceLabelKey = getWorkspaceLabel(user?.roles)
   const userRoles = user?.roles ?? []
 
   const sections : Record<string, SidebarItem[]> = {
     Menu: [
       { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
-      ...(roleIcon ? [roleIcon] : []),
+      ...managementItems,
     ],
     Settings: [
       { labelKey: 'nav.settings', path: '/settings', icon: Settings },
-      { labelKey: 'nav.account', path: '/user', icon: CircleUser },
+      { labelKey: 'nav.account', path: '/account', icon: CircleUser },
     ],
   }
 

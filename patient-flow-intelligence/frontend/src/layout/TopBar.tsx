@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { NavLink } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useKeycloak } from '../auth/context'
-import { LANGUAGES } from '../i18n'
+import NotificationPopover from './NotificationPopover'
 
 interface TopBarProps {
   pageName: string
@@ -9,85 +9,56 @@ interface TopBarProps {
 }
 
 const TopBar = ({ pageName, pageDescription }: TopBarProps) => {
-  const { user, keycloak } = useKeycloak()
-  const { t, i18n } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const { user } = useKeycloak()
+  const { t } = useTranslation()
 
-  useEffect(() => {
-    const onMouseDown = (e: MouseEvent) => {
-      if (ref.current && !e.composedPath().includes(ref.current)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onMouseDown)
-    return () => document.removeEventListener('mousedown', onMouseDown)
-  }, [])
-
-  const displayRole = () => {
-    const roles = user?.roles ?? []
-    if (roles.some((r) => r.includes('ADMIN'))) return t('topbar.admin')
-    const gestor = roles.find((r) => r.includes('GESTOR'))
-    if (gestor) return gestor.replace('GESTOR_', 'Gestor ').replace(/_/g, ' ')
-    return t('topbar.user')
+  // Gerar iniciais do utilizador 
+  const getInitials = (name?: string) => {
+    if (!name) return 'U'
+    const parts = name.trim().split(' ')
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase()
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   }
 
   return (
-    <header className="relative flex h-[77px] w-full items-center border-b border-gray-200 bg-white px-6">
+    <header className="relative flex h-[73px] w-full items-center border-b border-gray-200 bg-white px-8">
+      {/* Informação da Página */}
       <div className="flex flex-col justify-center">
-        <h1 className="mb-0.5 text-base leading-tight font-semibold text-gray-900">{pageName}</h1>
-        <p className="text-xs leading-tight text-gray-500">{pageDescription}</p>
+        <h1 className="text-xl font-bold text-slate-900 leading-tight">{pageName}</h1>
+        <p className="mt-0.5 text-xs text-slate-400 font-normal">{pageDescription}</p>
       </div>
 
       <div className="flex-1" />
 
-      <div className="relative" ref={ref}>
-        <button
-          type="button"
-          className={`flex max-w-[250px] items-center gap-2.5 rounded-lg px-2.5 py-1.5 hover:bg-gray-100 ${open ? 'bg-gray-100' : ''}`}
-          onClick={() => setOpen((o) => !o)}
-          title={user?.name}
-        >
-          <div className="h-8 w-8 min-w-8 rounded-full bg-[#d9d9d9]" />
-          <div className="flex min-w-0 flex-col text-left">
-            <span className="block truncate text-[13px] font-semibold text-gray-900">{user?.name || t('topbar.user')}</span>
-            <span className="block truncate text-[9px] font-medium text-gray-500 uppercase">{displayRole()}</span>
-          </div>
-          <span className="ml-1 text-[10px] text-gray-500">▼</span>
-        </button>
+      {/* Lado Direito: Notificação + Perfil */}
+      <div className="flex items-center gap-4">
+        <NotificationPopover />
 
-        {open && (
-          <div className="absolute top-full right-0 z-50 mt-2 w-[200px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-            <div className="flex flex-col bg-gray-50 px-4 py-3">
-              <span className="text-[13px] font-semibold text-gray-900">{user?.name}</span>
-              <span className="mt-0.5 text-[11px] text-gray-500">{user?.email}</span>
-            </div>
-            <div className="h-px bg-gray-200" />
-            <div className="flex items-center gap-2 px-4 py-2 text-[13px] text-gray-700">
-              <span>{t('topbar.language')}:</span>
-              {LANGUAGES.map((lng) => (
-                <button
-                  key={lng}
-                  type="button"
-                  className={`rounded px-1.5 py-0.5 hover:bg-gray-100 ${i18n.language === lng ? 'font-semibold text-primary' : ''}`}
-                  onClick={() => void i18n.changeLanguage(lng)}
-                >
-                  {lng}
-                </button>
-              ))}
-            </div>
-            <div className="h-px bg-gray-200" />
-            <button type="button" className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-100">
-              {t('nav.account')}
-            </button>
-            <div className="h-px bg-gray-200" />
-            <button
-              type="button"
-              className="w-full px-4 py-2.5 text-left text-[13px] text-danger hover:bg-red-50"
-              onClick={() => keycloak.logout()}
-            >
-              {t('nav.logout')}
-            </button>
+        {/* Divisor Vertical */}
+        <div className="h-8 w-px bg-gray-200" />
+
+        {/* Perfil */}
+        <NavLink
+          to="/account"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-1.5 transition-colors hover:bg-gray-50 ${
+              isActive 
+                ? 'bg-gray-100 border-gray-300' 
+                : 'bg-white hover:bg-slate-100 hover:border-gray-300'
+            }`
+          }
+          title={t('nav.account', 'Minha Conta')}
+        >
+          {/* Avatar com Iniciais */}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600">
+            {getInitials(user?.name)}
           </div>
-        )}
+
+          {/* Nome do Utilizador */}
+          <span className="text-[14px] font-medium text-slate-800">
+            {user?.name || t('topbar.user')}
+          </span>
+        </NavLink>
       </div>
     </header>
   )
