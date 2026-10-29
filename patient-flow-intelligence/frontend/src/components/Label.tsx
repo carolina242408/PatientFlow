@@ -1,0 +1,14 @@
+import type { ComponentProps } from "react"
+import { cn } from "@/lib/utils"
+
+function Label({ className, ...props }: ComponentProps<"label">) {
+  return (
+    <label
+      data-slot="label"
+      className={cn("text-xs font-medium text-gray-900 select-none peer-disabled:opacity-50", className)}
+      {...props}
+    />
+  )
+}
+
+export { Label }
