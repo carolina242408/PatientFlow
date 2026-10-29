@@ -13,6 +13,11 @@
     "administration": "Administration",
     "admin": "Admin Console",
     "logout": "Logout",
+    "logoutConfirmation": {
+      "title": "Confirm Logout",
+      "description": "Are you sure you want to log out of your account?",
+      "cancel": "Cancel"
+    },
     "collapse": "Collapse",
     "expand": "Expand",
     "workspace": {

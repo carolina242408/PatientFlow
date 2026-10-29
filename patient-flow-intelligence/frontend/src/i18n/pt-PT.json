@@ -13,6 +13,11 @@
     "administration": "Administração",
     "admin": "Consola Administrativa",
     "logout": "Terminar sessão",
+    "logoutConfirmation": {
+      "title": "Confirmar saída",
+      "description": "Tem a certeza de que pretende terminar sessão na sua conta?",
+      "cancel": "Cancelar"
+    },
     "collapse": "Recolher",
     "expand": "Expandir",
     "workspace": {
