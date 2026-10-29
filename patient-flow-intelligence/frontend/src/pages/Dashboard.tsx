@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Maximize2, X } from 'lucide-react'
 import { useKeycloak } from '../auth/context'
@@ -115,16 +115,6 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     if (expandedItem && dialog && !dialog.open) dialog.showModal()
   }, [expandedItem])
 
-  const handleDashboardItemKeyDown = (
-    event: KeyboardEvent<HTMLElement>,
-    item: DashboardItem,
-  ) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      setExpandedItem(item)
-    }
-  }
-
   const today = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'long',
     day: 'numeric',
@@ -221,16 +211,24 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         className={`grid min-w-0 grid-cols-1 gap-4 ${profileScope !== 'Service' ? '2xl:grid-cols-2' : ''}`}
       >
         <article
-          role="button"
-          tabIndex={0}
-          aria-haspopup="dialog"
-          aria-label={`${t('dashboard.perService.title')}. ${t('dashboard.expandChart')}`}
           onClick={() => setExpandedItem('service')}
-          onKeyDown={(event) => handleDashboardItemKeyDown(event, 'service')}
-          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
         >
-          <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perService.title')}</h2>
-          <p className="mt-1 text-sm text-gray-400">{t('dashboard.perService.body')}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perService.title')}</h2>
+              <p className="mt-1 text-sm text-gray-400">{t('dashboard.perService.body')}</p>
+            </div>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-label={`${t('dashboard.perService.title')}. ${t('dashboard.expandChart')}`}
+              onClick={() => setExpandedItem('service')}
+              className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <Maximize2 aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
 
           {/* Service Occupancy */}
           <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
@@ -263,16 +261,24 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
         {profileScope !== 'Service' && (
           <article
-            role="button"
-            tabIndex={0}
-            aria-haspopup="dialog"
-            aria-label={`${t('dashboard.perUnit.title')}. ${t('dashboard.expandChart')}`}
             onClick={() => setExpandedItem('unit')}
-            onKeyDown={(event) => handleDashboardItemKeyDown(event, 'unit')}
-            className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
           >
-            <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perUnit.title')}</h2>
-            <p className="mt-1 text-sm text-gray-400">{t('dashboard.perUnit.body')}</p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perUnit.title')}</h2>
+                <p className="mt-1 text-sm text-gray-400">{t('dashboard.perUnit.body')}</p>
+              </div>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={`${t('dashboard.perUnit.title')}. ${t('dashboard.expandChart')}`}
+                onClick={() => setExpandedItem('unit')}
+                className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <Maximize2 aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
 
             <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
               {UNIT_OCCUPANCY.map((item) => (
@@ -308,16 +314,24 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
         {/* Discharge Forecast */}
         <article
-          role="button"
-          tabIndex={0}
-          aria-haspopup="dialog"
-          aria-label={`${t('dashboard.forecastChart.title')}. ${t('dashboard.expandChart')}`}
           onClick={() => setExpandedItem('discharges')}
-          onKeyDown={(event) => handleDashboardItemKeyDown(event, 'discharges')}
-          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
         >
-          <h2 className="text-base font-semibold text-slate-900">{t('dashboard.forecastChart.title')}</h2>
-          <p className="mt-1 text-sm text-gray-400">{t('dashboard.forecastChart.body')}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.forecastChart.title')}</h2>
+              <p className="mt-1 text-sm text-gray-400">{t('dashboard.forecastChart.body')}</p>
+            </div>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-label={`${t('dashboard.forecastChart.title')}. ${t('dashboard.expandChart')}`}
+              onClick={() => setExpandedItem('discharges')}
+              className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <Maximize2 aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
 
           <div className="mt-6 flex h-48 items-end gap-2 border-b border-gray-200 pt-6">
             {DISCHARGE_FORECAST.map((item) => (
