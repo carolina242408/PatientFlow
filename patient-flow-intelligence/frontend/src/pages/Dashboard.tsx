@@ -237,7 +237,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {SERVICE_OCCUPANCY.map((item) => (
               <div key={item.service} className="flex h-full min-w-0 flex-1 items-end justify-center">
                 <div
-                  className={`relative w-full max-w-12 rounded-t-md ${barColor(item.occupancy)}`}
+                  className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
                   style={{ height: `${item.occupancy}%` }}
                 >
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
@@ -278,7 +278,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               {UNIT_OCCUPANCY.map((item) => (
                 <div key={item.unit} className="flex h-full min-w-0 flex-1 items-end justify-center">
                   <div
-                    className={`relative w-full max-w-12 rounded-t-md ${barColor(item.occupancy)}`}
+                    className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
                     style={{ height: `${item.occupancy}%` }}
                   >
                     <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
@@ -323,7 +323,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {DISCHARGE_FORECAST.map((item) => (
               <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
                 <div
-                  className="relative w-full max-w-8 rounded-t-md bg-blue-300"
+                  className="relative w-full max-w-32 rounded-t-md bg-blue-300"
                   style={{ height: `${(item.count / maxForecast) * 100}%` }}
                 >
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
@@ -459,7 +459,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                   {SERVICE_OCCUPANCY.map((item) => (
                     <div key={item.service} className="flex h-full min-w-0 flex-1 items-end justify-center">
                       <div
-                        className={`relative w-full max-w-24 rounded-t-md ${barColor(item.occupancy)}`}
+                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
                         style={{ height: `${item.occupancy}%` }}
                       >
                         <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
@@ -488,7 +488,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                   {UNIT_OCCUPANCY.map((item) => (
                     <div key={item.unit} className="flex h-full min-w-0 flex-1 items-end justify-center">
                       <div
-                        className={`relative w-full max-w-24 rounded-t-md ${barColor(item.occupancy)}`}
+                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
                         style={{ height: `${item.occupancy}%` }}
                       >
                         <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
@@ -517,7 +517,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                   {DISCHARGE_FORECAST.map((item) => (
                     <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
                       <div
-                        className="relative w-full max-w-16 rounded-t-md bg-blue-300"
+                        className="relative w-full max-w-32 rounded-t-md bg-blue-300"
                         style={{ height: `${(item.count / maxForecast) * 100}%` }}
                       >
                         <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
