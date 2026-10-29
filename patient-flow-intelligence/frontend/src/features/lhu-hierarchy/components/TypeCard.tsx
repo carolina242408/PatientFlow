@@ -20,7 +20,7 @@ export function TypeCard({ type, selected, onSelect }: TypeCardProps) {
       className={cn(
         "cursor-pointer flex items-start gap-4 rounded-lg border border-gray-200 bg-white p-5 text-left transition-colors hover:bg-[#EFF6FF] hover:border-[#2563EB]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40",
-        selected && "border-[#2563EB] ring-1 ring-[#2563EB] bg-[#EFF6FF]",
+        selected && "hierarchy-type-card-selected border-[#2563EB] ring-1 ring-[#2563EB] bg-[#EFF6FF]",
       )}
     >
       <HierarchyNodeIcon

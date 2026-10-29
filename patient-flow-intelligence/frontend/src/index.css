@@ -96,6 +96,20 @@
   color: #dbeafe !important;
 }
 
+.theme-dark .hierarchy-type-card-selected {
+  border-color: #3b82f6 !important;
+  background-color: #1e3a8a !important;
+  color: #dbeafe !important;
+}
+
+.theme-dark .hierarchy-type-card-selected :is(.text-gray-900, .text-gray-500) {
+  color: #dbeafe !important;
+}
+
+.theme-dark .hierarchy-type-card-selected:hover {
+  background-color: #172554 !important;
+}
+
 .theme-dark aside a:hover {
   background-color: #1f2937 !important;
   color: #f8fafc !important;
