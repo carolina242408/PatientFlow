@@ -421,6 +421,16 @@
       },
       "placeholders": { "name": "Nome ou número de {{type}}", "internalCode": "Sugerido automaticamente se vazio", "notes": "Adicionar notas operacionais", "parent": "Selecionar {{type}}" },
       "actions": { "clear": "Limpar", "submit": "Adicionar à hierarquia da ULS" },
+      "popup": {
+        "success": {
+          "title": "Submissão efetuada com sucesso",
+          "description": "Este protótipo ainda não guarda os dados."
+        },
+        "error": {
+          "title": "Falha na submissão",
+          "description": "Verifique os campos obrigatórios e tente novamente."
+        }
+      },
       "validation": { "required": "Este campo é obrigatório", "min": "Tem de ser pelo menos 1" }
     },
     "options": {

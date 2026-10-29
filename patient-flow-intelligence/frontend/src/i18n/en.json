@@ -421,6 +421,16 @@
       },
       "placeholders": { "name": "{{type}} name or number", "internalCode": "Automatically suggested if empty", "notes": "Add operational notes", "parent": "Select {{type}}" },
       "actions": { "clear": "Clear", "submit": "Add to LHU hierarchy" },
+      "popup": {
+        "success": {
+          "title": "Submission Successful",
+          "description": "This prototype does not save the data yet."
+        },
+        "error": {
+          "title": "Submission Failed",
+          "description": "Check the required fields and try again."
+        }
+      },
       "validation": { "required": "This field is required", "min": "Must be at least 1" }
     },
     "options": {
