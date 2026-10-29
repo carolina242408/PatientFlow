@@ -272,6 +272,16 @@
       "title": "Language",
       "body": "Select the preferred language for the interface."
     },
+    "popup": {
+      "success": {
+        "title": "Preferences saved",
+        "description": "Your preferences were saved successfully."
+      },
+      "error": {
+        "title": "Could not save preferences",
+        "description": "Please try again."
+      }
+    },
     "save": "Save Preferences"
   },
   "account": {

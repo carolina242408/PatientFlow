@@ -272,6 +272,16 @@
       "title": "Idioma",
       "body": "Seleciona o idioma preferido para a interface."
     },
+    "popup": {
+      "success": {
+        "title": "Preferências guardadas",
+        "description": "As suas preferências foram guardadas com sucesso."
+      },
+      "error": {
+        "title": "Não foi possível guardar as preferências",
+        "description": "Tente novamente."
+      }
+    },
     "save": "Guardar preferências"
   },
   "account": {

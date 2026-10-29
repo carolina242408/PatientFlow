@@ -33,6 +33,7 @@ const Settings = () => {
   const [language, setLanguage] = useState(
     () => (i18n.resolvedLanguage?.startsWith('pt') ? 'pt-PT' : 'en'),
   )
+  const [popup, setPopup] = useState<{ type: 'success' | 'error'; key: number } | null>(null)
 
   useEffect(
     () => () => {
@@ -41,15 +42,31 @@ const Settings = () => {
     [],
   )
 
+  useEffect(() => {
+    if (!popup) return
+    const timeoutId = window.setTimeout(() => setPopup(null), 4000)
+    return () => window.clearTimeout(timeoutId)
+  }, [popup])
+
+  const showPopup = (type: 'success' | 'error') => {
+    setPopup((current) => ({ type, key: (current?.key ?? 0) + 1 }))
+  }
+
   const handleThemePreview = (selectedTheme: Theme) => {
     setTheme(selectedTheme)
     document.documentElement.classList.toggle('theme-dark', selectedTheme === 'dark')
   }
 
-  const handleSave = () => {
-    localStorage.setItem('theme', theme)
-    savedTheme.current = theme
-    void i18n.changeLanguage(language)
+  const handleSave = async () => {
+    try {
+      await i18n.changeLanguage(language)
+      localStorage.setItem('theme', theme)
+      savedTheme.current = theme
+      showPopup('success')
+    } catch (error) {
+      console.error('Failed to save preferences', error)
+      showPopup('error')
+    }
   }
 
   return (
@@ -131,6 +148,17 @@ const Settings = () => {
           </button>
         </div>
       </div>
+      {popup && (
+        <div
+          key={popup.key}
+          role={popup.type === 'success' ? 'status' : 'alert'}
+          aria-live={popup.type === 'success' ? 'polite' : 'assertive'}
+          className={`operation-popup operation-popup-${popup.type}`}
+        >
+          <p className="text-xl font-semibold">{t(`settings.popup.${popup.type}.title`)}</p>
+          <p className="mt-1 text-sm">{t(`settings.popup.${popup.type}.description`)}</p>
+        </div>
+      )}
     </div>
   )
 }
