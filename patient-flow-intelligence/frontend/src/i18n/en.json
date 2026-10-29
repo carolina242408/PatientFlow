@@ -169,6 +169,9 @@
     }
   },
   "dashboard": {
+    "expandChart": "Select to enlarge",
+    "expandTable": "Select to enlarge",
+    "closeExpandedItem": "Close enlarged view",
     "lastUpdated": "Last updated today at {{time}}",
     "occupancyRate": "{{scope}} occupancy rate",
     "beds": "{{occupied}} / {{total}} beds",

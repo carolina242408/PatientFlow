@@ -123,6 +123,28 @@
   margin: auto;
 }
 
+.dashboard-chart-dialog {
+  position: fixed;
+  inset: 0;
+  max-height: 90vh;
+  margin: auto;
+}
+
+.theme-dark .dashboard-chart-dialog,
+.theme-dark .dashboard-chart-dialog > div {
+  border-color: #374151 !important;
+  background-color: #111827 !important;
+  color: #e2e8f0 !important;
+}
+
+.theme-dark .dashboard-chart-dialog h2 {
+  color: #f8fafc !important;
+}
+
+.theme-dark .dashboard-chart-dialog button:hover {
+  background-color: #1f2937 !important;
+}
+
 .theme-dark .logout-confirmation-dialog,
 .theme-dark .logout-confirmation-dialog > div {
   border-color: #374151 !important;

@@ -169,6 +169,9 @@
     }
   },
   "dashboard": {
+    "expandChart": "Selecionar para ampliar",
+    "expandTable": "Selecionar para ampliar",
+    "closeExpandedItem": "Fechar vista ampliada",
     "lastUpdated": "Última atualização hoje às {{time}}",
     "occupancyRate": "Taxa de ocupação ({{scope}})",
     "beds": "{{occupied}} / {{total}} camas",
