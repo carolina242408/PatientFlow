@@ -93,6 +93,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--validate", action="store_true", default=True, help="Run HL7 stream integrity validation")
     parser.add_argument("--no-validate", dest="validate", action="store_false", help="Skip HL7 validation")
     parser.add_argument("--check-converter", action="store_true", help="Validate messages against tools/hl7-fhir-converter")
+    parser.add_argument(
+        "--print-hl7",
+        "--print-events",
+        "-p",
+        dest="print_events",
+        action="store_true",
+        help="Print raw HL7 v2.5 pipe messages to terminal",
+    )
+    parser.add_argument("--delay-ms", type=int, default=0, help="Delay in ms between printed messages (for real-time watching)")
     return parser
 
 
@@ -252,6 +261,22 @@ def run_cli_generation(args: argparse.Namespace) -> int:
     logger.info("  -> HL7 files: %s (%d files)", args.output / "hl7", len(rendered_messages))
     logger.info("  -> FHIR hospital: %s", args.output / "fhir" / "hospital-locations.json")
     logger.info("  -> FHIR patients: %s", args.output / "fhir" / "patients")
+
+    if args.print_events:
+        import time
+
+        total_msgs = len(rendered_messages)
+        print(f"\n{'=' * 80}")
+        print(f"MENSAGENS HL7 v2.5 ADT ({total_msgs} mensagens geradas)")
+        print(f"{'=' * 80}\n")
+        for idx, msg in enumerate(rendered_messages, 1):
+            formatted_hl7 = msg.text.replace("\r\n", "\n").replace("\r", "\n").strip()
+            print(f"--- [Mensagem {idx}/{total_msgs} | ADT^{msg.trigger} | MSH-10: {msg.control_id} | Episódio: {msg.episode}] ---")
+            print(formatted_hl7)
+            print()
+            sys.stdout.flush()
+            if args.delay_ms > 0 and idx < total_msgs:
+                time.sleep(args.delay_ms / 1000.0)
 
     return 0 if (not args.validate or (validation_report and validation_report["passed"])) else 1
 

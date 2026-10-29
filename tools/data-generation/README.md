@@ -21,11 +21,12 @@ Combina o **Synthea** (para percursos clínicos longitudinais realistas com recu
    - [5.6 Ingestão de Recursos FHIR R4 (Topologia e Pacientes)](#56-ingestão-de-recursos-fhir-r4-topologia-e-pacientes)
 6. [Resumo dos Endpoints da REST API](#resumo-dos-endpoints-da-rest-api)
 7. [Instalação e Pré-requisitos](#instalação-e-pré-requisitos)
-8. [Como Executar](#como-executar)
+8. [Visualização em Tempo Real no Terminal (Watch Stream & Live Demo)](#visualização-em-tempo-real-no-terminal-watch-stream--live-demo)
+9. [Como Executar](#como-executar)
    - [Fluxo de Desenvolvimento em Simultâneo](#fluxo-de-desenvolvimento-em-simultâneo)
-9. [Estrutura de Ficheiros Gerados](#estrutura-de-ficheiros-gerados)
-10. [Configurações Editáveis (YAML)](#configurações-editáveis-yaml)
-11. [Testes e Validação](#testes-e-validação)
+10. [Estrutura de Ficheiros Gerados](#estrutura-de-ficheiros-gerados)
+11. [Configurações Editáveis (YAML)](#configurações-editáveis-yaml)
+12. [Testes e Validação](#testes-e-validação)
 
 ---
 
@@ -422,6 +423,63 @@ O gerador expõe bundles FHIR R4 compatíveis com o servidor HAPI FHIR da aplica
    ```
 2. **Java 11+ / 21+**:
    Necessário para o backend Spring Boot e para o Synthea (o gerador descarrega e coloca em cache automaticamente o `.jar` oficial do Synthea).
+
+---
+
+## Visualização em Tempo Real no Terminal (Watch Stream & Live HL7)
+
+Para ver as mensagens **HL7 v2.5 cruas** a serem geradas e emitidas em tempo real diretamente no terminal:
+
+### 1. Diretamente no Comando Principal (`main.py --print-hl7`)
+
+Use a flag `--print-hl7` (ou `-p`) para imprimir as mensagens HL7 v2.5 pipe a pipe diretamente para a consola:
+
+```powershell
+# Geração e impressão em tempo real das mensagens HL7 v2.5:
+python tools\data-generation\main.py --no-synthea --days 2 --print-hl7 --delay-ms 100
+```
+
+#### Exemplo de Saída no Terminal:
+```text
+================================================================================
+MENSAGENS HL7 v2.5 ADT (63 mensagens geradas)
+================================================================================
+
+--- [Mensagem 1/63 | ADT^A01 | MSH-10: b93b21d8-f297-48b4-b838-e1526bdd9dac | Episódio: 26001015] ---
+MSH|^~\&|HOS|INST|HL7_DEFAULT|INST|20261001000044||ADT^A01^ADT_A01|b93b21d8-f297-48b4-b838-e1526bdd9dac|D|2.5
+EVN|A01|20261001000043||A|7660^CORREIA^PEDRO^^^^^^HOS~13849^CORREIA^PEDRO^^^^^^N.Mecanogr\XE1\fico|20261001000000|INST
+PID|1||1201995^^^HOS^NS~128592075^^^HAS^SNS||FERNANDES PEREIRA^SUSANA^DEOLINDA^^^^L||19291205000000|F|||LARGO DA RESTAURA\XC7\\XC3\O, 75^^LAMA\XC7\\XC3\ES^BRAGA^4701-940^PRT^N^BRAGA^030354||^PRN^PH^^^^^^^^^927790104|||CASADA||15002507^^^HOS|||285361538^^^AT^NIF
+PV1|1|INT|30012^4010^003^3105^^Cama^1^4^SALA 1^^HOS|U||10015^^^^^URGENCIA|9340^GON\XC7\ALVES^NAT\XC1\LIA^^^^^^HOS~44175^GON\XC7\ALVES^NAT\XC1\LIA^^^^^^N.Ordem~17142^GON\XC7\ALVES^NAT\XC1\LIA^^^^^^N.Mecanogr\XE1\fico|||30012||||1|||9340^GON\XC7\ALVES^NAT\XC1\LIA^^^^^^HOS~44175^GON\XC7\ALVES^NAT\XC1\LIA^^^^^^N.Ordem~17142^GON\XC7\ALVES^NAT\XC1\LIA^^^^^^N.Mecanogr\XE1\fico||26001015^^^HOS||||||||||||||||||||10004||A|||20260930091900|||||||V
+PV2|||M17.9^GONARTROSE^ICD10|||||||||
+DG1|1||M17.9^GONARTROSE^ICD10^HOS||20260930091900|A|||||||||1||D
+IN1|1|935601^SNS^HOS|||||||||||||||||||||||||||||||||||||||||||||||128592075^^^HOS
+
+--- [Mensagem 2/63 | ADT^A01 | MSH-10: c5a52a3e-fcfe-4db1-be76-50124003dbfa | Episódio: 26001020] ---
+MSH|^~\&|HOS|INST|HL7_DEFAULT|INST|20261001000111||ADT^A01^ADT_A01|c5a52a3e-fcfe-4db1-be76-50124003dbfa|D|2.5
+EVN|A01|20261001000101||A|9112^GON\XC7\ALVES^TERESA^^^^^^HOS~11202^GON\XC7\ALVES^TERESA^^^^^^N.Mecanogr\XE1\fico|20261001000000|INST
+PID|1||1202004^^^HOS^NS~260650212^^^HAS^SNS||MARQUES VAZ GUERREIRO^ANT\XD3\NIO^GON\XC7\ALO^^^^L||19510101000000|M|||RUA DO OUTEIRO, 299 1\XBA\ ESQ^^MOREIRA DE C\XD3\NEGOS^BRAGA^4801-486^PRT^N^GUIMAR\XC3\ES^030817||^PRN^PH^^^^^^^^^253993097~^NET^X.400^antonio.guerreiro@outlook.pt|||SOLTEIRO||15002524^^^HOS|||358887941^^^AT^NIF
+PV1|1|INT|30006^4023^020^3092^^Cama^1^4^SALA 5^^HOS|C||10020^^^^^CONSULTA EXTERNA|5455^CUNHA^ADELINO^^^^^^HOS~69283^CUNHA^ADELINO^^^^^^N.Ordem~21059^CUNHA^ADELINO^^^^^^N.Mecanogr\XE1\fico|||30006||||2|||5455^CUNHA^ADELINO^^^^^^HOS~69283^CUNHA^ADELINO^^^^^^N.Ordem~21059^CUNHA^ADELINO^^^^^^N.Mecanogr\XE1\fico||26001020^^^HOS||||||||||||||||||||10004||A|||20260930114500|||||||V
+PV2|||K56.60^OCLUSAO INTESTINAL^ICD10|||||||||
+DG1|1||K56.60^OCLUSAO INTESTINAL^ICD10^HOS||20260930114500|A|||||||||1||D
+IN1|1|935601^SNS^HOS|||||||||||||||||||||||||||||||||||||||||||||||260650212^^^HOS
+```
+
+---
+
+### 2. Script Dedicado de Streaming em Tempo Real (`watch_stream.py` / `test_stream.py`)
+
+Pode também usar o visualizador contínuo:
+
+```powershell
+# Streaming em direto das mensagens HL7 com atraso configurável (ex: 200ms):
+python tools\data-generation\watch_stream.py --days 2 --delay-ms 200
+
+# Filtrar apenas admissões (A01), transferências (A02) ou altas (A03):
+python tools\data-generation\watch_stream.py --trigger A01 --delay-ms 150
+
+# Ligar ao servidor REST API ativo (recebe o stream em direto via SSE):
+python tools\data-generation\watch_stream.py --connect --url http://localhost:8001
+```
 
 ---
 
