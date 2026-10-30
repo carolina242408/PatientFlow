@@ -44,7 +44,7 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
       .catch((err) => {
         console.error('Keycloak init failed', err)
         setInitialized(true)
-        setError('Unable to connect to Keycloak. Check that it is running on http://localhost:9080.')
+        setError('Unable to connect to Keycloak. Check that it is running on https://localhost:9080.')
       })
   }, [])
 
