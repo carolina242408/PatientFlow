@@ -1,7 +1,7 @@
 import Keycloak from 'keycloak-js'
 
 const keycloak = new Keycloak({
-  url: 'http://localhost:9080',
+  url: 'https://localhost:9080',
   realm: 'patientflow',
   clientId: 'web_app',
 })
