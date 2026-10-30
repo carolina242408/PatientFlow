@@ -1,0 +1,5 @@
+# Cache and generated output
+.cache/
+output/
+__pycache__/
+*.pyc
