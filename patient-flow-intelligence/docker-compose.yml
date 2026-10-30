@@ -30,7 +30,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.4
     container_name: keycloak
-    command: [ "start-dev", "--import-realm" ]
+    command: [ "start", "--import-realm" ]
     env_file: .env
     environment:
       KC_DB: postgres
@@ -40,16 +40,18 @@ services:
       KC_HOSTNAME: localhost
       KC_HOSTNAME_PORT: 9080
       KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_SPI_THEME_CACHE_THEMES: "false"
       KC_SPI_THEME_CACHE_TEMPLATES: "false"
       KC_SPI_THEME_STATIC_MAX_AGE: "-1"
+      KC_HTTPS_CERTIFICATE_FILE: "/opt/keycloak/certs/localhostCertificate.pem"
+      KC_HTTPS_CERTIFICATE_KEY_FILE: "/opt/keycloak/certs/localhostKey.pem"
     ports:
-      - "9080:8080"
+      - "9080:8443"
     volumes:
       - ./keycloak/realm:/opt/keycloak/data/import:ro
       - ./keycloak/theme:/opt/keycloak/themes:ro
+      - ./certs:/opt/keycloak/certs
     depends_on:
       postgresql:
         condition: service_healthy
@@ -166,10 +168,6 @@ services:
     container_name: ui
     ports:
       - "5173:80"
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     volumes:
       - ./frontend:/app
       - /app/node_modules

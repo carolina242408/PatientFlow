@@ -33,3 +33,19 @@ Abre `http://localhost:5173` e entra com `admin/admin` (ROLE_ADMIN) ou `user/use
 | MinIO console | http://localhost:9001 (pfi/pfi12345) |
 
 Credenciais de desenvolvimento em `.env` (criado a partir de `.env.example`, não vai para o git).
+
+## Keycloak HTTPS configuration
+
+To use HTTPS in Keycloak, you need a certificate. For development, you can generate a self-signed one by running the following commands:
+```
+cd patient-flow-intelligence
+```
+```
+mkdir certs
+```
+```
+cd certs
+```
+```
+openssl req -x509 -out localhostCertificate.pem -keyout localhostKey.pem -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -extensions EXT -config <(printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+```
