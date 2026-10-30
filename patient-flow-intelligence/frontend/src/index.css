@@ -257,6 +257,11 @@
   background-color: #1e293b !important;
 }
 
+.theme-dark .theme-light-swatch {
+  background-color: #fffbeb !important;
+  border-color: #fef3c7 !important;
+}
+
 .theme-dark :is(
   .border-gray-100,
   .border-gray-200,

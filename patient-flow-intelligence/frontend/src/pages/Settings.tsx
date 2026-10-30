@@ -13,13 +13,13 @@ const THEMES: { value: Theme; titleKey: string; descKey: string; iconClass: stri
     value: 'light',
     titleKey: 'settings.appearance.light',
     descKey: 'settings.appearance.lightDesc',
-    iconClass: 'border-[6px] border-amber-100 bg-amber-50',
+    iconClass: 'theme-light-swatch border-amber-100 bg-amber-50',
   },
   {
     value: 'dark',
     titleKey: 'settings.appearance.dark',
     descKey: 'settings.appearance.darkDesc',
-    iconClass: 'border-[6px] border-slate-600 bg-slate-900',
+    iconClass: 'border-slate-600 bg-slate-900',
   },
 ]
 
@@ -103,7 +103,7 @@ const Settings = () => {
                 >
                   <span
                     aria-hidden="true"
-                    className={`h-12 w-12 shrink-0 rounded-full ${option.iconClass}`}
+                    className={`h-12 w-12 shrink-0 rounded-full border-[6px] ${option.iconClass}`}
                   />
                   <span className="flex flex-col">
                     <span className="text-base font-semibold text-slate-900">
