@@ -13,6 +13,11 @@
     "administration": "Administration",
     "admin": "Admin Console",
     "logout": "Logout",
+    "logoutConfirmation": {
+      "title": "Confirm Logout",
+      "description": "Are you sure you want to log out of your account?",
+      "cancel": "Cancel"
+    },
     "collapse": "Collapse",
     "expand": "Expand",
     "workspace": {
@@ -164,6 +169,9 @@
     }
   },
   "dashboard": {
+    "expandChart": "Select to enlarge",
+    "expandTable": "Select to enlarge",
+    "closeExpandedItem": "Close enlarged view",
     "lastUpdated": "Last updated today at {{time}}",
     "occupancyRate": "{{scope}} occupancy rate",
     "beds": "{{occupied}} / {{total}} beds",
@@ -271,6 +279,16 @@
     "language": {
       "title": "Language",
       "body": "Select the preferred language for the interface."
+    },
+    "popup": {
+      "success": {
+        "title": "Preferences saved",
+        "description": "Your preferences were saved successfully."
+      },
+      "error": {
+        "title": "Could not save preferences",
+        "description": "Please try again."
+      }
     },
     "save": "Save Preferences"
   },
@@ -421,6 +439,16 @@
       },
       "placeholders": { "name": "{{type}} name or number", "internalCode": "Automatically suggested if empty", "notes": "Add operational notes", "parent": "Select {{type}}" },
       "actions": { "clear": "Clear", "submit": "Add to LHU hierarchy" },
+      "popup": {
+        "success": {
+          "title": "Submission Successful",
+          "description": "This prototype does not save the data yet."
+        },
+        "error": {
+          "title": "Submission Failed",
+          "description": "Check the required fields and try again."
+        }
+      },
       "validation": { "required": "This field is required", "min": "Must be at least 1" }
     },
     "options": {

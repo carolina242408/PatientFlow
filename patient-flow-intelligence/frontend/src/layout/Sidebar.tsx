@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
 import { useKeycloak } from '../auth/context'
@@ -26,10 +26,7 @@ interface SidebarItem {
 
 const getManagementSidebarItems = (roles: string[] = []): SidebarItem[] => {
   if (roles.includes('ROLE_ADMIN')) {
-    return [
-      { labelKey: 'nav.admin', path: '/admin', icon: House },
-      { labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network },
-    ]
+    return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
   if (roles.includes('LHU_MANAGER')) {
     return [{ labelKey: 'nav.lhu', path: '/lhu', icon: House }]
@@ -54,9 +51,16 @@ const Sidebar = () => {
   const { keycloak, user } = useKeycloak()
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
+  const logoutDialogRef = useRef<HTMLDialogElement>(null)
   const managementItems = getManagementSidebarItems(user?.roles)
   const workspaceLabelKey = getWorkspaceLabel(user?.roles)
   const userRoles = user?.roles ?? []
+
+  useEffect(() => {
+    const dialog = logoutDialogRef.current
+    if (logoutConfirmationOpen && dialog && !dialog.open) dialog.showModal()
+  }, [logoutConfirmationOpen])
 
   const sections : Record<string, SidebarItem[]> = {
     Menu: [
@@ -145,7 +149,7 @@ const Sidebar = () => {
         {/* Logout Button */}
         <button
           type="button"
-          onClick={() => keycloak.logout()}
+          onClick={() => setLogoutConfirmationOpen(true)}
           className={`mb-1 flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[14px] font-semibold text-red-600 transition-colors hover:bg-red-50 ${
             collapsed ? 'justify-center px-0' : ''
           }`}
@@ -177,6 +181,47 @@ const Sidebar = () => {
           )}
         </NavLink>
       </div>
+      <dialog
+        ref={logoutDialogRef}
+        aria-labelledby="logout-confirmation-title"
+        aria-describedby="logout-confirmation-description"
+        onClose={() => setLogoutConfirmationOpen(false)}
+        className="logout-confirmation-dialog w-[calc(100%-2rem)] max-w-[500px] rounded-2xl border-0 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/40"
+      >
+        <div className="p-8 sm:p-10">
+          <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <LogOut aria-hidden="true" className="h-9 w-9" />
+          </div>
+          <h2
+            id="logout-confirmation-title"
+            className="text-center text-2xl font-bold text-slate-900"
+          >
+            {t('nav.logoutConfirmation.title')}
+          </h2>
+          <p
+            id="logout-confirmation-description"
+            className="mt-3 text-center text-base text-slate-500"
+          >
+            {t('nav.logoutConfirmation.description')}
+          </p>
+          <div className="mt-8 flex flex-col gap-3 border-t border-gray-200 pt-7 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => logoutDialogRef.current?.close()}
+              className="h-14 flex-1 rounded-xl border border-gray-200 bg-gray-100 px-5 text-base font-semibold text-slate-700 transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {t('nav.logoutConfirmation.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => keycloak.logout()}
+              className="h-14 flex-1 rounded-xl bg-red-500 px-5 text-base font-semibold text-white shadow-md transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+            >
+              {t('nav.logout')}
+            </button>
+          </div>
+        </div>
+      </dialog>
     </aside>
   )
 }
