@@ -22,11 +22,11 @@ public class Floor {
     private Building building;
 
     @OneToMany(mappedBy = "floor", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Wing> wings = new ArrayList<>();
+    private List<ClinicalService> services = new ArrayList<>();
 
-    public void addWing(Wing wing) {
-        wings.add(wing);
-        wing.setFloor(this);
+    public void addService(ClinicalService service) {
+        services.add(service);
+        service.setFloor(this);
     }
 
     public UUID getId() { return id; }
@@ -41,7 +41,7 @@ public class Floor {
 
     public void setBuilding(Building building) { this.building = building; }
 
-    public List<Wing> getWings() { return wings; }
+    public List<ClinicalService> getServices() { return services; }
 
-    public void setWings(List<Wing> wings) { this.wings = wings; }
+    public void setServices(List<ClinicalService> services) { this.services = services; }
 }

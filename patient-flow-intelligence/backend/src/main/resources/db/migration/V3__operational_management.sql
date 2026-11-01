@@ -1,46 +1,52 @@
-CREATE TABLE clinical_services (
-    id UUID PRIMARY KEY,
-    unit_id UUID NOT NULL REFERENCES healthcare_units(id),
-    code VARCHAR(255) NOT NULL CHECK (btrim(code) <> ''),
-    name VARCHAR(255) NOT NULL CHECK (btrim(name) <> ''),
-    UNIQUE (unit_id, code)
-);
+-- 1. Inserir um Serviço Geral por cada Piso existente para retrocompatibilidade/seed (opcional)
+INSERT INTO clinical_services (id, floor_id, code, name)
+SELECT gen_random_uuid(), id, 'GENERAL', 'Serviço Geral' FROM floors
+ON CONFLICT DO NOTHING;
 
--- Give pre-existing wards an explicit clinical service, independently of their physical location.
-INSERT INTO clinical_services (id, unit_id, code, name)
-SELECT gen_random_uuid(), id, 'GENERAL', 'Serviço geral' FROM healthcare_units;
-ALTER TABLE wards ADD COLUMN service_id UUID REFERENCES clinical_services(id);
-UPDATE wards w SET service_id = s.id FROM wings wi, floors f, buildings b, clinical_services s
-WHERE w.wing_id = wi.id AND wi.floor_id = f.id AND f.building_id = b.id
-  AND s.unit_id = b.unit_id AND s.code = 'GENERAL';
-ALTER TABLE wards ALTER COLUMN service_id SET NOT NULL;
-CREATE INDEX ix_wards_service ON wards(service_id);
-
-ALTER TABLE beds DROP CONSTRAINT beds_status_check;
+-- 2. Atualizações em Beds
+ALTER TABLE beds DROP CONSTRAINT IF EXISTS beds_status_check;
 ALTER TABLE beds ADD CONSTRAINT beds_status_check
     CHECK (status IN ('AVAILABLE', 'OCCUPIED', 'BLOCKED', 'CLEANING'));
-ALTER TABLE beds ADD COLUMN status_reason VARCHAR(255);
+ALTER TABLE beds ADD COLUMN IF NOT EXISTS status_reason VARCHAR(255);
 
-ALTER TABLE patients ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE encounters ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE encounters ADD COLUMN expected_discharge_at TIMESTAMP(6) WITH TIME ZONE;
-ALTER TABLE encounters ADD COLUMN clinical_discharge_at TIMESTAMP(6) WITH TIME ZONE;
-ALTER TABLE encounters ADD COLUMN service_id UUID REFERENCES clinical_services(id);
+-- 3. Atualizações em Patients e Encounters
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+
+ALTER TABLE encounters ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE encounters ADD COLUMN IF NOT EXISTS expected_discharge_at TIMESTAMP(6) WITH TIME ZONE;
+ALTER TABLE encounters ADD COLUMN IF NOT EXISTS clinical_discharge_at TIMESTAMP(6) WITH TIME ZONE;
+ALTER TABLE encounters ADD COLUMN IF NOT EXISTS service_id UUID REFERENCES clinical_services(id);
+
+-- Associar encontros ativos ao serviço correspondente via alocação de cama
 UPDATE encounters e SET service_id = (
-    SELECT w.service_id FROM location_allocations a
-    JOIN beds b ON b.id=a.bed_id JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
-    WHERE a.encounter_id=e.id ORDER BY a.assigned_at DESC, a.id DESC LIMIT 1
+    SELECT s.id 
+    FROM location_allocations a
+    JOIN beds b ON b.id = a.bed_id 
+    JOIN rooms r ON r.id = b.room_id 
+    JOIN wards w ON w.id = r.ward_id
+    JOIN wings wi ON wi.id = w.wing_id
+    JOIN clinical_services s ON s.id = wi.service_id
+    WHERE a.encounter_id = e.id 
+    ORDER BY a.assigned_at DESC, a.id DESC LIMIT 1
 );
+
+ALTER TABLE encounters DROP CONSTRAINT IF EXISTS ck_expected_discharge;
 ALTER TABLE encounters ADD CONSTRAINT ck_expected_discharge
     CHECK (expected_discharge_at IS NULL OR start_period IS NULL OR expected_discharge_at >= start_period);
+
+ALTER TABLE encounters DROP CONSTRAINT IF EXISTS ck_clinical_discharge;
 ALTER TABLE encounters ADD CONSTRAINT ck_clinical_discharge
     CHECK (clinical_discharge_at IS NULL OR start_period IS NULL OR clinical_discharge_at >= start_period);
+
+ALTER TABLE encounters DROP CONSTRAINT IF EXISTS ck_administrative_discharge;
 ALTER TABLE encounters ADD CONSTRAINT ck_administrative_discharge
     CHECK (clinical_discharge_at IS NULL OR end_period IS NULL OR end_period >= clinical_discharge_at);
-CREATE INDEX ix_encounters_service ON encounters(service_id);
-CREATE UNIQUE INDEX uq_active_encounter_patient ON encounters(patient_id) WHERE status = 'IN_PROGRESS';
 
-CREATE TABLE admission_requests (
+CREATE INDEX IF NOT EXISTS ix_encounters_service ON encounters(service_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_active_encounter_patient ON encounters(patient_id) WHERE status = 'IN_PROGRESS';
+
+-- 4. Admission Requests
+CREATE TABLE IF NOT EXISTS admission_requests (
     id UUID PRIMARY KEY,
     request_number VARCHAR(255) NOT NULL UNIQUE CHECK (btrim(request_number) <> ''),
     patient_id UUID NOT NULL REFERENCES patients(id),
@@ -59,5 +65,6 @@ CREATE TABLE admission_requests (
         OR (status = 'CANCELLED' AND encounter_id IS NULL AND closed_at IS NOT NULL)),
     CHECK (closed_at IS NULL OR closed_at >= requested_at)
 );
-CREATE UNIQUE INDEX uq_waiting_patient ON admission_requests(patient_id) WHERE status = 'WAITING';
-CREATE INDEX ix_waiting_queue ON admission_requests(service_id, status, priority, requested_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_waiting_patient ON admission_requests(patient_id) WHERE status = 'WAITING';
+CREATE INDEX IF NOT EXISTS ix_waiting_queue ON admission_requests(service_id, status, priority, requested_at);

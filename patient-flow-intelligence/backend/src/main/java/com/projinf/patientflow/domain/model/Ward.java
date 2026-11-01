@@ -14,7 +14,6 @@ public class Ward {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /** ex: "Ward 30004" */
     @Column(nullable = false, unique = true)
     private String code;
 
@@ -25,12 +24,10 @@ public class Ward {
     @JoinColumn(name = "wing_id")
     private Wing wing;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "service_id")
-    private ClinicalService service;
-
-    public ClinicalService getService() { return service; }
-    public void setService(ClinicalService service) { this.service = service; }
+    // Método helper para obter o ClinicalService através da Wing (evita quebrar código existente)
+    public ClinicalService getService() {
+        return (wing != null) ? wing.getService() : null;
+    }
 
     @OneToMany(mappedBy = "ward", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Room> rooms = new ArrayList<>();

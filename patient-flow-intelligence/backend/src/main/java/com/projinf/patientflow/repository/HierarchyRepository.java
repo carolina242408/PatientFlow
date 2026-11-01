@@ -17,8 +17,8 @@ public class HierarchyRepository {
         UNIT("healthcare_units", "name", "uls_id", ULS, false),
         BUILDING("buildings", "name", "unit_id", UNIT, false),
         FLOOR("floors", "level_name", "building_id", BUILDING, false),
-        WING("wings", "name", "floor_id", FLOOR, false),
-        SERVICE("clinical_services", "name", "unit_id", UNIT, true),
+        SERVICE("clinical_services", "name", "floor_id", FLOOR, true),
+        WING("wings", "name", "service_id", SERVICE, false),
         WARD("wards", "name", "wing_id", WING, true),
         ROOM("rooms", null, "ward_id", WARD, true),
         BED("beds", null, "room_id", ROOM, true);
@@ -50,7 +50,7 @@ public class HierarchyRepository {
         return "id, " + (type.parentColumn == null ? "NULL::uuid" : type.parentColumn) + " AS parent_id, "
             + (type.nameColumn == null ? "code" : type.nameColumn) + " AS name, "
             + (type.hasCode ? "code" : "NULL::varchar") + " AS code, "
-            + (type == Type.WARD ? "service_id" : "NULL::uuid") + " AS service_id";
+            + "NULL::uuid AS service_id";
     }
 
     private RowMapper<HierarchyNode> mapper(Type type) {
@@ -71,12 +71,12 @@ public class HierarchyRepository {
         if (parent != null && type.parentColumn == null) throw new IllegalArgumentException("ULS não tem pai");
         String where = " WHERE " + access.hierarchySql(type, "n.id")
             + (parent == null ? "" : " AND " + type.parentColumn + "=:parent");
-        var args=access.parameters();
-        if(parent!=null) args.put("parent",parent);
-        long total=named.queryForObject("SELECT count(*) FROM "+type.table+" n"+where,args,Long.class);
-        args.put("limit",size); args.put("offset",(long)page*size);
-        var rows=named.query("SELECT "+columns(type)+" FROM "+type.table+" n"+where
-            +" ORDER BY "+(type.nameColumn==null ? "code" : type.nameColumn)+", id LIMIT :limit OFFSET :offset",args,mapper(type));
+        var args = access.parameters();
+        if (parent != null) args.put("parent", parent);
+        long total = named.queryForObject("SELECT count(*) FROM " + type.table + " n" + where, args, Long.class);
+        args.put("limit", size); args.put("offset", (long) page * size);
+        var rows = named.query("SELECT " + columns(type) + " FROM " + type.table + " n" + where
+            + " ORDER BY " + (type.nameColumn == null ? "code" : type.nameColumn) + ", id LIMIT :limit OFFSET :offset", args, mapper(type));
         return new PageResult<>(rows, page, size, total, (total + size - 1) / size);
     }
 
@@ -87,7 +87,6 @@ public class HierarchyRepository {
         if (type.parentColumn != null) { columns.add(type.parentColumn); values.add(input.parentId()); }
         if (type.nameColumn != null) { columns.add(type.nameColumn); values.add(input.name()); }
         if (type.hasCode) { columns.add("code"); values.add(input.code()); }
-        if (type == Type.WARD) { columns.add("service_id"); values.add(input.serviceId()); }
         if (type == Type.BED) { columns.add("status"); values.add("AVAILABLE"); }
         jdbc.update("INSERT INTO " + type.table + " (" + String.join(",", columns) + ") VALUES ("
             + String.join(",", Collections.nCopies(values.size(), "?")) + ")", values.toArray());
@@ -106,7 +105,9 @@ public class HierarchyRepository {
     }
 
     public UUID unitOfWing(UUID wingId) {
-        return jdbc.queryForObject("SELECT b.unit_id FROM wings w JOIN floors f ON f.id=w.floor_id "
-            + "JOIN buildings b ON b.id=f.building_id WHERE w.id=?", UUID.class, wingId);
+        return jdbc.queryForObject("SELECT b.unit_id FROM wings w "
+            + "JOIN clinical_services s ON s.id = w.service_id "
+            + "JOIN floors f ON f.id = s.floor_id "
+            + "JOIN buildings b ON b.id = f.building_id WHERE w.id = ?", UUID.class, wingId);
     }
 }

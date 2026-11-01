@@ -22,10 +22,20 @@ CREATE TABLE floors (
     building_id UUID NOT NULL REFERENCES buildings(id)
 );
 
+-- Nova tabela adicionada na posição correta da hierarquia (Floor -> Service)
+CREATE TABLE clinical_services (
+    id UUID PRIMARY KEY,
+    code VARCHAR(255) NOT NULL CHECK (btrim(code) <> ''),
+    name VARCHAR(255) NOT NULL CHECK (btrim(name) <> ''),
+    floor_id UUID NOT NULL REFERENCES floors(id),
+    UNIQUE (floor_id, code)
+);
+
+-- Wings passa a ter service_id em vez de floor_id
 CREATE TABLE wings (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL CHECK (btrim(name) <> ''),
-    floor_id UUID NOT NULL REFERENCES floors(id)
+    service_id UUID NOT NULL REFERENCES clinical_services(id)
 );
 
 CREATE TABLE wards (
@@ -89,7 +99,8 @@ CREATE UNIQUE INDEX uq_open_allocation_encounter ON location_allocations(encount
 CREATE INDEX ix_units_uls ON healthcare_units(uls_id);
 CREATE INDEX ix_buildings_unit ON buildings(unit_id);
 CREATE INDEX ix_floors_building ON floors(building_id);
-CREATE INDEX ix_wings_floor ON wings(floor_id);
+CREATE INDEX ix_clinical_services_floor ON clinical_services(floor_id);
+CREATE INDEX ix_wings_service ON wings(service_id);
 CREATE INDEX ix_wards_wing ON wards(wing_id);
 CREATE INDEX ix_encounters_patient ON encounters(patient_id);
 CREATE INDEX ix_encounters_status ON encounters(status);

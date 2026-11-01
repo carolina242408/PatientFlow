@@ -89,6 +89,14 @@ export async function createHierarchyNode(
   type: OrgType,
   input: { name?: string; code?: string; parentId?: string; serviceId?: string },
 ) {
-  const response = await api.post(`/hierarchy/${backendType(type)}`, input)
+  const bType = backendType(type)
+  const payload = { ...input }
+
+  // Se for um tipo que exige código (ex: service, ward) e o code não veio preenchido:
+  if ((type === "service" || type === "ward") && (!payload.code || payload.code.trim() === "")) {
+    payload.code = payload.name ? payload.name.trim().toUpperCase().replace(/\s+/g, "_") : "CODE"
+  }
+
+  const response = await api.post(`/hierarchy/${bType}`, payload)
   return response.data
 }

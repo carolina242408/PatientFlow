@@ -18,8 +18,8 @@ public class Wing {
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "floor_id")
-    private Floor floor;
+    @JoinColumn(name = "service_id")
+    private ClinicalService service;
 
     @OneToMany(mappedBy = "wing", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Ward> wards = new ArrayList<>();
@@ -37,9 +37,9 @@ public class Wing {
 
     public void setName(String name) { this.name = name; }
 
-    public Floor getFloor() { return floor; }
+    public ClinicalService getService() { return service; }
 
-    public void setFloor(Floor floor) { this.floor = floor; }
+    public void setService(ClinicalService service) { this.service = service; }
 
     public List<Ward> getWards() { return wards; }
 

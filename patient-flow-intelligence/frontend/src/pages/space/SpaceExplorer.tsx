@@ -11,6 +11,7 @@ import UnitView from './views/UnitView'
 import BuildingView from './views/BuildingView'
 import FloorView from './views/FloorView'
 import ServiceView from './views/ServiceView'
+import WingView from './views/WingView'
 import WardView from './views/WardView'
 import NurseryView from './views/NurseryView'
 import RoomView from './views/RoomView'
@@ -23,6 +24,7 @@ const VIEWS: Record<Level, ComponentType<ViewProps>> = {
   building: BuildingView,
   floor: FloorView,
   service: ServiceView,
+  wing: WingView,
   ward: WardView,
   nursery: NurseryView,
   room: RoomView,
@@ -70,7 +72,7 @@ const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps)
   // 2. Dados operacionais de camas (estado + doente atual)
   const { data: bedsData } = useQuery({
     queryKey: ['beds-operational'],
-    queryFn: () => fetchBeds({}, undefined, 0, 20),
+    queryFn: () => fetchBeds({}, undefined, 0, 50),
     refetchInterval: 60_000, // Atualiza automaticamente a cada minuto
   })
 
