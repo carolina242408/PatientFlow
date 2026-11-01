@@ -197,7 +197,10 @@ services:
     container_name: ui
     ports:
       - "5173:80"
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     volumes:
       - ./frontend:/app
       - /app/node_modules

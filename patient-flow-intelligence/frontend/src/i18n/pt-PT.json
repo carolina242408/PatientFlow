@@ -13,6 +13,11 @@
     "administration": "Administração",
     "admin": "Consola Administrativa",
     "logout": "Terminar sessão",
+    "logoutConfirmation": {
+      "title": "Confirmar saída",
+      "description": "Tem a certeza de que pretende terminar sessão na sua conta?",
+      "cancel": "Cancelar"
+    },
     "collapse": "Recolher",
     "expand": "Expandir",
     "workspace": {
@@ -164,6 +169,9 @@
     }
   },
   "dashboard": {
+    "expandChart": "Selecionar para ampliar",
+    "expandTable": "Selecionar para ampliar",
+    "closeExpandedItem": "Fechar vista ampliada",
     "lastUpdated": "Última atualização hoje às {{time}}",
     "occupancyRate": "Taxa de ocupação ({{scope}})",
     "beds": "{{occupied}} / {{total}} camas",
@@ -271,6 +279,16 @@
     "language": {
       "title": "Idioma",
       "body": "Seleciona o idioma preferido para a interface."
+    },
+    "popup": {
+      "success": {
+        "title": "Preferências guardadas",
+        "description": "As suas preferências foram guardadas com sucesso."
+      },
+      "error": {
+        "title": "Não foi possível guardar as preferências",
+        "description": "Tente novamente."
+      }
     },
     "save": "Guardar preferências"
   },
@@ -421,6 +439,16 @@
       },
       "placeholders": { "name": "Nome ou número de {{type}}", "internalCode": "Sugerido automaticamente se vazio", "notes": "Adicionar notas operacionais", "parent": "Selecionar {{type}}" },
       "actions": { "clear": "Limpar", "submit": "Adicionar à hierarquia da ULS" },
+      "popup": {
+        "success": {
+          "title": "Submissão efetuada com sucesso",
+          "description": "Este protótipo ainda não guarda os dados."
+        },
+        "error": {
+          "title": "Falha na submissão",
+          "description": "Verifique os campos obrigatórios e tente novamente."
+        }
+      },
       "validation": { "required": "Este campo é obrigatório", "min": "Tem de ser pelo menos 1" }
     },
     "options": {
