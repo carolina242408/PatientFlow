@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Maximize2, X } from 'lucide-react'
 import { useKeycloak } from '../auth/context'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
@@ -87,6 +89,8 @@ const STATUS_STYLES: Record<DischargeStatus, string> = {
 const barColor = (occupancy: number) =>
   occupancy >= 85 ? 'bg-violet-500' : occupancy >= 75 ? 'bg-blue-500' : 'bg-blue-400'
 
+type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
+
 const getProfileScope = (roles: string[] = []): Scope | undefined => {
   if (roles.includes('ROLE_ADMIN') || roles.includes('LHU_MANAGER')) return 'LHU'
   if (roles.includes('UNIT_MANAGER')) return 'Unit'
@@ -101,8 +105,15 @@ interface DashboardProps {
 const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { t, i18n } = useTranslation()
   const { user } = useKeycloak()
+  const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
+  const dashboardDialogRef = useRef<HTMLDialogElement>(null)
   const profileScope = getProfileScope(user?.roles) ?? scope
   const metrics = SCOPE_METRICS[scope]
+
+  useEffect(() => {
+    const dialog = dashboardDialogRef.current
+    if (expandedItem && dialog && !dialog.open) dialog.showModal()
+  }, [expandedItem])
 
   const today = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'long',
@@ -199,16 +210,32 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       <section
         className={`grid min-w-0 grid-cols-1 gap-4 ${profileScope !== 'Service' ? '2xl:grid-cols-2' : ''}`}
       >
-        <article className="rounded-2xl border border-gray-200 bg-white p-6">
-          <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perService.title')}</h2>
-          <p className="mt-1 text-sm text-gray-400">{t('dashboard.perService.body')}</p>
+        <article
+          onClick={() => setExpandedItem('service')}
+          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perService.title')}</h2>
+              <p className="mt-1 text-sm text-gray-400">{t('dashboard.perService.body')}</p>
+            </div>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-label={`${t('dashboard.perService.title')}. ${t('dashboard.expandChart')}`}
+              onClick={() => setExpandedItem('service')}
+              className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <Maximize2 aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
 
           {/* Service Occupancy */}
           <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
             {SERVICE_OCCUPANCY.map((item) => (
               <div key={item.service} className="flex h-full min-w-0 flex-1 items-end justify-center">
                 <div
-                  className={`relative w-full max-w-12 rounded-t-md ${barColor(item.occupancy)}`}
+                  className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
                   style={{ height: `${item.occupancy}%` }}
                 >
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
@@ -233,15 +260,31 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         </article>
 
         {profileScope !== 'Service' && (
-          <article className="rounded-2xl border border-gray-200 bg-white p-6">
-            <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perUnit.title')}</h2>
-            <p className="mt-1 text-sm text-gray-400">{t('dashboard.perUnit.body')}</p>
+          <article
+            onClick={() => setExpandedItem('unit')}
+            className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perUnit.title')}</h2>
+                <p className="mt-1 text-sm text-gray-400">{t('dashboard.perUnit.body')}</p>
+              </div>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={`${t('dashboard.perUnit.title')}. ${t('dashboard.expandChart')}`}
+                onClick={() => setExpandedItem('unit')}
+                className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <Maximize2 aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
 
             <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
               {UNIT_OCCUPANCY.map((item) => (
                 <div key={item.unit} className="flex h-full min-w-0 flex-1 items-end justify-center">
                   <div
-                    className={`relative w-full max-w-12 rounded-t-md ${barColor(item.occupancy)}`}
+                    className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
                     style={{ height: `${item.occupancy}%` }}
                   >
                     <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
@@ -270,15 +313,31 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
 
         {/* Discharge Forecast */}
-        <article className="rounded-2xl border border-gray-200 bg-white p-6">
-          <h2 className="text-base font-semibold text-slate-900">{t('dashboard.forecastChart.title')}</h2>
-          <p className="mt-1 text-sm text-gray-400">{t('dashboard.forecastChart.body')}</p>
+        <article
+          onClick={() => setExpandedItem('discharges')}
+          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.forecastChart.title')}</h2>
+              <p className="mt-1 text-sm text-gray-400">{t('dashboard.forecastChart.body')}</p>
+            </div>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-label={`${t('dashboard.forecastChart.title')}. ${t('dashboard.expandChart')}`}
+              onClick={() => setExpandedItem('discharges')}
+              className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <Maximize2 aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
 
           <div className="mt-6 flex h-48 items-end gap-2 border-b border-gray-200 pt-6">
             {DISCHARGE_FORECAST.map((item) => (
               <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
                 <div
-                  className="relative w-full max-w-8 rounded-t-md bg-blue-300"
+                  className="relative w-full max-w-32 rounded-t-md bg-blue-300"
                   style={{ height: `${(item.count / maxForecast) * 100}%` }}
                 >
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
@@ -307,16 +366,30 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         {/* Length-of-stay forecast */}
         <article>
           <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-            <div className="border-b border-gray-200 px-6 py-7">
-              <h2 className="text-base font-semibold text-slate-900">
-                {t('dashboard.lengthOfStay.title')}
-              </h2>
-              <p className="mt-1 text-sm text-gray-400">
-                {t('dashboard.lengthOfStay.body')}
-              </p>
+            <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-7">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">
+                  {t('dashboard.lengthOfStay.title')}
+                </h2>
+                <p className="mt-1 text-sm text-gray-400">
+                  {t('dashboard.lengthOfStay.body')}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={`${t('dashboard.lengthOfStay.title')}. ${t('dashboard.expandTable')}`}
+                onClick={() => setExpandedItem('lengthOfStay')}
+                className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <Maximize2 aria-hidden="true" className="h-4 w-4" />
+              </button>
             </div>
 
-            <div className="overflow-x-auto">
+            <div
+              className="cursor-zoom-in overflow-x-auto"
+              onClick={() => setExpandedItem('lengthOfStay')}
+            >
               <table className="w-full min-w-[480px] border-collapse">
                 <thead>
                   <tr className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400">
@@ -346,6 +419,214 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         </article>
       </section>
 
+      <dialog
+        ref={dashboardDialogRef}
+        aria-labelledby="dashboard-item-dialog-title"
+        onClose={() => setExpandedItem(null)}
+        className="dashboard-chart-dialog w-[calc(100%-2rem)] max-w-6xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/40"
+      >
+        {expandedItem && (
+          <div className="p-6 sm:p-8">
+            <header className="mb-6 flex items-start justify-between gap-4 border-b border-gray-200 pb-5">
+              <div>
+                <h2 id="dashboard-item-dialog-title" className="text-xl font-semibold text-slate-900">
+                  {t(
+                    expandedItem === 'service'
+                      ? 'dashboard.perService.title'
+                      : expandedItem === 'unit'
+                        ? 'dashboard.perUnit.title'
+                        : expandedItem === 'discharges'
+                          ? 'dashboard.forecastChart.title'
+                          : expandedItem === 'lengthOfStay'
+                            ? 'dashboard.lengthOfStay.title'
+                            : 'dashboard.discharges.title',
+                  )}
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {t(
+                    expandedItem === 'service'
+                      ? 'dashboard.perService.body'
+                      : expandedItem === 'unit'
+                        ? 'dashboard.perUnit.body'
+                        : expandedItem === 'discharges'
+                          ? 'dashboard.forecastChart.body'
+                          : expandedItem === 'lengthOfStay'
+                            ? 'dashboard.lengthOfStay.body'
+                            : 'dashboard.discharges.body',
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => dashboardDialogRef.current?.close()}
+                aria-label={t('dashboard.closeExpandedItem')}
+                className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <X aria-hidden="true" className="h-5 w-5" />
+              </button>
+            </header>
+
+            {expandedItem === 'service' && (
+              <div>
+                <div className="flex h-[min(55vh,480px)] items-end gap-6 border-b border-gray-200 px-4 pt-12 sm:gap-10">
+                  {SERVICE_OCCUPANCY.map((item) => (
+                    <div key={item.service} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                      <div
+                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
+                        style={{ height: `${item.occupancy}%` }}
+                      >
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
+                          {item.occupancy}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-6 px-4 pt-3 sm:gap-10">
+                  {SERVICE_OCCUPANCY.map((item) => (
+                    <div key={item.service} className="min-w-0 flex-1 text-center">
+                      <span className="block min-h-10 whitespace-normal break-words text-sm font-medium text-gray-600">
+                        {item.service}
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-400">{item.beds}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {expandedItem === 'unit' && (
+              <div>
+                <div className="flex h-[min(55vh,480px)] items-end gap-6 border-b border-gray-200 px-4 pt-12 sm:gap-10">
+                  {UNIT_OCCUPANCY.map((item) => (
+                    <div key={item.unit} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                      <div
+                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
+                        style={{ height: `${item.occupancy}%` }}
+                      >
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
+                          {item.occupancy}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-6 px-4 pt-3 sm:gap-10">
+                  {UNIT_OCCUPANCY.map((item) => (
+                    <div key={item.unit} className="min-w-0 flex-1 text-center">
+                      <span className="block min-h-10 whitespace-normal break-words text-sm font-medium text-gray-600">
+                        {item.unit}
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-400">{item.beds}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {expandedItem === 'discharges' && (
+              <>
+                <div className="flex h-[min(55vh,480px)] items-end gap-4 border-b border-gray-200 px-4 pt-12 sm:gap-8">
+                  {DISCHARGE_FORECAST.map((item) => (
+                    <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                      <div
+                        className="relative w-full max-w-32 rounded-t-md bg-blue-300"
+                        style={{ height: `${(item.count / maxForecast) * 100}%` }}
+                      >
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
+                          {item.count}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-4 px-4 pt-3 sm:gap-8">
+                  {DISCHARGE_FORECAST.map((item) => (
+                    <span key={item.day} className="flex-1 text-center text-sm font-medium text-gray-500">
+                      {t(`dashboard.weekdays.${item.day}`)}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-6 flex items-center justify-between rounded-lg bg-blue-50/60 px-4 py-3">
+                  <span className="text-sm text-gray-500">{t('dashboard.forecastChart.total')}</span>
+                  <span className="text-sm font-semibold text-blue-600">
+                    {t('dashboard.forecastChart.patients', { count: weekTotal })}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {expandedItem === 'lengthOfStay' && (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px] border-collapse text-base">
+                  <thead>
+                    <tr className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500">
+                      <th scope="col" className="px-8 py-5 text-left">
+                        {t('dashboard.lengthOfStay.condition')}
+                      </th>
+                      <th scope="col" className="px-8 py-5 text-center">
+                        {t('dashboard.lengthOfStay.estimatedStay')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {LENGTH_OF_STAY_FORECAST.map(({ condition, minimumDays, maximumDays }) => (
+                      <tr key={condition} className="border-t border-gray-100 text-gray-600">
+                        <th scope="row" className="px-8 py-6 text-left font-medium text-slate-900">
+                          {t(`dashboard.lengthOfStay.conditions.${condition}`)}
+                        </th>
+                        <td className="px-8 py-6 text-center">
+                          {t('dashboard.lengthOfStay.daysRange', { minimum: minimumDays, maximum: maximumDays })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {expandedItem === 'upcomingDischarges' && (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] border-collapse text-base text-left">
+                  <thead>
+                    <tr className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500">
+                      {(['patient', 'location', 'service', 'expected', 'destination', 'readiness'] as const).map(
+                        (column) => (
+                          <th key={column} scope="col" className="px-6 py-5">
+                            {t(`dashboard.discharges.columns.${column}`)}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {UPCOMING_DISCHARGES.map((discharge) => (
+                      <tr key={discharge.patient} className="border-t border-gray-100 text-gray-600">
+                        <th scope="row" className="px-6 py-5 font-medium text-slate-900">
+                          {discharge.patient}
+                        </th>
+                        <td className="px-6 py-5">
+                          {t('dashboard.discharges.location', { room: discharge.room, bed: discharge.bed })}
+                        </td>
+                        <td className="px-6 py-5">{discharge.service}</td>
+                        <td className="px-6 py-5">{formatWhen(discharge.day, discharge.time)}</td>
+                        <td className="px-6 py-5">{t(`dashboard.destinations.${discharge.destination}`)}</td>
+                        <td className="px-6 py-5">
+                          <span className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLES[discharge.status]}`}>
+                            {t(`dashboard.status.${discharge.status}`)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </dialog>
+
       {/* Upcoming discharges */}
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-4">
@@ -353,9 +634,21 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             <h2 className="text-base font-semibold text-slate-900">{t('dashboard.discharges.title')}</h2>
             <p className="mt-1 text-sm text-gray-400">{t('dashboard.discharges.body')}</p>
           </div>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-label={`${t('dashboard.discharges.title')}. ${t('dashboard.expandTable')}`}
+            onClick={() => setExpandedItem('upcomingDischarges')}
+            className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <Maximize2 aria-hidden="true" className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div
+          className="cursor-zoom-in overflow-x-auto"
+          onClick={() => setExpandedItem('upcomingDischarges')}
+        >
           <table className="w-full min-w-[720px] border-collapse text-left">
             <thead>
               <tr className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400">

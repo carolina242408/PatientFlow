@@ -19,6 +19,8 @@ const NODE_ICONS: Record<OrgNode["type"], LucideIcon> = {
   unit: HospitalIcon,
   building: Building2Icon,
   floor: LayersIcon,
+  service: StethoscopeIcon,
+  wing: LayersIcon,
   ward: BedDoubleIcon,
   nursery: StethoscopeIcon,
   room: DoorClosedIcon,

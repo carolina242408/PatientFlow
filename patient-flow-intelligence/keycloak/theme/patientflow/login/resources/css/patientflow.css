@@ -1,106 +1,374 @@
-/* 1. Global Font & Light Background */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-body, input, button, span, label, div, a {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+/* ==========================================================================
+   Tokens
+   ========================================================================== */
+:root {
+  --kc-primary: #2563eb;
+  --kc-button: #2583ed;
+  --kc-button-hover: #1d6fd0;
+  --kc-border: #d1d5db;
+  --kc-text: #111827;
+  --kc-muted: #64748b;
+  --kc-radius: 10px;
+  --kc-focus-ring: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+body,
+input,
+button,
+span,
+label,
+div,
+a {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+html,
+body,
+#keycloak-bg {
+  min-height: 100%;
 }
 
 body {
-    background-color: #fafafa !important; /* Matches your dashboard background */
-    background-image: none !important;    /* Removes Keycloak's dark pattern */
+  background: #f3f4f6 !important;
+  background-image: none !important;
 }
 
-/* 2. The Main Card */
+/* ==========================================================================
+   Page layout and card
+   ========================================================================== */
+.pf-v5-c-login {
+  display: flex;
+  box-sizing: border-box;
+  width: 100vw;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.pf-v5-c-login .pf-v5-c-login__container {
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 512px !important;
+  min-width: 0;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  grid-template-columns: none !important;
+}
+
+.pf-v5-c-login__header,
+#kc-header-wrapper {
+  display: none !important;
+}
+
 .pf-v5-c-login__main {
-    background-color: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 15px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-    padding: 40px !important; /* Gives the form some breathing room */
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+  padding: 32px 44px 40px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 40px rgb(15 23 42 / 5%) !important;
 }
 
-/* 3. Typography */
-h1#kc-page-title, .pf-v5-c-title {
-    color: #111827 !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    margin-bottom: 24px !important;
+.pf-v5-c-login__main-header,
+.pf-v5-c-login__main-body {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ==========================================================================
+   Header: icon, title, subtitle
+   ========================================================================== */
+.pf-v5-c-login__main-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0 !important;
+  text-align: center;
+}
+
+.pf-v5-c-login__main-header::before {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 24px;
+  border: 1px solid #dbeafe;
+  border-radius: 50%;
+  background-color: #f8fbff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238891a1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='10' cy='7' r='4'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 0 0 8px #f3f8ff;
+  content: '';
+}
+
+#kc-page-title {
+  margin: 0 0 32px !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 1.3 !important;
+}
+
+#kc-page-title::before {
+  display: block;
+  color: var(--kc-text);
+  content: 'Welcome back';
+  font-size: 28px;
+  font-weight: 700;
+}
+
+#kc-page-title::after {
+  display: block;
+  margin-top: 12px;
+  color: var(--kc-muted);
+  content: 'Sign in to continue to your account.';
+  font-size: 16px;
+  font-weight: 400;
+}
+
+/* ==========================================================================
+   Form structure
+   ========================================================================== */
+.pf-v5-c-login__main-body,
+#kc-form,
+#kc-form-wrapper,
+#kc-form-login {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+}
+
+#kc-form-login {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#kc-form-login .pf-v5-c-form__group,
+#kc-form-login .pf-v5-c-form-control,
+#kc-form-login .pf-v5-c-input-group {
+  display: block;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+}
+
+.pf-v5-c-form__group {
+  margin: 0 !important;
+}
+
+.pf-v5-c-form__group-label {
+  padding-bottom: 8px !important;
 }
 
 .pf-v5-c-form__label-text {
-    color: #374151 !important;
-    font-weight: 600 !important;
-    font-size: 13px !important;
-    margin-bottom: 6px !important;
+  color: #1f2937 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
 }
 
-/* 4. Input Fields & Focus State */
+/* ==========================================================================
+   Fields (single-input groups, e.g. email)
+   ========================================================================== */
 .pf-v5-c-form-control {
-    background-color: #ffffff !important;
-    border: 1px solid #d1d5db !important;
-    border-radius: 8px !important;
-    color: #111827 !important;
-    padding: 10px 12px !important;
-    box-shadow: none !important;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  min-height: 56px;
+  border: 1px solid var(--kc-border) !important;
+  border-radius: var(--kc-radius) !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease !important;
 }
 
-/* Make the input border blue when clicked (focused) */
 .pf-v5-c-form-control:focus-within {
-    border-color: #3068d8 !important;
-    box-shadow: 0 0 0 2px rgba(48, 104, 216, 0.2) !important;
+  border-color: var(--kc-primary) !important;
+  box-shadow: var(--kc-focus-ring) !important;
 }
 
-/* The "Show" text for password */
-.pf-v5-c-button.pf-m-control {
-    background-color: transparent !important;
-    color: #4b5563 !important;
-    font-weight: 500 !important;
-    border: 1px solid #d1d5db !important;
-    border-left: none !important;
-    border-radius: 0 8px 8px 0 !important;
+.pf-v5-c-form-control::before,
+.pf-v5-c-form-control::after {
+  display: none !important;
+  content: none !important;
 }
 
-/* 5. The Big Blue "Sign In" Button */
-#kc-login, .pf-v5-c-button.pf-m-primary {
-    background-color: #2563eb !important; /* Bright blue from your screenshot */
-    color: #ffffff !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    padding: 12px !important;
-    border-radius: 8px !important;
-    border: none !important;
-    width: 100% !important;
-    transition: background-color 0.2s !important;
+.pf-v5-c-form-control input {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 16px !important;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--kc-text) !important;
+  font-size: 16px !important;
 }
 
-#kc-login:hover, .pf-v5-c-button.pf-m-primary:hover {
-    background-color: #1d4ed8 !important; /* Darker blue on hover */
+.pf-v5-c-form-control input::placeholder {
+  color: #9ca3af !important;
 }
 
-/* 6. Checkbox and Links */
+#kc-form-login .pf-v5-c-form-control > input {
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Password field
+   ========================================================================== */
+#kc-form-login .pf-v5-c-input-group {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--kc-border);
+  border-radius: var(--kc-radius);
+  background: #ffffff;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+#kc-form-login .pf-v5-c-input-group:focus-within {
+  border-color: var(--kc-primary);
+  box-shadow: var(--kc-focus-ring);
+}
+
+#kc-form-login .pf-v5-c-input-group__item.pf-m-fill {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#kc-form-login .pf-v5-c-input-group__item:not(.pf-m-fill) {
+  flex: 0 0 auto;
+}
+
+#kc-form-login .pf-v5-c-input-group .pf-v5-c-form-control,
+#kc-form-login .pf-v5-c-input-group .pf-v5-c-form-control:focus-within {
+  min-height: 54px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+#kc-form-login .pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+  min-height: 54px;
+  padding: 0 16px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--kc-muted) !important;
+}
+
+#kc-form-login .pf-v5-c-input-group .pf-v5-c-button.pf-m-control::before,
+#kc-form-login .pf-v5-c-input-group .pf-v5-c-button.pf-m-control::after {
+  display: none !important;
+  content: none !important;
+  border: 0 !important;
+}
+
+#kc-form-login .pf-v5-c-input-group .pf-v5-c-button.pf-m-control:hover {
+  color: var(--kc-primary) !important;
+}
+
+/* ==========================================================================
+   Options row, links
+   ========================================================================== */
+#kc-form-options {
+  margin-top: -4px;
+}
+
 .pf-v5-c-check__label {
-    color: #4b5563 !important;
-    font-size: 13px !important;
+  color: #475569 !important;
+  font-size: 14px !important;
 }
 
-#kc-form-options a, .pf-v5-c-login__main-footer a {
-    color: #2563eb !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    text-decoration: none !important;
+.pf-v5-c-check__input {
+  accent-color: var(--kc-primary);
 }
 
-#kc-form-options a:hover, .pf-v5-c-login__main-footer a:hover {
-    text-decoration: underline !important;
+#kc-form-options a,
+#kc-info-wrapper a {
+  color: var(--kc-primary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
 }
 
-/* 7. Remove the default Keycloak logo/branding */
-#kc-header-wrapper {
-    display: none !important;
+#kc-form-options a:hover,
+#kc-info-wrapper a:hover {
+  text-decoration: underline !important;
 }
 
-/* 8. Hide scrollbars if any */
-::-webkit-scrollbar {
-    width: 0px;
+#kc-info,
+.pf-v5-c-login__main-footer-band,
+#kc-registration-container {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Sign In button
+   ========================================================================== */
+#kc-form-login .pf-v5-c-form__actions {
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding-top: 4px !important;
+}
+
+#kc-form-login .pf-v5-c-form__actions > * {
+  margin: 0 !important;
+}
+
+#kc-login,
+.pf-v5-c-button.pf-m-primary {
+  display: flex !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: 56px;
+  margin: 0 !important;
+  padding: 12px !important;
+  border: 0 !important;
+  border-radius: var(--kc-radius) !important;
+  background: var(--kc-button) !important;
+  box-shadow: 0 8px 18px rgb(37 131 237 / 22%);
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  transition: background-color 160ms ease, transform 160ms ease !important;
+}
+
+#kc-login:hover,
+.pf-v5-c-button.pf-m-primary:hover {
+  background: var(--kc-button-hover) !important;
+}
+
+#kc-login:focus-visible {
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 30%);
+}
+
+/* ==========================================================================
+   Small screens
+   ========================================================================== */
+@media (max-width: 520px) {
+  .pf-v5-c-login {
+    align-items: flex-start;
+    padding: 16px 12px;
+  }
+
+  .pf-v5-c-login__main {
+    padding: 28px 24px 32px !important;
+  }
 }
