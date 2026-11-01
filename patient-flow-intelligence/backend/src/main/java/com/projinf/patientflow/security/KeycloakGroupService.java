@@ -40,6 +40,9 @@ public class KeycloakGroupService {
         if (type != Type.ULS && type != Type.UNIT && type != Type.SERVICE) return;
         String groupName = groupName(type, id, name);
         String parentGroupId = parentId == null ? null : findGroupId(parentType(type), parentId);
+        if (parentGroupId == null && parentId != null) {
+            parentGroupId = findGroupId(groups(null), "__" + parentId);
+        }
         if (parentId != null && parentGroupId == null) {
             throw new IllegalStateException("Grupo Keycloak pai não encontrado para " + parentId);
         }
@@ -69,9 +72,12 @@ public class KeycloakGroupService {
                 return String.valueOf(group.get("id"));
             }
             Object children = group.get("subGroups");
-            if (children instanceof List<?> nested) {
-                String found = findGroupId((List<Map<String, Object>>) nested, marker);
-                if (found != null) return found;
+            List<Map<String, Object>> nested = children instanceof List<?> childList && !childList.isEmpty()
+                    ? (List<Map<String, Object>>) childList
+                    : groups(String.valueOf(group.get("id")));
+            String found = findGroupId(nested, marker);
+            if (found != null) {
+                return found;
             }
         }
         return null;
@@ -96,7 +102,9 @@ public class KeycloakGroupService {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> groups(String parentId) {
-        String path = "/admin/realms/" + realm + (parentId == null ? "/groups" : "/groups/" + parentId + "/children");
+        String path = "/admin/realms/" + realm
+                + (parentId == null ? "/groups" : "/groups/" + parentId + "/children")
+                + "?briefRepresentation=false&max=200";
         return client.get().uri(path).headers(headers -> headers.setBearerAuth(accessToken()))
                 .retrieve().body(List.class);
     }

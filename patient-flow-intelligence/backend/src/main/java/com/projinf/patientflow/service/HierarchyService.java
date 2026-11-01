@@ -42,9 +42,28 @@ public class HierarchyService {
             }
         } else if (input.serviceId() != null) throw new IllegalArgumentException("serviceId só se aplica à enfermaria");
         var created=repository.create(type, new HierarchyWrite(name, code, input.parentId(), input.serviceId()));
-        keycloakGroups.ensureHierarchyGroup(type, created.id(), created.name(), created.parentId());
+        ensureKeycloakHierarchyGroup(type, created);
         changes.changed("HIERARCHY_CREATED",type.name(),created.id());
         return created;
+    }
+
+    private void ensureKeycloakHierarchyGroup(Type type, HierarchyNode node) {
+        if (type == Type.ULS) {
+            keycloakGroups.ensureHierarchyGroup(type, node.id(), node.name(), null);
+            return;
+        }
+        if (type == Type.UNIT) {
+            var uls = repository.get(Type.ULS, node.parentId());
+            ensureKeycloakHierarchyGroup(Type.ULS, uls);
+            keycloakGroups.ensureHierarchyGroup(type, node.id(), node.name(), uls.id());
+            return;
+        }
+        if (type == Type.SERVICE) {
+            UUID unitId = repository.unitOfFloor(node.parentId());
+            var unit = repository.get(Type.UNIT, unitId);
+            ensureKeycloakHierarchyGroup(Type.UNIT, unit);
+            keycloakGroups.ensureHierarchyGroup(type, node.id(), node.name(), unit.id());
+        }
     }
 
     public HierarchyNode update(Type type, UUID id, HierarchyWrite input) {
