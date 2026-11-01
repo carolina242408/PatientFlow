@@ -293,6 +293,7 @@
     "save": "Guardar preferências"
   },
   "account": {
+    "error": "Não foi possível carregar os dados da conta.",
     "subtitle": "Conta de {{profile}}",
     "fullName": "Nome completo",
     "email": "Email institucional",

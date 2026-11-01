@@ -1,6 +1,8 @@
-import { useState, type ComponentType } from 'react'
+import { useEffect, useState, type ComponentType } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
+import { fetchLHUHierarchy } from '@/features/lhu-hierarchy/api/hierarchy'
 import SpaceNavigation from './SpaceNavigation'
-import { pathTo } from './data'
 import { LEVELS, type Level, type Open, type SpaceNode, type ViewProps } from './types'
 
 import LhuView from './views/LhuView'
@@ -34,18 +36,30 @@ interface SpaceExplorerProps {
 }
 
 const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps) => {
+  const { t } = useTranslation()
+  const { data: hierarchy, isPending, isError } = useQuery({
+    queryKey: ['space-hierarchy'],
+    queryFn: fetchLHUHierarchy,
+  })
   const startIndex = LEVELS.indexOf(startLevel)
   const initialIndex = Math.max(LEVELS.indexOf(initialLevel ?? startLevel), startIndex)
 
-  // Full path from the LHU root down to the open node
-  const [path, setPath] = useState<SpaceNode[]>(() => pathTo(initialIndex))
+  const tree = hierarchy?.map(toSpaceNode) ?? []
+  const initialPath = hierarchy ? pathToLevel(tree, initialIndex, startLevel) : []
+  const [path, setPath] = useState<SpaceNode[]>(initialPath)
+
+  useEffect(() => {
+    if (initialPath.length) setPath(initialPath)
+  }, [hierarchy, initialIndex])
+
+  if (isPending) return <div>Loading...</div>
+  if (isError || !path.length) return <div>{t('lhuHierarchy.error')}</div>
 
   const current = path[path.length - 1]
-  // Levels above startLevel exist in the data but are never shown
-  const crumbs = path.slice(startIndex)
+  const crumbs = path
 
   const open: Open = (...nodes) => setPath((p) => [...p, ...nodes])
-  const goTo = (index: number) => setPath((p) => p.slice(0, startIndex + index + 1))
+  const goTo = (index: number) => setPath((p) => p.slice(0, index + 1))
 
   const View = VIEWS[current.level]
 
@@ -56,6 +70,31 @@ const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps)
       <View key={current.id} node={current} open={open} />
     </div>
   )
+}
+
+function toSpaceNode(node: Awaited<ReturnType<typeof fetchLHUHierarchy>>[number]): SpaceNode {
+  if (node.type === 'operating-room' || node.type === 'treatment-chair') {
+    throw new Error(`Unsupported hierarchy type: ${node.type}`)
+  }
+
+  return {
+    id: node.id,
+    level: node.type,
+    name: node.name,
+    children: node.children?.map(toSpaceNode),
+  }
+}
+
+function pathToLevel(tree: SpaceNode[], depth: number, startLevel: Level): SpaceNode[] {
+  const path: SpaceNode[] = []
+  let current = tree.find((node) => node.level === startLevel) ?? tree[0]
+  const relativeDepth = current?.level === startLevel ? depth - LEVELS.indexOf(startLevel) : depth
+  while (current) {
+    path.push(current)
+    if (path.length - 1 >= relativeDepth) break
+    current = current.children?.[0] as SpaceNode
+  }
+  return path
 }
 
 export default SpaceExplorer

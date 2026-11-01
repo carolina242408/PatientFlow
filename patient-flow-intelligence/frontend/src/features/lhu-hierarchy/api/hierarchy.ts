@@ -71,7 +71,9 @@ export async function fetchLHUHierarchy(): Promise<OrgNode[]> {
     const children = childrenByParent.get(node.id)?.map(attachChildren)
     return children?.length ? { ...node, children } : node
   }
-  return (childrenByParent.get(null) ?? []).map(attachChildren)
+  const knownIds = new Set(nodes.map((node) => node.id))
+  const roots = nodes.filter((node) => node.parentId === null || !knownIds.has(node.parentId))
+  return roots.map(attachChildren)
 }
 
 const backendType = (type: OrgType) => {

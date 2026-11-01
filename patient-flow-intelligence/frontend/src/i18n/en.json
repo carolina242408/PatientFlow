@@ -293,6 +293,7 @@
     "save": "Save Preferences"
   },
   "account": {
+    "error": "Unable to load account data.",
     "subtitle": "{{profile}} account",
     "fullName": "Full name",
     "email": "Institutional email",

@@ -47,6 +47,9 @@ export const hasAdminRole = (roles: string[] = []) =>
 export const getApplicationUrl = () =>
   `${globalThis.location.origin}${globalThis.location.pathname}`
 
+export const getDashboardUrl = () =>
+  `${globalThis.location.origin}/dashboard`
+
 export const useKeycloak = () => {
   const ctx = use(KeycloakContext)
   if (!ctx) throw new Error('useKeycloak must be used inside KeycloakProvider')

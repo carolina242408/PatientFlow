@@ -1,5 +1,5 @@
 import Keycloak from 'keycloak-js'
-import { getApplicationUrl } from './context'
+import { getDashboardUrl } from './context'
 
 const keycloak = new Keycloak({
   url: 'http://localhost:9080',
@@ -15,7 +15,7 @@ export const initKeycloak = () =>
     onLoad: 'login-required',
     checkLoginIframe: false,
     pkceMethod: 'S256',
-    redirectUri: getApplicationUrl(),
+    redirectUri: getDashboardUrl(),
   }))
 
 export default keycloak
