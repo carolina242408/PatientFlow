@@ -4,6 +4,7 @@ export type OrgType =
   | "building"
   | "floor"
   | "service"
+  | "wing"
   | "ward"
   | "nursery"
   | "room"

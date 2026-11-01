@@ -460,12 +460,12 @@
     },
     "typeDescriptions": {
       "lhu": "Top-level local health unit", "unit": "Hospital or care delivery unit", "building": "Physical building within a unit",
-      "floor": "Floor within a building", "ward": "Clinical ward on a floor", "nursery": "Care area containing rooms",
+      "floor": "Floor within a building", "service": "Clinical service on a floor", "wing": "Wing within a service", "ward": "Clinical ward within a wing", "nursery": "Care area containing rooms",
       "room": "Patient or treatment room", "bed": "Patient bed assigned to a room", "operating-room": "Surgical operating resource",
       "treatment-chair": "Chair used for clinical treatment"
     },
     "types": {
-      "lhu": "LHU", "unit": "Unit", "building": "Building", "floor": "Floor", "ward": "Ward",
+      "lhu": "LHU", "unit": "Unit", "building": "Building", "floor": "Floor", "service": "Service", "wing": "Wing", "ward": "Ward",
       "nursery": "Nursery", "room": "Room", "bed": "Bed", "operating-room": "Operating room", "treatment-chair": "Treatment chair"
     }
   }
