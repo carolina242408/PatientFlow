@@ -1,6 +1,6 @@
 import type { OrgType } from "../types/tree"
 
-export const PREMISE_TYPES: OrgType[] = ["lhu", "unit", "building", "floor", "ward", "nursery", "room"]
+export const PREMISE_TYPES: OrgType[] = ["lhu", "unit", "building", "floor", "service", "ward", "nursery", "room"]
 export const RESOURCE_TYPES: OrgType[] = ["bed", "operating-room", "treatment-chair"]
 
 export const PARENT_TYPE: Record<OrgType, OrgType | null> = {
@@ -8,6 +8,7 @@ export const PARENT_TYPE: Record<OrgType, OrgType | null> = {
   unit: "lhu",
   building: "unit",
   floor: "building",
+  service: "unit",
   ward: "floor",
   nursery: "ward",
   room: "nursery",

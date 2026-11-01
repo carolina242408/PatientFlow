@@ -74,6 +74,8 @@ altas e lista de espera estão em [OPERATIONS.md](OPERATIONS.md).
 | `DB_PASSWORD` | `pfi` |
 | `KEYCLOAK_ISSUER_URI` | `http://localhost:9080/realms/patientflow` |
 | `KEYCLOAK_JWK_SET_URI` (perfil `docker`) | Chaves do Keycloak na rede Docker; issuer externo continua validado |
+| `KEYCLOAK_ADMIN_BASE_URL` | `http://localhost:9080` (local) ou `http://keycloak:8080` (Docker) |
+| `KEYCLOAK_ADMIN_USERNAME` / `KEYCLOAK_ADMIN_PASSWORD` | Credenciais do administrador Keycloak usadas apenas para criar grupos |
 | `FHIR_SNS_SYSTEM` | `https://www.sns.gov.pt/numero-utente` |
 | `FHIR_HOSPITAL_NUMBER_SYSTEM` | `urn:hospital:process-number` |
 | `FHIR_VISIT_NUMBER_SYSTEM` | `urn:hospital:visit-number` |
@@ -88,8 +90,12 @@ usar configuração Spring. `ddl-auto=validate`: apenas o Flyway gere o esquema.
 enfermarias existentes a um serviço `GENERAL` da respetiva unidade, preservando
 os internamentos. A migração exige no máximo um internamento ativo por doente;
 dados antigos que violem essa regra devem ser reconciliados antes da atualização.
-`V4__organizational_access.sql` cria as associações por `sub` Keycloak e a vista
-de resolução de âmbitos. Não atribui acessos automaticamente aos utilizadores.
+`V4__organizational_access.sql` preserva a tabela de grants por compatibilidade,
+mas a autorização atual resolve os âmbitos diretamente do claim `groups` do
+JWT. Ao criar uma ULS, unidade ou serviço, o backend cria o grupo Keycloak
+correspondente e os grupos ficam aninhados. O nome inclui o UUID para permitir
+resolução inequívoca, por exemplo
+`/ULS_Norte__UUID/UNIT_Hospital_A__UUID/SERVICE_Cardiologia__UUID`.
 `V5__analytics_indexes.sql` acrescenta índices para consultas analíticas.
 
 ## Arquitetura e persistência

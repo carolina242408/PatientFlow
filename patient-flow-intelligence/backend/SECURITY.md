@@ -3,8 +3,11 @@
 ## Identidade e âmbito
 
 O JWT é validado pelo resource server contra o issuer Keycloak configurado.
-O identificador utilizado nas associações é o claim `sub`, nunca o nome de
-utilizador. Os papéis são lidos das authorities derivadas de `realm_access.roles`.
+Os papéis são lidos das authorities derivadas de `realm_access.roles` e os
+âmbitos são lidos do claim `groups`. Os grupos organizacionais incluem o UUID
+da entidade no nome (`ULS_<nome>__<uuid>`, `UNIT_<nome>__<uuid>` e
+`SERVICE_<nome>__<uuid>`), pelo que a associação é resolvida sem consultar
+`/api/access/grants`.
 
 Um gestor precisa simultaneamente de papel e associação do tipo correspondente:
 
@@ -15,10 +18,10 @@ Um gestor precisa simultaneamente de papel e associação do tipo correspondente
 | `UNIT_MANAGER` | `UNIT` | Serviços dessa unidade |
 | `SERVICE_MANAGER` | `SERVICE` | Serviço e suas enfermarias/camas |
 
-É possível atribuir vários âmbitos; o acesso efetivo é a união das associações
-compatíveis com os papéis presentes no JWT. Uma associação `UNIT` sem papel
-`UNIT_MANAGER` não concede esse acesso. Não são criadas associações automáticas
-pelo nome de utilizador, registo de conta ou perfil `demo`.
+É possível atribuir vários âmbitos; o acesso efetivo é a união dos grupos
+compatíveis com os papéis presentes no JWT. Um grupo `UNIT` sem papel
+`UNIT_MANAGER` não concede esse acesso. Ao criar ULS, unidade ou serviço pela
+API de hierarquia, o backend cria o grupo Keycloak correspondente.
 
 ## Matriz de operações
 
@@ -61,14 +64,15 @@ para utilizadores sem `ROLE_ADMIN`.
 
 ## Atribuição inicial de acessos
 
-1. Autenticar um administrador com `ROLE_ADMIN` no realm `patientflow`.
-2. Obter o `sub` do gestor (por exemplo, através de `GET /api/access/me` com
-   o token desse utilizador) e atribuir-lhe o papel correspondente no Keycloak.
-3. Obter o UUID da ULS/unidade/serviço nas APIs de hierarquia.
-4. Criar a associação com o token do administrador:
+1. Criar a ULS, unidade e serviço através da API de hierarquia. O backend cria
+   os grupos aninhados no Keycloak.
+2. Atribuir o utilizador ao grupo correspondente no Keycloak e atribuir-lhe o
+   papel `LHU_MANAGER`, `UNIT_MANAGER` ou `SERVICE_MANAGER`.
+3. Renovar o token do utilizador. O claim `groups` passa a conter o caminho
+   do grupo e o acesso é aplicado sem grant na base de dados.
 
 ```http
-POST /api/access/grants
+<!-- Legacy grant API is not used for authorization. -->
 Authorization: Bearer ACCESS_TOKEN_ADMIN
 Content-Type: application/json
 
@@ -79,25 +83,17 @@ Content-Type: application/json
 }
 ```
 
-O backend valida a existência do âmbito e regista quem atribuiu o acesso e
-quando. Esta operação não cria utilizadores nem altera papéis no Keycloak.
-O administrador cria/revoga estas associações pela API. Os utilizadores continuam
-a ser criados no Keycloak; o campo `subject` recebe o ID desse utilizador, não o
-username. A interface de administração fica planeada no passo 9 de [PLAN.md](PLAN.md).
-O ambiente autónomo de demonstração tem realm e contas próprios, sem concessão
-automática de âmbitos: ver [DEMO.md](../DEMO.md).
+O realm deve ter um mapper de grupos com `full.path=true` no claim `groups`.
+O ficheiro `keycloak/realm/patientflow-realm.json` configura esse mapper e
+inclui o client scope nos scopes por omissão de `web_app`. Se o realm já tiver
+sido importado, é necessário reaplicar/importar essa configuração.
 
 | Método e caminho | Resultado |
 | --- | --- |
-| `GET /api/access/me` | `subject`, `roles`, `administrator` e associações efetivas |
-| `GET /api/access/grants?subject=…` | Associações persistidas; administrador |
-| `POST /api/access/grants` | Cria associação, `201`; duplicados devolvem `409` |
-| `DELETE /api/access/grants/{id}` | Revoga associação, `204` |
+| `GET /api/access/me` | `subject`, `roles`, `administrator` e âmbitos derivados do JWT |
 
-A revogação afeta os pedidos REST seguintes e é revista antes de cada envio
-WebSocket. Ligações sem qualquer âmbito efetivo são encerradas. Alterações
-aos papéis no Keycloak refletem-se num novo token; a validade do JWT limita
-a duração da ligação existente.
+Alterações aos grupos ou papéis no Keycloak refletem-se num novo token; a
+validade do JWT limita a duração da ligação existente.
 
 ## WebSocket autenticado
 

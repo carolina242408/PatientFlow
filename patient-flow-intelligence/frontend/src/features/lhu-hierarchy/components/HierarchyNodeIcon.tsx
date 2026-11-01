@@ -8,6 +8,7 @@ import {
   NetworkIcon,
   SettingsIcon,
   StethoscopeIcon,
+  BriefcaseMedicalIcon,
   UserIcon,
   type LucideIcon,
 } from "lucide-react"
@@ -19,6 +20,7 @@ const NODE_ICONS: Record<OrgNode["type"], LucideIcon> = {
   unit: HospitalIcon,
   building: Building2Icon,
   floor: LayersIcon,
+  service: BriefcaseMedicalIcon,
   ward: BedDoubleIcon,
   nursery: StethoscopeIcon,
   room: DoorClosedIcon,

@@ -24,11 +24,19 @@ public class ScopeGrantService {
 
     public AccessSummary me() {
         var identity=access.identity();
-        var effective = listFor(identity.subject()).stream().filter(g -> switch(g.type()) {
-            case ULS -> identity.roles().contains("LHU_MANAGER");
-            case UNIT -> identity.roles().contains("UNIT_MANAGER");
-            case SERVICE -> identity.roles().contains("SERVICE_MANAGER");
-        }).toList();
+        var effective = new ArrayList<Grant>();
+        if (identity.roles().contains("LHU_MANAGER")) {
+            identity.ulsIds().forEach(id -> effective.add(new Grant(UUID.randomUUID(), identity.subject(),
+                Kind.ULS, id, "KEYCLOAK_GROUP", Instant.EPOCH)));
+        }
+        if (identity.roles().contains("UNIT_MANAGER")) {
+            identity.unitIds().forEach(id -> effective.add(new Grant(UUID.randomUUID(), identity.subject(),
+                Kind.UNIT, id, "KEYCLOAK_GROUP", Instant.EPOCH)));
+        }
+        if (identity.roles().contains("SERVICE_MANAGER")) {
+            identity.serviceIds().forEach(id -> effective.add(new Grant(UUID.randomUUID(), identity.subject(),
+                Kind.SERVICE, id, "KEYCLOAK_GROUP", Instant.EPOCH)));
+        }
         return new AccessSummary(identity.subject(), identity.roles(), identity.admin(), effective);
     }
 

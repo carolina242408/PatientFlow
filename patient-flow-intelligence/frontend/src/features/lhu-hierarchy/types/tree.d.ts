@@ -3,6 +3,7 @@ export type OrgType =
   | "unit"
   | "building"
   | "floor"
+  | "service"
   | "ward"
   | "nursery"
   | "room"

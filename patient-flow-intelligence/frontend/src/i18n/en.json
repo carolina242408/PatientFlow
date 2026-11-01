@@ -442,7 +442,7 @@
       "popup": {
         "success": {
           "title": "Submission Successful",
-          "description": "This prototype does not save the data yet."
+          "description": "The data was saved to the healthcare unit."
         },
         "error": {
           "title": "Submission Failed",

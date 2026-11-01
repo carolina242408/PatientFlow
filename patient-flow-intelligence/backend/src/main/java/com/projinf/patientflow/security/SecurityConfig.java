@@ -2,6 +2,7 @@ package com.projinf.patientflow.security;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,7 +48,11 @@ public class SecurityConfig {
         if (realmAccess == null || !(realmAccess.get("roles") instanceof List<?> roles)) {
             return List.of();
         }
-        return roles.stream().map(Object::toString).<GrantedAuthority>map(SimpleGrantedAuthority::new).toList();
+        return roles.stream()
+                .map(Object::toString)
+                .map(role -> role.toUpperCase(Locale.ROOT))
+                .<GrantedAuthority>map(SimpleGrantedAuthority::new)
+                .toList();
     }
 
 }

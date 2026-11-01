@@ -6,6 +6,7 @@ import com.projinf.patientflow.repository.HierarchyRepository;
 import com.projinf.patientflow.repository.HierarchyRepository.Type;
 import java.util.Objects;
 import com.projinf.patientflow.security.AccessPolicy;
+import com.projinf.patientflow.security.KeycloakGroupService;
 import java.util.UUID;
 import com.projinf.patientflow.event.ChangePublisher;
 import org.springframework.stereotype.Service;
@@ -17,8 +18,10 @@ public class HierarchyService {
     private final ChangePublisher changes;
     private final HierarchyRepository repository;
     private final AccessPolicy access;
-    public HierarchyService(HierarchyRepository repository, AccessPolicy access, ChangePublisher changes) {
-        this.changes=changes; this.repository = repository; this.access = access; }
+    private final KeycloakGroupService keycloakGroups;
+    public HierarchyService(HierarchyRepository repository, AccessPolicy access, ChangePublisher changes,
+            KeycloakGroupService keycloakGroups) {
+        this.changes=changes; this.repository = repository; this.access = access; this.keycloakGroups = keycloakGroups; }
 
     public HierarchyNode create(Type type, HierarchyWrite input) {
         access.admin();
@@ -39,6 +42,7 @@ public class HierarchyService {
             }
         } else if (input.serviceId() != null) throw new IllegalArgumentException("serviceId só se aplica à enfermaria");
         var created=repository.create(type, new HierarchyWrite(name, code, input.parentId(), input.serviceId()));
+        keycloakGroups.ensureHierarchyGroup(type, created.id(), created.name(), created.parentId());
         changes.changed("HIERARCHY_CREATED",type.name(),created.id());
         return created;
     }

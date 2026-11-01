@@ -76,6 +76,9 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       KEYCLOAK_ISSUER_URI: http://localhost:9080/realms/patientflow
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/patientflow/protocol/openid-connect/certs
+      KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8080
+      KEYCLOAK_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       ALGORITHMS_URL: http://algorithms:8000
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     ports:
@@ -197,10 +200,6 @@ services:
     container_name: ui
     ports:
       - "5173:80"
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     volumes:
       - ./frontend:/app
       - /app/node_modules

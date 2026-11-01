@@ -442,7 +442,7 @@
       "popup": {
         "success": {
           "title": "Submissão efetuada com sucesso",
-          "description": "Este protótipo ainda não guarda os dados."
+          "description": "Os dados foram guardados na unidade de saúde."
         },
         "error": {
           "title": "Falha na submissão",

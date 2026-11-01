@@ -4,6 +4,8 @@ import com.projinf.patientflow.repository.HierarchyRepository.Type;
 import com.projinf.patientflow.dto.ParsedBundleDTO;
 import com.projinf.patientflow.exception.ResourceNotFoundException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AccessPolicy {
+    private static final Pattern GROUP_ID = Pattern.compile("^(ULS|UNIT|SERVICE)_[^/]*__([0-9a-fA-F-]{36})$");
     private final NamedParameterJdbcTemplate jdbc;
     public AccessPolicy(NamedParameterJdbcTemplate jdbc) { this.jdbc = jdbc; }
 
@@ -21,7 +24,25 @@ public class AccessPolicy {
                 || jwt.getSubject() == null || jwt.getSubject().isBlank()) throw new AccessDeniedException("Identidade Keycloak obrigatória");
         Set<String> roles = new HashSet<>();
         auth.getAuthorities().forEach(a -> roles.add(a.getAuthority()));
-        return new AccessIdentity(jwt.getSubject(), roles, jwt.getExpiresAt());
+        Set<UUID> uls = new HashSet<>(), units = new HashSet<>(), services = new HashSet<>();
+        Object claim = jwt.getClaims().get("groups");
+        if (claim instanceof Collection<?> groups) {
+            for (Object value : groups) {
+                String path = String.valueOf(value);
+                for (String segment : path.split("/")) {
+                    Matcher match = GROUP_ID.matcher(segment);
+                    if (!match.matches()) continue;
+                    UUID id = UUID.fromString(match.group(2));
+                    switch (match.group(1)) {
+                        case "ULS" -> uls.add(id);
+                        case "UNIT" -> units.add(id);
+                        case "SERVICE" -> services.add(id);
+                        default -> { }
+                    }
+                }
+            }
+        }
+        return new AccessIdentity(jwt.getSubject(), roles, jwt.getExpiresAt(), uls, units, services);
     }
 
     public void admin() {
@@ -30,9 +51,10 @@ public class AccessPolicy {
 
     public boolean operational(AccessIdentity identity) {
         if (identity.admin()) return true;
-        return jdbc.queryForObject("SELECT count(*) FROM user_scope_grants g WHERE g.keycloak_subject=:authSubject AND "
-            + "((g.scope_type='ULS' AND :authLhu) OR (g.scope_type='UNIT' AND :authUnit) OR (g.scope_type='SERVICE' AND :authService))",
-            bindings(identity), Long.class) > 0;
+        return jdbc.queryForObject("SELECT count(*) FROM organization_scope os WHERE "
+            + "(:authLhu AND os.uls_id IN (:authUlsIds)) OR "
+            + "(:authUnit AND os.unit_id IN (:authUnitIds)) OR "
+            + "(:authService AND os.service_id IN (:authServiceIds))", bindings(identity), Long.class) > 0;
     }
 
     public Map<String, Object> parameters() {
@@ -42,16 +64,23 @@ public class AccessPolicy {
     }
 
     public Map<String, Object> bindings(AccessIdentity identity) {
+        Set<UUID> ulsIds = identity.ulsIds().isEmpty()
+                ? Set.of(new UUID(0L, 0L)) : identity.ulsIds();
+        Set<UUID> unitIds = identity.unitIds().isEmpty()
+                ? Set.of(new UUID(0L, 0L)) : identity.unitIds();
+        Set<UUID> serviceIds = identity.serviceIds().isEmpty()
+                ? Set.of(new UUID(0L, 0L)) : identity.serviceIds();
         return Map.of("authSubject", identity.subject(), "authAdmin", identity.admin(),
             "authLhu", identity.roles().contains("LHU_MANAGER"), "authUnit", identity.roles().contains("UNIT_MANAGER"),
-            "authService", identity.roles().contains("SERVICE_MANAGER"));
+            "authService", identity.roles().contains("SERVICE_MANAGER"),
+            "authUlsIds", ulsIds, "authUnitIds", unitIds, "authServiceIds", serviceIds);
     }
 
     public String sql(String uls, String unit, String service) {
-        return "(:authAdmin OR EXISTS (SELECT 1 FROM user_scope_grants ag WHERE ag.keycloak_subject=:authSubject AND ("
-            + "(:authLhu AND ag.scope_type='ULS' AND ag.uls_id=" + uls + ") OR "
-            + "(:authUnit AND ag.scope_type='UNIT' AND ag.unit_id=" + unit + ") OR "
-            + "(:authService AND ag.scope_type='SERVICE' AND ag.service_id=" + service + "))))";
+        return "(:authAdmin OR ("
+            + "(:authLhu AND " + uls + " IN (:authUlsIds)) OR "
+            + "(:authUnit AND " + unit + " IN (:authUnitIds)) OR "
+            + "(:authService AND " + service + " IN (:authServiceIds))))";
     }
 
     public String patientSql(String patientId) {
