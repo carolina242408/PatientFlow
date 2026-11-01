@@ -459,12 +459,12 @@
     },
     "typeDescriptions": {
       "lhu": "Unidade local de saúde de topo", "unit": "Unidade hospitalar ou de prestação de cuidados", "building": "Edifício físico dentro de uma unidade",
-      "floor": "Piso dentro de um edifício", "ward": "Enfermaria clínica num piso", "nursery": "Área de cuidados com quartos",
+      "floor": "Piso dentro de um edifício", "service": "Serviço clínico num piso", "wing": "Ala dentro de um serviço", "ward": "Enfermaria clínica numa ala", "nursery": "Área de cuidados com quartos",
       "room": "Quarto de paciente ou de tratamento", "bed": "Cama de paciente atribuída a um quarto", "operating-room": "Recurso cirúrgico de bloco operatório",
       "treatment-chair": "Cadeirão usado em tratamento clínico"
     },
     "types": {
-      "lhu": "ULS", "unit": "Unidade", "building": "Edifício", "floor": "Piso", "ward": "Enfermaria",
+      "lhu": "ULS", "unit": "Unidade", "building": "Edifício", "floor": "Piso", "service": "Serviço", "wing": "Ala", "ward": "Enfermaria",
       "nursery": "Berçário", "room": "Quarto", "bed": "Cama", "operating-room": "Bloco operatório", "treatment-chair": "Cadeirão de tratamento"
     }
   }
