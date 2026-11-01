@@ -24,7 +24,25 @@ const BACKEND_TYPES = [
   "bed",
 ] as const
 
-const frontendType = (type: string): OrgType => (type === "WING" ? "nursery" : type.toLowerCase() as OrgType)
+const frontendType = (type: string): OrgType => {
+  const typeMap: Record<string, OrgType> = {
+    ULS: "lhu",
+    UNIT: "unit",
+    BUILDING: "building",
+    FLOOR: "floor",
+    WING: "nursery",
+    SERVICE: "service",
+    WARD: "ward",
+    ROOM: "room",
+    BED: "bed",
+  }
+
+  const mappedType = typeMap[type.toUpperCase()]
+  if (!mappedType) {
+    throw new Error(`Tipo de hierarquia desconhecido: ${type}`)
+  }
+  return mappedType
+}
 
 export async function fetchLHUHierarchy(): Promise<OrgNode[]> {
   const responses = await Promise.all(
