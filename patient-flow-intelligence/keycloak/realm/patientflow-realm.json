@@ -138,6 +138,16 @@
       "webOrigins": [
         "http://localhost:5173"
       ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "email",
+        "profile",
+        "roles",
+        "role_list",
+        "basic",
+        "microprofile-jwt"
+      ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "frontchannelLogout": true
@@ -607,7 +617,7 @@
           "id": "fcc6819e-761c-4e0f-bbe6-3ba0c500cceb",
           "name": "roles",
           "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "protocolMapper": "oidc-group-membership-mapper",
           "consentRequired": false,
           "config": {
             "id.token.claim": "false",
@@ -821,7 +831,7 @@
           "protocolMapper": "oidc-usermodel-client-role-mapper",
           "consentRequired": false,
           "config": {
-            "user.attribute": "foo",
+            "full.path": "true",
             "access.token.claim": "true",
             "claim.name": "resource_access.${client_id}.roles",
             "jsonType.label": "String",
@@ -835,7 +845,6 @@
           "protocolMapper": "oidc-usermodel-realm-role-mapper",
           "consentRequired": false,
           "config": {
-            "user.attribute": "foo",
             "access.token.claim": "true",
             "claim.name": "realm_access.roles",
             "jsonType.label": "String",
@@ -858,12 +867,12 @@
           "id": "56d712cb-ef8e-4ecc-92d4-daf6d1812a46",
           "name": "groups",
           "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "protocolMapper": "oidc-group-membership-mapper",
           "consentRequired": false,
           "config": {
             "multivalued": "true",
             "userinfo.token.claim": "true",
-            "user.attribute": "foo",
+            "full.path": "true",
             "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "groups",

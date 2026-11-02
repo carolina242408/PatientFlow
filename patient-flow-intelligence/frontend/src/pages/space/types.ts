@@ -1,6 +1,6 @@
-export type Level = 'lhu' | 'unit' | 'building' | 'floor' | 'service' | 'ward' | 'nursery' | 'room' | 'bed'
+export type Level = 'lhu' | 'unit' | 'building' | 'floor' | 'service' | 'wing' | 'ward' | 'nursery' | 'room' | 'bed'
 
-export const LEVELS: Level[] = ['lhu', 'unit', 'building', 'floor', 'service', 'ward', 'nursery', 'room', 'bed']
+export const LEVELS: Level[] = ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'nursery', 'room', 'bed']
 
 export type ResourceType = 'bed' | 'operatingRoom' | 'chair'
 

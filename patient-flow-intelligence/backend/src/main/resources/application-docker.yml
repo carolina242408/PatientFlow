@@ -1,0 +1,13 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Validate the external issuer while fetching keys on the internal Docker network.
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://keycloak:8080/realms/patientflow/protocol/openid-connect/certs}
+
+patientflow:
+  keycloak:
+    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:http://keycloak:8080}
+    admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
+    admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}

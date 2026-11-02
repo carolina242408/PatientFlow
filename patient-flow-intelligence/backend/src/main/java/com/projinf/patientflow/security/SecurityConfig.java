@@ -2,6 +2,7 @@ package com.projinf.patientflow.security;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,12 +26,17 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health/**").permitAll()
-                .anyRequest().authenticated())
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                .requestMatchers("/ws/events").permitAll() // The handshake requires a one-use authenticated ticket.
+                .requestMatchers("/api/account", "/api/access/me").authenticated()
+                .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info").hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/**").hasAnyAuthority("ROLE_ADMIN", "LHU_MANAGER", "UNIT_MANAGER", "SERVICE_MANAGER")
+                .anyRequest().denyAll())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }
 
-    /** Converte realm_access.roles do token Keycloak em authorities (ROLE_ADMIN, GESTOR_ULS, ...). */
+    /** Converts Keycloak realm roles into the exact PatientFlow authorities. */
     static JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(SecurityConfig::realmRoles);
@@ -42,7 +48,11 @@ public class SecurityConfig {
         if (realmAccess == null || !(realmAccess.get("roles") instanceof List<?> roles)) {
             return List.of();
         }
-        return roles.stream().map(Object::toString).<GrantedAuthority>map(SimpleGrantedAuthority::new).toList();
+        return roles.stream()
+                .map(Object::toString)
+                .map(role -> role.toUpperCase(Locale.ROOT))
+                .<GrantedAuthority>map(SimpleGrantedAuthority::new)
+                .toList();
     }
 
 }

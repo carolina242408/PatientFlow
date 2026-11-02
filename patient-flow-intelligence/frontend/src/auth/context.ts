@@ -44,7 +44,11 @@ export const hasAdminRole = (roles: string[] = []) =>
     return r === 'admin' || r === 'role_admin'
   })
 
-export const getApplicationUrl = () => globalThis.location.href
+export const getApplicationUrl = () =>
+  `${globalThis.location.origin}${globalThis.location.pathname}`
+
+export const getDashboardUrl = () =>
+  `${globalThis.location.origin}/dashboard`
 
 export const useKeycloak = () => {
   const ctx = use(KeycloakContext)

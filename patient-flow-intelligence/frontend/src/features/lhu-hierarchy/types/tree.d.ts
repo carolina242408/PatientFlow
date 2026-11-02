@@ -6,7 +6,6 @@ export type OrgType =
   | "service"
   | "wing"
   | "ward"
-  | "nursery"
   | "room"
   | "bed"
   | "operating-room"

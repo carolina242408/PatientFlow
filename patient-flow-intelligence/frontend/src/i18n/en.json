@@ -293,6 +293,7 @@
     "save": "Save Preferences"
   },
   "account": {
+    "error": "Unable to load account data.",
     "subtitle": "{{profile}} account",
     "fullName": "Full name",
     "email": "Institutional email",
@@ -442,7 +443,7 @@
       "popup": {
         "success": {
           "title": "Submission Successful",
-          "description": "This prototype does not save the data yet."
+          "description": "The data was saved to the healthcare unit."
         },
         "error": {
           "title": "Submission Failed",
