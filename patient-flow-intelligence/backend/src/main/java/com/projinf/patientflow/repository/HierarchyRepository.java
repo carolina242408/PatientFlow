@@ -111,6 +111,10 @@ public class HierarchyRepository {
             + "JOIN buildings b ON b.id = f.building_id WHERE w.id = ?", UUID.class, wingId);
     }
 
+    public UUID serviceOfWing(UUID wingId) {
+        return jdbc.queryForObject("SELECT service_id FROM wings WHERE id = ?", UUID.class, wingId);
+    }
+
     public UUID unitOfFloor(UUID floorId) {
         return jdbc.queryForObject("SELECT b.unit_id FROM floors f "
             + "JOIN buildings b ON b.id = f.building_id WHERE f.id = ?", UUID.class, floorId);

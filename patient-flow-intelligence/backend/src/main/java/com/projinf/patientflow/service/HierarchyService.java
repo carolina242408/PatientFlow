@@ -35,11 +35,7 @@ public class HierarchyService {
         if (!type.hasCode && input.code() != null) throw new IllegalArgumentException("Este nível não usa code");
         String name = type == Type.ROOM || type == Type.BED ? code : required(input.name(), "name");
         if (type == Type.WARD) {
-            if (input.serviceId() == null) throw new IllegalArgumentException("serviceId obrigatório na enfermaria");
-            var service = repository.get(Type.SERVICE, input.serviceId());
-            if (!service.parentId().equals(repository.unitOfWing(input.parentId()))) {
-                throw new ConflictException("Serviço e enfermaria devem pertencer à mesma unidade");
-            }
+            repository.get(Type.SERVICE, repository.serviceOfWing(input.parentId()));
         } else if (input.serviceId() != null) throw new IllegalArgumentException("serviceId só se aplica à enfermaria");
         var created=repository.create(type, new HierarchyWrite(name, code, input.parentId(), input.serviceId()));
         ensureKeycloakHierarchyGroup(type, created);

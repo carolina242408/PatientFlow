@@ -54,7 +54,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
 
   const onSubmit = async (values: AddNodeValues) => {
     const parentId = Object.values(values.parents).reverse().find(Boolean)
-    const usesCode = type === "ward" || type === "room" || type === "bed" || type === "nursery"
+    const usesCode = type === "room" || type === "bed"
     try {
       await createNode.mutateAsync({
         type,

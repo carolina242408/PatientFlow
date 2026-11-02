@@ -30,7 +30,7 @@ const frontendType = (type: string): OrgType => {
     UNIT: "unit",
     BUILDING: "building",
     FLOOR: "floor",
-    WING: "nursery",
+    WING: "wing",
     SERVICE: "service",
     WARD: "ward",
     ROOM: "room",
@@ -78,7 +78,6 @@ export async function fetchLHUHierarchy(): Promise<OrgNode[]> {
 
 const backendType = (type: OrgType) => {
   if (type === "lhu") return "uls"
-  if (type === "nursery") return "wing"
   if (type === "operating-room" || type === "treatment-chair") {
     throw new Error(`O backend ainda não suporta o tipo de recurso ${type}`)
   }
