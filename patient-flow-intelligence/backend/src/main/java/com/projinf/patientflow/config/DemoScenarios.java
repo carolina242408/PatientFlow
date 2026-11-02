@@ -37,9 +37,9 @@ public class DemoScenarios implements CommandLineRunner {
         UUID pressure=service("pressure","DEMO-MED","Medicina — pressão assistencial",centro);
         UUID recovery=service("recovery","DEMO-ORT","Ortopedia — recuperação",centro);
         UUID stable=service("stable","DEMO-NORTE","Medicina — capacidade disponível",norte);
-        UUID pressureRoom=room("pressure",pressure,centro);
-        UUID recoveryRoom=room("recovery",recovery,centro);
-        UUID stableRoom=room("stable",stable,norte);
+        UUID pressureRoom=room("pressure",pressure);
+        UUID recoveryRoom=room("recovery",recovery);
+        UUID stableRoom=room("stable",stable);
         for(int i=0;i<8;i++) {
             String key="pressure-"+i;
             UUID bed=bed(key,pressureRoom,i==7?"BLOCKED":"OCCUPIED");
@@ -77,15 +77,16 @@ public class DemoScenarios implements CommandLineRunner {
         UUID value=id("unit-"+key); jdbc.update("INSERT INTO healthcare_units(id,name,uls_id) VALUES(?,?,?)",value,name,uls); return value;
     }
     private UUID service(String key,String code,String name,UUID unit) {
-        UUID value=id("service-"+key);
-        jdbc.update("INSERT INTO clinical_services(id,unit_id,code,name) VALUES(?,?,?,?)",value,unit,code,name); return value;
-    }
-    private UUID room(String key,UUID service,UUID unit) {
-        UUID building=id("building-"+key),floor=id("floor-"+key),wing=id("wing-"+key),ward=id("ward-"+key),room=id("room-"+key);
+        UUID building=id("building-"+key), floor=id("floor-"+key), value=id("service-"+key);
         jdbc.update("INSERT INTO buildings(id,name,unit_id) VALUES(?,?,?)",building,"Edifício demonstração "+key,unit);
         jdbc.update("INSERT INTO floors(id,level_name,building_id) VALUES(?,?,?)",floor,"Piso 1",building);
-        jdbc.update("INSERT INTO wings(id,name,floor_id) VALUES(?,?,?)",wing,"Ala demonstração "+key,floor);
-        jdbc.update("INSERT INTO wards(id,code,name,wing_id,service_id) VALUES(?,?,?,?,?)",ward,"Ward DEMO-"+key,"Enfermaria sintética "+key,wing,service);
+        jdbc.update("INSERT INTO clinical_services(id,floor_id,code,name) VALUES(?,?,?,?)",value,floor,code,name);
+        return value;
+    }
+    private UUID room(String key,UUID service) {
+        UUID wing=id("wing-"+key),ward=id("ward-"+key),room=id("room-"+key);
+        jdbc.update("INSERT INTO wings(id,name,service_id) VALUES(?,?,?)",wing,"Ala demonstração "+key,service);
+        jdbc.update("INSERT INTO wards(id,code,name,wing_id) VALUES(?,?,?,?)",ward,"Ward DEMO-"+key,"Enfermaria sintética "+key,wing);
         jdbc.update("INSERT INTO rooms(id,code,ward_id) VALUES(?,?,?)",room,"Room DEMO-"+key,ward); return room;
     }
     private UUID bed(String key,UUID room,String state) {

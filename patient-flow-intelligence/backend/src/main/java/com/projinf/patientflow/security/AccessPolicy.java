@@ -85,23 +85,22 @@ public class AccessPolicy {
 
     public String patientSql(String patientId) {
         return "(:authAdmin OR EXISTS (SELECT 1 FROM encounters ae JOIN clinical_services aps ON aps.id=ae.service_id"
-            + " JOIN healthcare_units apu ON apu.id=aps.unit_id WHERE ae.patient_id=" + patientId
+            + " JOIN floors apf ON apf.id=aps.floor_id JOIN buildings apb ON apb.id=apf.building_id"
+            + " JOIN healthcare_units apu ON apu.id=apb.unit_id WHERE ae.patient_id=" + patientId
             + " AND " + sql("apu.uls_id", "apu.id", "aps.id") + ") OR EXISTS (SELECT 1 FROM admission_requests aq"
-            + " JOIN clinical_services aqs ON aqs.id=aq.service_id JOIN healthcare_units aqu ON aqu.id=aqs.unit_id"
+            + " JOIN clinical_services aqs ON aqs.id=aq.service_id JOIN floors aqf ON aqf.id=aqs.floor_id"
+            + " JOIN buildings aqb ON aqb.id=aqf.building_id JOIN healthcare_units aqu ON aqu.id=aqb.unit_id"
             + " WHERE aq.patient_id=" + patientId + " AND " + sql("aqu.uls_id", "aqu.id", "aqs.id") + "))";
     }
 
     public String hierarchySql(Type type, String id) {
-        String permitted = sql("os.uls_id", "os.unit_id", "os.service_id");
-        if (type == Type.ULS || type == Type.UNIT) {
-            String link = type == Type.ULS ? "child.uls_id=os.id" : "child.unit_id=os.id";
-            permitted += " OR EXISTS (SELECT 1 FROM organization_scope child WHERE child.kind='SERVICE' AND " + link
-                + " AND " + sql("child.uls_id", "child.unit_id", "child.service_id") + ")";
-        } else if (type == Type.BUILDING || type == Type.FLOOR || type == Type.WING) {
-            String column = type.name().toLowerCase(Locale.ROOT) + "_id";
-            permitted += " OR EXISTS (SELECT 1 FROM organization_scope child WHERE child.kind='WARD' AND child."
-                + column + "=os.id AND " + sql("child.uls_id", "child.unit_id", "child.service_id") + ")";
-        }
+        String permitted = switch (type) {
+            case ULS -> "(:authAdmin OR (:authLhu AND os.uls_id IN (:authUlsIds)))";
+            case UNIT, BUILDING, FLOOR ->
+                "(:authAdmin OR (:authLhu AND os.uls_id IN (:authUlsIds))"
+                + " OR (:authUnit AND os.unit_id IN (:authUnitIds)))";
+            default -> sql("os.uls_id", "os.unit_id", "os.service_id");
+        };
         return "EXISTS (SELECT 1 FROM organization_scope os WHERE os.kind='" + type.name() + "' AND os.id="
             + id + " AND (" + permitted + "))";
     }
@@ -119,7 +118,8 @@ public class AccessPolicy {
     public void encounter(UUID id) {
         var params = parameters(); params.put("id", id);
         if (jdbc.queryForObject("SELECT count(*) FROM encounters e LEFT JOIN clinical_services s ON s.id=e.service_id"
-            + " LEFT JOIN healthcare_units u ON u.id=s.unit_id WHERE e.id=:id AND "
+            + " LEFT JOIN floors f ON f.id=s.floor_id LEFT JOIN buildings b ON b.id=f.building_id"
+            + " LEFT JOIN healthcare_units u ON u.id=b.unit_id WHERE e.id=:id AND "
             + sql("u.uls_id", "u.id", "s.id"), params, Long.class) == 0) {
             throw new ResourceNotFoundException("Episódio não encontrado no âmbito autorizado");
         }
@@ -130,8 +130,10 @@ public class AccessPolicy {
         params.put("ward", bundle.location().wardCode()); params.put("room", bundle.location().roomCode());
         params.put("bed", bundle.location().bedCode());
         long count = jdbc.queryForObject("SELECT count(*) FROM beds b JOIN rooms r ON r.id=b.room_id"
-            + " JOIN wards w ON w.id=r.ward_id JOIN clinical_services s ON s.id=w.service_id"
-            + " JOIN healthcare_units u ON u.id=s.unit_id WHERE w.code=:ward AND r.code=:room AND b.code=:bed AND "
+            + " JOIN wards w ON w.id=r.ward_id JOIN wings wi ON wi.id=w.wing_id"
+            + " JOIN clinical_services s ON s.id=wi.service_id JOIN floors f ON f.id=s.floor_id"
+            + " JOIN buildings bu ON bu.id=f.building_id JOIN healthcare_units u ON u.id=bu.unit_id"
+            + " WHERE w.code=:ward AND r.code=:room AND b.code=:bed AND "
             + sql("u.uls_id", "u.id", "s.id"), params, Long.class);
         if (count == 0) throw new ResourceNotFoundException("Cama não encontrada no âmbito autorizado");
         var existing = jdbc.query("SELECT id FROM encounters WHERE visit_number=:visit",

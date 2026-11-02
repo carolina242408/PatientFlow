@@ -25,11 +25,13 @@ public class OperationalQueries {
 
     private static final String LOCATION = """
         LEFT JOIN rooms r ON r.id=b.room_id LEFT JOIN wards w ON w.id=r.ward_id
-        LEFT JOIN wings wi ON wi.id=w.wing_id LEFT JOIN floors f ON f.id=wi.floor_id
+        LEFT JOIN wings wi ON wi.id=w.wing_id
+        LEFT JOIN floors f ON f.id=(SELECT s_floor.floor_id FROM clinical_services s_floor
+            WHERE s_floor.id=wi.service_id)
         LEFT JOIN buildings bu ON bu.id=f.building_id LEFT JOIN healthcare_units u ON u.id=bu.unit_id
         """;
     private static final String BED_FROM = " FROM beds b " + LOCATION + """
-        JOIN uls l ON l.id=u.uls_id JOIN clinical_services s ON s.id=w.service_id
+        JOIN uls l ON l.id=u.uls_id JOIN clinical_services s ON s.id=wi.service_id
         LEFT JOIN location_allocations a ON a.bed_id=b.id AND a.discharged_at IS NULL
         LEFT JOIN encounters e ON e.id=a.encounter_id LEFT JOIN patients p ON p.id=e.patient_id
         """;
@@ -45,14 +47,17 @@ public class OperationalQueries {
         LEFT JOIN LATERAL (SELECT * FROM location_allocations la WHERE la.encounter_id=e.id
             ORDER BY la.assigned_at DESC, la.id DESC LIMIT 1) a ON true
         LEFT JOIN beds b ON b.id=a.bed_id
-        """ + LOCATION + " LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,w.service_id) ";
+        """ + LOCATION + " LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,wi.service_id) ";
     private static final String ENCOUNTER_SELECT = """
         SELECT e.*, p.full_name AS patient_name, s.name AS service_name, b.id AS bed_id,
         b.code AS bed_code, w.id AS ward_id, w.code AS ward_code
         """;
     private static final String REQUEST_FROM = """
         FROM admission_requests q JOIN patients p ON p.id=q.patient_id
-        JOIN clinical_services s ON s.id=q.service_id JOIN healthcare_units u ON u.id=s.unit_id
+        JOIN clinical_services s ON s.id=q.service_id
+        JOIN floors f ON f.id=s.floor_id
+        JOIN buildings bu ON bu.id=f.building_id
+        JOIN healthcare_units u ON u.id=bu.unit_id
         """;
     private static final String REQUEST_SELECT = "SELECT q.*, p.full_name AS patient_name, s.name AS service_name ";
 
@@ -115,11 +120,12 @@ public class OperationalQueries {
         if (filter.ulsId()!=null || filter.unitId()!=null || filter.serviceId()!=null || filter.wardId()!=null) {
             where += " AND (EXISTS (SELECT 1 FROM encounters e JOIN location_allocations a ON a.encounter_id=e.id"
                 + " JOIN beds b ON b.id=a.bed_id " + LOCATION
-                + " LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,w.service_id)"
+                + " LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,wi.service_id)"
                 + " WHERE e.patient_id=p.id" + scope(filter) + ")";
             if (filter.wardId() == null) {
                 where += " OR EXISTS (SELECT 1 FROM admission_requests q JOIN clinical_services s ON s.id=q.service_id"
-                    + " JOIN healthcare_units u ON u.id=s.unit_id WHERE q.patient_id=p.id" + scope(filter) + ")";
+                    + " JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id"
+                    + " JOIN healthcare_units u ON u.id=bu.unit_id WHERE q.patient_id=p.id" + scope(filter) + ")";
             }
             where += ")";
         }
@@ -147,7 +153,7 @@ public class OperationalQueries {
         if (patientId != null) { where += " AND e.patient_id=:patient"; params.put("patient", patientId); }
         if (active != null) where += " AND a.discharged_at IS " + (active ? "NULL" : "NOT NULL");
         String from = " FROM location_allocations a JOIN encounters e ON e.id=a.encounter_id JOIN beds b ON b.id=a.bed_id "
-            + LOCATION + " LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,w.service_id) ";
+            + LOCATION + " LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,wi.service_id) ";
         return page("SELECT a.*, e.visit_number, e.patient_id, b.code AS bed_code, w.id AS ward_id", from, where,
             params, "a.assigned_at DESC, a.id", page, size, (r, n) -> new AllocationView(uuid(r, "id"),
                 uuid(r, "encounter_id"), r.getString("visit_number"), uuid(r, "patient_id"), uuid(r, "bed_id"),

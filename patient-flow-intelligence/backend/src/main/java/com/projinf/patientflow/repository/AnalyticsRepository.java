@@ -46,7 +46,9 @@ public class AnalyticsRepository {
             count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied,count(*) FILTER(WHERE b.status='BLOCKED') AS blocked,
             count(*) FILTER(WHERE b.status='CLEANING') AS cleaning
             FROM beds b JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
-            JOIN clinical_services s ON s.id=w.service_id JOIN healthcare_units u ON u.id=s.unit_id
+            JOIN wings wi ON wi.id=w.wing_id JOIN clinical_services s ON s.id=wi.service_id
+            JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id
+            JOIN healthcare_units u ON u.id=bu.unit_id
             """+filter,p,(r,n)->{
                 long total=r.getLong("total"),blocked=r.getLong("blocked"),occupied=r.getLong("occupied");
                 return new BedIndicators(total,total-blocked,r.getLong("available"),occupied,blocked,r.getLong("cleaning"),
@@ -70,7 +72,9 @@ public class AnalyticsRepository {
             count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at>:now AND e.expected_discharge_at<=:next24) AS expected24,
             count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at>:now AND e.expected_discharge_at<=:next48) AS expected48,
             count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at<:now) AS overdue
-            FROM encounters e LEFT JOIN clinical_services s ON s.id=e.service_id LEFT JOIN healthcare_units u ON u.id=s.unit_id
+            FROM encounters e LEFT JOIN clinical_services s ON s.id=e.service_id
+            LEFT JOIN floors f ON f.id=s.floor_id LEFT JOIN buildings bu ON bu.id=f.building_id
+            LEFT JOIN healthcare_units u ON u.id=bu.unit_id
             """+filter,p,(r,n)->new StayIndicators(r.getLong("active"),r.getLong("admissions"),r.getLong("discharges"),
                 r.getLong("los_samples"),number(r,"los_days"),r.getLong("prolonged"),number(r,"oldest_active"),r.getLong("clinical_pending"),
                 number(r,"clinical_oldest"),r.getLong("delay_samples"),number(r,"delay_hours"),r.getLong("expected24"),
@@ -82,7 +86,9 @@ public class AnalyticsRepository {
             avg(EXTRACT(EPOCH FROM :now-due_at)/3600.0) FILTER(WHERE due_at<=:now) AS average_hours,
             max(EXTRACT(EPOCH FROM :now-due_at)/3600.0) FILTER(WHERE due_at<=:now) AS oldest_hours
             FROM (SELECT q.origin,GREATEST(q.requested_at,COALESCE(q.desired_admission_at,q.requested_at)) AS due_at
-                FROM admission_requests q JOIN clinical_services s ON s.id=q.service_id JOIN healthcare_units u ON u.id=s.unit_id
+                FROM admission_requests q JOIN clinical_services s ON s.id=q.service_id
+                JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id
+                JOIN healthcare_units u ON u.id=bu.unit_id
             """+filter+" AND q.status='WAITING') due_requests",p,(r,n)->new WaitingIndicators(r.getLong("pending"),
                 r.getLong("due"),r.getLong("emergency"),r.getLong("overdue"),number(r,"average_hours"),number(r,"oldest_hours")));
         return new Indicators(now,from,to,scope,beds,stays,waiting,settings.thresholds());
@@ -92,15 +98,18 @@ public class AnalyticsRepository {
         HierarchyRepository.page(page,size);
         var p=parameters(scope,from,now,now,settings);
         String filter=where(scope);
-        long count=jdbc.queryForObject("SELECT count(*) FROM clinical_services s JOIN healthcare_units u ON u.id=s.unit_id"+filter,p,Long.class);
+        long count=jdbc.queryForObject("SELECT count(*) FROM clinical_services s JOIN floors f ON f.id=s.floor_id"
+            + " JOIN buildings bu ON bu.id=f.building_id JOIN healthcare_units u ON u.id=bu.unit_id"+filter,p,Long.class);
         p.put("limit",size); p.put("offset",(long)page*size);
         var inputs=jdbc.query("""
             SELECT s.id,s.name,bs.capacity,bs.occupied,es.unscheduled,es.discharges,es.planned24,es.planned48,qs.pending24,qs.pending48
-            FROM (SELECT s.* FROM clinical_services s JOIN healthcare_units u ON u.id=s.unit_id
+            FROM (SELECT s.* FROM clinical_services s JOIN floors f ON f.id=s.floor_id
+            JOIN buildings bu ON bu.id=f.building_id JOIN healthcare_units u ON u.id=bu.unit_id
             """+filter+" ORDER BY s.code,s.id LIMIT :limit OFFSET :offset) s "+"""
             CROSS JOIN LATERAL (SELECT count(*) FILTER(WHERE b.status<>'BLOCKED') AS capacity,
                 count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied FROM beds b
-                JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id WHERE w.service_id=s.id) bs
+                JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
+                JOIN wings wi ON wi.id=w.wing_id WHERE wi.service_id=s.id) bs
             CROSS JOIN LATERAL (SELECT count(*) FILTER(WHERE e.start_period>=:from AND e.start_period<:now
                 AND NOT EXISTS(SELECT 1 FROM admission_requests q WHERE q.encounter_id=e.id)) AS unscheduled,
                 count(*) FILTER(WHERE e.status='FINISHED' AND e.end_period>=:from AND e.end_period<:now) AS discharges,
@@ -124,7 +133,8 @@ public class AnalyticsRepository {
             SELECT b.id,b.code,r.code AS room_code,w.code AS ward_code,w.id AS ward_id,
                 (SELECT count(*) FROM beds rb WHERE rb.room_id=r.id AND rb.status='OCCUPIED') AS room_occupied
             FROM beds b JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
-            WHERE w.service_id=:serviceId AND b.status='AVAILABLE' ORDER BY w.code,r.code,b.code,b.id LIMIT 5001
+            JOIN wings wi ON wi.id=w.wing_id
+            WHERE wi.service_id=:serviceId AND b.status='AVAILABLE' ORDER BY w.code,r.code,b.code,b.id LIMIT 5001
             """,p,(r,n)->new Candidate(r.getObject("id",UUID.class),r.getString("ward_code"),r.getString("room_code"),
                 r.getString("code"),r.getLong("room_occupied"),Objects.equals(preferredWard,r.getObject("ward_id",UUID.class))));
         if(result.size()>5000) throw new IllegalArgumentException("Máximo de 5000 camas candidatas por serviço");
@@ -135,7 +145,8 @@ public class AnalyticsRepository {
     }
     public void preferredWard(UUID ward,UUID service) {
         access.requireHierarchy(HierarchyRepository.Type.WARD,ward);
-        if(!jdbc.queryForObject("SELECT service_id=:service FROM wards WHERE id=:ward",Map.of("service",service,"ward",ward),Boolean.class))
+        if(!jdbc.queryForObject("SELECT wi.service_id=:service FROM wards w JOIN wings wi ON wi.id=w.wing_id"
+            + " WHERE w.id=:ward",Map.of("service",service,"ward",ward),Boolean.class))
             throw new IllegalArgumentException("A enfermaria preferida deve pertencer ao serviço solicitado");
     }
     public static double round(double value) { return Math.round(value*100d)/100d; }

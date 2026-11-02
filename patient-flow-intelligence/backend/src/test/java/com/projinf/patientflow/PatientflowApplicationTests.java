@@ -572,7 +572,8 @@ class PatientflowApplicationTests {
         assertThat(legacy.queryForObject("SELECT count(*) FROM location_allocations WHERE discharged_at IS NULL", Long.class)).isEqualTo(1);
         assertThat(legacy.queryForObject("SELECT status FROM beds", String.class)).isEqualTo("OCCUPIED");
         assertThat(legacy.queryForObject("SELECT code FROM clinical_services", String.class)).isEqualTo("GENERAL");
-        assertThat(legacy.queryForObject("SELECT e.service_id = w.service_id FROM encounters e CROSS JOIN wards w", Boolean.class)).isTrue();
+        assertThat(legacy.queryForObject("SELECT e.service_id = wi.service_id FROM encounters e CROSS JOIN wards w"
+            + " JOIN wings wi ON wi.id=w.wing_id", Boolean.class)).isTrue();
         assertThat(legacy.queryForObject("SELECT max(version::int) FROM flyway_schema_history WHERE success=true", Integer.class)).isEqualTo(5);
     }
 
