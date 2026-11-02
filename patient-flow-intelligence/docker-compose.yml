@@ -84,7 +84,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "java", "-cp", "/app", "Healthcheck"]
+      test: [ "CMD", "java", "-cp", "/app", "Healthcheck" ]
       interval: 10s
       timeout: 5s
       start_period: 90s
@@ -170,24 +170,24 @@ services:
       hapi-fhir-postgres:
         condition: service_healthy
 
-  # ------------------------------------------------------------
-  # MinIO (armazenamento S3)
-  # ------------------------------------------------------------
-  minio:
-    image: pgsty/silo:latest
-    container_name: minio
-    command: server /data --console-address ":9001"
-    env_file: .env
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - pfi-minio-data:/data
-    healthcheck:
-      test: [ "CMD", "mc", "ready", "local" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # # ------------------------------------------------------------
+  # # MinIO (armazenamento S3)
+  # # ------------------------------------------------------------
+  # minio:
+  #   image: pgsty/silo:latest
+  #   container_name: minio
+  #   command: server /data --console-address ":9001"
+  #   env_file: .env
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - pfi-minio-data:/data
+  #   healthcheck:
+  #     test: [ "CMD", "mc", "ready", "local" ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   # ------------------------------------------------------------
   # Frontend
