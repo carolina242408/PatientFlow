@@ -30,6 +30,10 @@ class TestPatientFlowAPI(unittest.TestCase):
         self.assertEqual(res_health.status_code, 200)
         self.assertEqual(res_health.json()["status"], "ok")
 
+        res_ui = self.client.get("/ui")
+        self.assertEqual(res_ui.status_code, 200)
+        self.assertIn("PatientFlow Data Generator", res_ui.text)
+
     def test_02_generate_data(self) -> None:
         payload = {
             "days": 2,

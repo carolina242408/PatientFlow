@@ -75,6 +75,7 @@ services:
       - "8001:8001"
     volumes:
       - ../tools/data-generation/config:/app/config:ro
+      - ../tools/data-generation/ui:/app/ui:ro
       - ../tools/data-generation/output:/app/output
       - ../tools/data-generation/.cache:/app/.cache
     healthcheck:

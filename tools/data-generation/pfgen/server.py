@@ -23,7 +23,7 @@ from typing import Any, AsyncGenerator
 
 from fastapi import BackgroundTasks, Body, FastAPI, HTTPException, Header, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .hl7 import HL7Builder, RenderedMessage, render_all
@@ -33,6 +33,7 @@ from .publisher import dispatch_to_subscribers, write_file_outputs
 from .simulation import Simulation, output_events
 from .synthea import load_pool, run_synthea, synthetic_pool
 from .validate import validate_messages
+from ui.app import router as ui_router
 
 logger = logging.getLogger("pfgen.api")
 
@@ -55,6 +56,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(ui_router)
 
 
 # In-memory store for active simulation state and subscriptions
@@ -282,6 +285,7 @@ def get_root():
     return {
         "service": "PatientFlow Synthetic Data REST API",
         "version": "1.0.0",
+        "ui": "/ui",
         "docs": "/docs",
         "total_messages_loaded": len(state.messages),
         "endpoints": {
