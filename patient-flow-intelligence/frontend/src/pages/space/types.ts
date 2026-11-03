@@ -1,6 +1,6 @@
-export type Level = 'lhu' | 'unit' | 'building' | 'floor' | 'service' | 'wing' | 'ward' | 'nursery' | 'room' | 'bed'
+export type Level = 'lhu' | 'unit' | 'building' | 'floor' | 'service' | 'wing' | 'ward' | 'room' | 'bed'
 
-export const LEVELS: Level[] = ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'nursery', 'room', 'bed']
+export const LEVELS: Level[] = ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'room', 'bed']
 
 export type ResourceType = 'bed' | 'operatingRoom' | 'chair'
 
@@ -12,9 +12,10 @@ export const STATUS = {
 
 export interface Patient {
   name: string
-  age: number
+  age?: number
   diagnosis: string
-  admitted: string 
+  admitted?: string
+  id?: string
 }
 
 export interface Resource {
@@ -31,6 +32,12 @@ export interface SpaceNode {
   name: string
   children?: SpaceNode[]
   resources?: Resource[] 
+  bedCounts?: {
+    total: number
+    occupied: number
+    available: number
+    reserved: number
+  }
 }
 
 

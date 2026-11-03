@@ -49,10 +49,13 @@ const RoomView = ({ node, open }: ViewProps) => {
     time: new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(updatedAt),
   })
 
-  const formatAdmitted = (iso: string) =>
-    new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric' }).format(
-      new Date(`${iso}T00:00:00`),
-    )
+  const formatAdmitted = (iso?: string) => {
+    if (!iso) return '—'
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso)
+    return Number.isNaN(date.getTime())
+      ? '—'
+      : new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric' }).format(date)
+  }
 
   // Ex: "6 beds", ou "6 beds, 1 chair" quando a sala possui múltiplos tipos de recursos
   const items = types
@@ -180,10 +183,12 @@ const RoomView = ({ node, open }: ViewProps) => {
                           {resource.occupant.name}
                         </p>
                         <p className="truncate text-xs text-gray-500">
-                          {t('space.ageDiagnosis', {
-                            age: resource.occupant.age,
-                            diagnosis: resource.occupant.diagnosis,
-                          })}
+                          {resource.occupant.age === undefined
+                            ? resource.occupant.diagnosis || '—'
+                            : t('space.ageDiagnosis', {
+                                age: resource.occupant.age,
+                                diagnosis: resource.occupant.diagnosis || '—',
+                              })}
                         </p>
                       </div>
                     </div>

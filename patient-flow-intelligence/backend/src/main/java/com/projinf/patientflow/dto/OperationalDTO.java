@@ -13,7 +13,8 @@ public final class OperationalDTO {
     private OperationalDTO() { }
 
     public record PageResult<T>(List<T> content, int page, int size, long totalElements, long totalPages) { }
-    public record Scope(UUID ulsId, UUID unitId, UUID serviceId, UUID wardId) { }
+    public record Scope(UUID ulsId, UUID unitId, UUID buildingId, UUID floorId, UUID serviceId,
+                        UUID wingId, UUID wardId, UUID roomId) { }
     public record HierarchyNode(UUID id, String type, UUID parentId, String name, String code, UUID serviceId) { }
     public record HierarchyWrite(@Size(max = 255) String name, @Size(max = 255) String code,
                                  UUID parentId, UUID serviceId) { }
@@ -28,7 +29,8 @@ public final class OperationalDTO {
     public record BedView(UUID id, String code, BedStatus status, String reason, long version,
             UUID ulsId, String ulsName, UUID unitId, String unitName, UUID serviceId, String serviceName,
             UUID wardId, String wardCode, UUID roomId, String roomCode,
-            UUID patientId, String patientName, UUID encounterId, Instant expectedDischargeAt,
+            UUID patientId, String patientName, LocalDate patientBirthDate, UUID encounterId, Instant admittedAt,
+            Instant expectedDischargeAt,
             Instant clinicalDischargeAt) { }
     public record BedMap(PageResult<BedView> beds, Map<BedStatus, Long> counts) { }
     public record BedState(@NotNull BedStatus status, @NotNull @PositiveOrZero Long version,

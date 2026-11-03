@@ -13,8 +13,12 @@ export interface PageResult<T> {
 export interface Scope {
   ulsId?: string
   unitId?: string
+  buildingId?: string
+  floorId?: string
   serviceId?: string
+  wingId?: string
   wardId?: string
+  roomId?: string
 }
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'BLOCKED' | 'RESERVED' | 'CLEANING'
@@ -37,7 +41,9 @@ export interface BedView {
   roomCode: string
   patientId: string | null
   patientName: string | null
+  patientBirthDate: string | null
   encounterId: string | null
+  admittedAt: string | null
   expectedDischargeAt: string | null
   clinicalDischargeAt: string | null
 }

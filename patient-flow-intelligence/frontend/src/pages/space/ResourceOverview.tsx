@@ -6,7 +6,7 @@ import { collectBeds, countBeds, sumResources } from './utils'
 // "Continue to…" list. LHU, unit, building and floor all share this layout.
 const ResourceOverview = ({ node, open }: ViewProps) => {
   const { t } = useTranslation()
-  const beds = countBeds(collectBeds(node))
+  const beds = node.bedCounts ?? countBeds(collectBeds(node))
   const res = sumResources(node)
   const nextLevel = node?.children?.[0]?.level
 

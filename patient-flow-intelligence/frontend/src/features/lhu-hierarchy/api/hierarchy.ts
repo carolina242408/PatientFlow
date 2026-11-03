@@ -44,7 +44,35 @@ const frontendType = (type: string): OrgType => {
   return mappedType
 }
 
-export async function fetchLHUHierarchy(): Promise<OrgNode[]> {
+const backendType = (type: OrgType) => {
+  if (type === "lhu") return "uls"
+  if (type === "operating-room" || type === "treatment-chair") {
+    throw new Error(`O backend ainda não suporta o tipo de recurso ${type}`)
+  }
+  return type
+}
+
+const mapNodes = (content: HierarchyResponse["content"]): OrgNode[] =>
+  content.map((node) => ({
+    id: node.id,
+    name: node.name,
+    type: frontendType(node.type),
+    parentId: node.parentId,
+    status: "operational",
+  }))
+
+export async function fetchHierarchyLevel(type: OrgType, parentId?: string): Promise<OrgNode[]> {
+  const response = await api.get<HierarchyResponse>(`/hierarchy/${backendType(type)}`, {
+    params: { page: 0, size: 100, ...(parentId ? { parentId } : {}) },
+  })
+  return mapNodes(response.data.content)
+}
+
+export async function fetchLHUHierarchy(startType: OrgType = "lhu"): Promise<OrgNode[]> {
+  return fetchHierarchyLevel(startType)
+}
+
+export async function fetchCompleteLHUHierarchy(): Promise<OrgNode[]> {
   const responses = await Promise.all(
     BACKEND_TYPES.map((type) =>
       api.get<HierarchyResponse>(`/hierarchy/${type}`, {
@@ -52,15 +80,7 @@ export async function fetchLHUHierarchy(): Promise<OrgNode[]> {
       }),
     ),
   )
-  const nodes = responses.flatMap((response) =>
-    response.data.content.map((node) => ({
-      id: node.id,
-      name: node.name,
-      type: frontendType(node.type),
-      parentId: node.parentId,
-      status: "operational",
-    })),
-  )
+  const nodes = responses.flatMap((response) => mapNodes(response.data.content))
   const childrenByParent = new Map<string | null, OrgNode[]>()
   for (const node of nodes) {
     const children = childrenByParent.get(node.parentId) ?? []
@@ -72,16 +92,24 @@ export async function fetchLHUHierarchy(): Promise<OrgNode[]> {
     return children?.length ? { ...node, children } : node
   }
   const knownIds = new Set(nodes.map((node) => node.id))
-  const roots = nodes.filter((node) => node.parentId === null || !knownIds.has(node.parentId))
-  return roots.map(attachChildren)
+  return nodes
+    .filter((node) => node.parentId === null || !knownIds.has(node.parentId))
+    .map(attachChildren)
 }
 
-const backendType = (type: OrgType) => {
-  if (type === "lhu") return "uls"
-  if (type === "operating-room" || type === "treatment-chair") {
-    throw new Error(`O backend ainda não suporta o tipo de recurso ${type}`)
+export async function fetchHierarchyChildren(node: OrgNode): Promise<OrgNode[]> {
+  const childType: Partial<Record<OrgType, OrgType>> = {
+    lhu: "unit",
+    unit: "building",
+    building: "floor",
+    floor: "service",
+    service: "wing",
+    wing: "ward",
+    ward: "room",
+    room: "bed",
   }
-  return type
+  const nextType = childType[node.type]
+  return nextType ? fetchHierarchyLevel(nextType, node.id) : []
 }
 
 export async function createHierarchyNode(
