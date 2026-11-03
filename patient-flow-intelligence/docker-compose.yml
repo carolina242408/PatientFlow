@@ -64,6 +64,26 @@ services:
       - "8000:8000"
 
   # ------------------------------------------------------------
+  # Gerador de Dados Sintéticos (Python/FastAPI - HL7 v2.5 + FHIR R4)
+  # ------------------------------------------------------------
+  data-generator:
+    build:
+      context: ../tools/data-generation
+      dockerfile: ./Dockerfile
+    container_name: pfi-data-generator
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../tools/data-generation/config:/app/config:ro
+      - ../tools/data-generation/output:/app/output
+      - ../tools/data-generation/.cache:/app/.cache
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------
   # Backend Spring Boot
   # ------------------------------------------------------------
   backend:
@@ -80,6 +100,7 @@ services:
       KEYCLOAK_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       ALGORITHMS_URL: http://algorithms:8000
+      DATA_GENERATOR_URL: http://data-generator:8001
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     ports:
       - "8080:8080"

@@ -243,6 +243,27 @@ def run_generator(
 @app.on_event("startup")
 def startup_event() -> None:
     state.load_from_disk()
+    if not state.messages:
+        try:
+            import yaml
+
+            with open(DEFAULT_SIMULATION_CONFIG, "r", encoding="utf-8") as f:
+                sim_cfg = yaml.safe_load(f)
+            run_generator(
+                days=int(sim_cfg["simulation"].get("days", 7)),
+                warmup_days=int(sim_cfg["simulation"].get("warmup_days", 3)),
+                seed=int(sim_cfg["simulation"].get("seed", 42)),
+                population_arg=str(sim_cfg["synthea"].get("population", "20")),
+                no_synthea=False,
+                warmup_output=str(sim_cfg["simulation"].get("warmup_output", "census")),
+                validate=True,
+            )
+        except Exception as e:
+            logger.warning("Initial startup generation skipped: %s", e)
+
+
+def _unused_startup_placeholder() -> None:
+    state.load_from_disk()
 
 
 @app.get("/", tags=["Info"])
