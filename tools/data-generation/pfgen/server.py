@@ -21,7 +21,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-from fastapi import Body, FastAPI, HTTPException, Header, Query, Request, Response
+from fastapi import BackgroundTasks, Body, FastAPI, HTTPException, Header, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -86,7 +86,7 @@ class GenerateRequest(BaseModel):
     warmup_days: int = Field(default=3, ge=0, le=60, description="Warmup days prior to start")
     seed: int = Field(default=42, description="Random seed")
     population: str = Field(default="20", description="Synthea population size ('auto' or integer)")
-    no_synthea: bool = Field(default=False, description="Fast offline mode (bypass Synthea)")
+    no_synthea: bool = Field(default=True, description="Fast lightweight mode (bypass Synthea)")
     warmup_output: str = Field(default="census", description="'census' or 'full'")
     run_validation: bool = Field(default=True, alias="validate", description="Run HL7 integrity validator")
 
@@ -95,6 +95,8 @@ class SubscriptionCreate(BaseModel):
     url: str = Field(..., description="Callback webhook URL (e.g. http://localhost:8080/api/hl7/events)")
     triggers: list[str] | None = Field(default=None, description="Optional trigger filter (e.g. ['A01', 'A02', 'A03'])")
     format: str = Field(default="json", description="Payload format: 'json' or 'hl7'")
+    auto_stream: bool = Field(default=False, description="Immediately start streaming lightweight HL7 events in the background to this subscriber")
+    delay_ms: int = Field(default=250, ge=0, le=10000, description="Inter-message delay in ms when auto_stream=True")
 
 
 class SubscriptionResponse(BaseModel):
@@ -102,6 +104,8 @@ class SubscriptionResponse(BaseModel):
     url: str
     triggers: list[str] | None
     format: str
+    auto_stream: bool = False
+    delay_ms: int = 250
     created_at: str
 
 
@@ -237,33 +241,40 @@ def run_generator(
     return summary
 
 
+def ensure_light_stream(seed: int | None = None) -> list[RenderedMessage]:
+    """Ensure lightweight patient flow messages (20 patients, 10 beds, no Synthea) are ready in memory."""
+    if state.messages and seed is None:
+        return state.messages
+
+    import yaml
+
+    with open(DEFAULT_SIMULATION_CONFIG, "r", encoding="utf-8") as f:
+        sim_cfg = yaml.safe_load(f)
+
+    run_generator(
+        days=int(sim_cfg["simulation"].get("days", 7)),
+        warmup_days=int(sim_cfg["simulation"].get("warmup_days", 3)),
+        seed=seed if seed is not None else int(sim_cfg["simulation"].get("seed", 42)),
+        population_arg=str(sim_cfg["synthea"].get("population", "20")),
+        no_synthea=True,
+        warmup_output=str(sim_cfg["simulation"].get("warmup_output", "census")),
+        validate=True,
+    )
+    return state.messages
+
+
 # -----------------------------------------------------------------------------
 # Endpoints: System & Health
 # -----------------------------------------------------------------------------
 @app.on_event("startup")
 def startup_event() -> None:
+    """Initialize a lightweight in-memory stream (20 patients, 10 beds, pure Python) on server startup."""
     state.load_from_disk()
     if not state.messages:
         try:
-            import yaml
-
-            with open(DEFAULT_SIMULATION_CONFIG, "r", encoding="utf-8") as f:
-                sim_cfg = yaml.safe_load(f)
-            run_generator(
-                days=int(sim_cfg["simulation"].get("days", 7)),
-                warmup_days=int(sim_cfg["simulation"].get("warmup_days", 3)),
-                seed=int(sim_cfg["simulation"].get("seed", 42)),
-                population_arg=str(sim_cfg["synthea"].get("population", "20")),
-                no_synthea=False,
-                warmup_output=str(sim_cfg["simulation"].get("warmup_output", "census")),
-                validate=True,
-            )
+            ensure_light_stream()
         except Exception as e:
             logger.warning("Initial startup generation skipped: %s", e)
-
-
-def _unused_startup_placeholder() -> None:
-    state.load_from_disk()
 
 
 @app.get("/", tags=["Info"])
@@ -342,18 +353,7 @@ def list_hl7_messages(
     since: str | None = None,
 ):
     """Query and paginate generated HL7 v2.5 messages."""
-    items = state.messages
-    if not items:
-        # Try loading stream from disk
-        stream_file = state.output_dir / "stream.hl7"
-        if stream_file.exists():
-            return JSONResponse(
-                content={
-                    "total": 0,
-                    "message": "Messages are saved in output/ directory. Run POST /api/generate or reload to populate memory.",
-                }
-            )
-        raise HTTPException(status_code=404, detail="No messages generated. Call POST /api/generate first.")
+    items = ensure_light_stream()
 
     filtered = items
     if trigger:
@@ -425,45 +425,56 @@ def get_hl7_stream():
     """Download the full sequential HL7 v2.5 stream."""
     stream_file = state.output_dir / "stream.hl7"
     if not stream_file.exists():
-        if state.messages:
-            content = "".join(m.text for m in state.messages)
-            return PlainTextResponse(content)
-        raise HTTPException(status_code=404, detail="No stream.hl7 found. Call POST /api/generate first.")
+        messages = ensure_light_stream()
+        content = "".join(m.text for m in messages)
+        return PlainTextResponse(content)
     return PlainTextResponse(stream_file.read_text(encoding="utf-8"))
 
 
 @app.get("/api/hl7/live", tags=["HL7"])
 async def live_hl7_stream(
-    delay_ms: int = Query(default=100, ge=10, le=5000, description="Delay between events in ms"),
-    trigger: str | None = None,
+    delay_ms: int = Query(default=250, ge=10, le=10000, description="Delay between events in ms"),
+    trigger: str | None = Query(default=None, pattern="^(A01|A02|A03)$"),
+    loop: bool = Query(default=False, description="Continuously generate and stream new lightweight batches"),
+    limit: int | None = Query(default=None, ge=1, le=500, description="Optional maximum number of events to stream"),
 ):
-    """Server-Sent Events (SSE) live stream of HL7 messages.
+    """Lightweight Server-Sent Events (SSE) stream of HL7 messages.
 
-    The backend can subscribe to this endpoint to receive events as a continuous stream.
+    The backend can subscribe to `GET /api/hl7/live` to receive events as a real-time stream
+    without needing to call POST /api/generate first.
     """
-    messages = state.messages
-    if not messages:
-        raise HTTPException(status_code=404, detail="No messages available. Call POST /api/generate first.")
+    ensure_light_stream()
 
     async def event_generator() -> AsyncGenerator[str, None]:
-        for msg in messages:
-            if trigger and msg.trigger != trigger:
-                continue
+        sent = 0
+        cycle = 0
+        while True:
+            current_messages = state.messages if cycle == 0 else ensure_light_stream(seed=42 + cycle)
+            for msg in current_messages:
+                if trigger and msg.trigger != trigger:
+                    continue
 
-            event_data = json.dumps(
-                {
-                    "control_id": msg.control_id,
-                    "trigger": msg.trigger,
-                    "episode": msg.episode,
-                    "ns": msg.ns,
-                    "processo": msg.processo,
-                    "occurred": msg.occurred.isoformat(),
-                    "msh_time": msg.msh_time.isoformat(),
-                    "hl7": msg.text,
-                }
-            )
-            yield f"event: hl7_{msg.trigger.lower()}\ndata: {event_data}\n\n"
-            await asyncio.sleep(delay_ms / 1000.0)
+                event_data = json.dumps(
+                    {
+                        "control_id": msg.control_id,
+                        "trigger": msg.trigger,
+                        "episode": msg.episode,
+                        "ns": msg.ns,
+                        "processo": msg.processo,
+                        "occurred": msg.occurred.isoformat(),
+                        "msh_time": msg.msh_time.isoformat(),
+                        "hl7": msg.text,
+                    }
+                )
+                yield f"event: hl7_{msg.trigger.lower()}\ndata: {event_data}\n\n"
+                sent += 1
+                if limit is not None and sent >= limit:
+                    return
+                await asyncio.sleep(delay_ms / 1000.0)
+
+            if not loop:
+                break
+            cycle += 1
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -476,7 +487,9 @@ def get_hospital_locations():
     """Retrieve FHIR R4 Bundle for Hospital Locations, Wards, Rooms, Beds & Practitioners."""
     hosp_file = state.output_dir / "fhir" / "hospital-locations.json"
     if not hosp_file.exists():
-        raise HTTPException(status_code=404, detail="hospital-locations.json not found. Run POST /api/generate first.")
+        ensure_light_stream()
+    if not hosp_file.exists():
+        raise HTTPException(status_code=404, detail="hospital-locations.json not found.")
     return JSONResponse(content=json.loads(hosp_file.read_text(encoding="utf-8")))
 
 
@@ -484,6 +497,8 @@ def get_hospital_locations():
 def list_fhir_patients():
     """List available patient NS identifiers."""
     patients_dir = state.output_dir / "fhir" / "patients"
+    if not patients_dir.exists():
+        ensure_light_stream()
     if not patients_dir.exists():
         return {"patients": []}
     files = sorted(p.stem for p in patients_dir.glob("*.json"))
@@ -503,18 +518,31 @@ def get_patient_fhir_bundle(ns: str):
 # Endpoints: Subscriptions / Webhooks (REST Push)
 # -----------------------------------------------------------------------------
 @app.post("/api/subscriptions", response_model=SubscriptionResponse, tags=["Subscriptions"])
-def register_subscription(sub: SubscriptionCreate):
-    """Register a backend webhook URL to receive HL7 events."""
+def register_subscription(sub: SubscriptionCreate, background_tasks: BackgroundTasks):
+    """Register a backend webhook URL to receive HL7 events.
+
+    When `auto_stream=True`, a lightweight background stream immediately starts pushing
+    HL7 events to the registered URL at `delay_ms` intervals.
+    """
     sub_id = f"sub_{uuid.uuid4().hex[:8]}"
     record = {
         "id": sub_id,
         "url": str(sub.url),
         "triggers": sub.triggers,
         "format": sub.format,
+        "auto_stream": sub.auto_stream,
+        "delay_ms": sub.delay_ms,
         "created_at": datetime.now().isoformat(),
     }
     state.subscribers[sub_id] = record
-    logger.info("Registered subscription %s for URL: %s", sub_id, sub.url)
+    logger.info("Registered subscription %s for URL: %s (auto_stream=%s)", sub_id, sub.url, sub.auto_stream)
+
+    if sub.auto_stream:
+        messages = ensure_light_stream()
+        if sub.triggers:
+            messages = [m for m in messages if m.trigger in sub.triggers]
+        background_tasks.add_task(dispatch_to_subscribers, messages, [record], sub.delay_ms)
+
     return record
 
 
@@ -541,10 +569,8 @@ def dispatch_events(req: DispatchRequest = Body(...)):
     """
     if not state.subscribers:
         raise HTTPException(status_code=400, detail="No active subscriptions registered. Call POST /api/subscriptions first.")
-    if not state.messages:
-        raise HTTPException(status_code=400, detail="No messages generated. Call POST /api/generate first.")
 
-    messages = state.messages
+    messages = ensure_light_stream()
     if req.triggers:
         messages = [m for m in messages if m.trigger in req.triggers]
 

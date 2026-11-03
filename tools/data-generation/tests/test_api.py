@@ -78,7 +78,15 @@ class TestPatientFlowAPI(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn("MSH|^~\\&|", res.text)
 
-    def test_05_fhir_endpoints(self) -> None:
+    def test_05_live_sse_stream_endpoint(self) -> None:
+        state.messages = []
+        res = self.client.get("/api/hl7/live?delay_ms=10&limit=3")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("text/event-stream", res.headers.get("content-type", ""))
+        self.assertIn("event: hl7_", res.text)
+        self.assertIn("MSH|^~\\\\&|", res.text)
+
+    def test_06_fhir_endpoints(self) -> None:
         res_loc = self.client.get("/api/fhir/hospital-locations")
         self.assertEqual(res_loc.status_code, 200)
         bundle = res_loc.json()
@@ -98,12 +106,13 @@ class TestPatientFlowAPI(unittest.TestCase):
         pt_bundle = res_pt.json()
         self.assertEqual(pt_bundle["resourceType"], "Bundle")
 
-    def test_06_subscriptions_crud(self) -> None:
+    def test_07_subscriptions_crud(self) -> None:
         # Register a subscription
         sub_payload = {
             "url": "http://example.com/api/hl7-webhook",
             "triggers": ["A01", "A02"],
             "format": "json",
+            "auto_stream": False,
         }
         res_create = self.client.post("/api/subscriptions", json=sub_payload)
         self.assertEqual(res_create.status_code, 200)
