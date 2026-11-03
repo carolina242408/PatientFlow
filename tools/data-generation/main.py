@@ -159,7 +159,7 @@ def run_cli_generation(args: argparse.Namespace) -> int:
                 cap = hospital.capacity_of(s)
                 rate = cap * float(spec_cfg.get("target_occupancy", 0.85)) / float(spec_cfg["los"]["mean"])
             expected_adm += rate * total_days
-        population_size = max(50, int(expected_adm * 1.35))
+        population_size = max(20, int(expected_adm * 1.35))
     else:
         population_size = int(pop_arg)
 

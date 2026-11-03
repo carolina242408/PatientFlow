@@ -85,7 +85,7 @@ class GenerateRequest(BaseModel):
     days: int = Field(default=7, ge=1, le=365, description="Number of simulation days")
     warmup_days: int = Field(default=3, ge=0, le=60, description="Warmup days prior to start")
     seed: int = Field(default=42, description="Random seed")
-    population: str = Field(default="auto", description="Synthea population size ('auto' or integer)")
+    population: str = Field(default="20", description="Synthea population size ('auto' or integer)")
     no_synthea: bool = Field(default=False, description="Fast offline mode (bypass Synthea)")
     warmup_output: str = Field(default="census", description="'census' or 'full'")
     run_validation: bool = Field(default=True, alias="validate", description="Run HL7 integrity validator")
@@ -161,7 +161,7 @@ def run_generator(
                 cap = hospital.capacity_of(s)
                 rate = cap * float(spec_cfg.get("target_occupancy", 0.85)) / float(spec_cfg["los"]["mean"])
             expected_adm += rate * total_days
-        population_size = max(50, int(expected_adm * 1.35))
+        population_size = max(20, int(expected_adm * 1.35))
     else:
         population_size = int(population_arg)
 

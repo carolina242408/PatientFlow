@@ -114,7 +114,7 @@ def run_standalone_stream(
             cap = hospital.capacity_of(s)
             rate = cap * float(spec_cfg.get("target_occupancy", 0.85)) / float(spec_cfg["los"]["mean"])
         expected_adm += rate * total_days
-    population_size = max(40, int(expected_adm * 1.3))
+    population_size = int(sim_cfg["synthea"].get("population", 20)) if str(sim_cfg["synthea"].get("population", 20)) != "auto" else max(20, int(expected_adm * 1.3))
 
     if use_synthea:
         print(f"{DIM}[2/3] A obter doentes clínicos Synthea (população: {population_size})...{RESET}")

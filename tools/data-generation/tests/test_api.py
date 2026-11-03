@@ -36,7 +36,7 @@ class TestPatientFlowAPI(unittest.TestCase):
             "warmup_days": 1,
             "seed": 123,
             "no_synthea": True,
-            "population": "30",
+            "population": "20",
             "validate": True,
         }
         res = self.client.post("/api/generate", json=payload)
