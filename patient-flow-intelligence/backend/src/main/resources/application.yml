@@ -2,9 +2,9 @@ spring:
   application:
     name: patientflow
   datasource:
-    url: jdbc:postgresql://localhost:5432/patientflow
-    username: pfi
-    password: pfi
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/patientflow}
+    username: ${DB_USERNAME:pfi}
+    password: ${DB_PASSWORD:pfi}
   jpa:
     hibernate:
       ddl-auto: validate   # o schema é gerido pelo Flyway (src/main/resources/db/migration)
@@ -15,7 +15,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9080/realms/patientflow
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9080/realms/patientflow}
 
 server:
   port: 8080
@@ -25,3 +25,35 @@ management:
     web:
       exposure:
         include: health,info
+
+fhir:
+  systems:
+    sns: ${FHIR_SNS_SYSTEM:https://www.sns.gov.pt/numero-utente}
+    hospital-number: ${FHIR_HOSPITAL_NUMBER_SYSTEM:urn:hospital:process-number}
+    visit-number: ${FHIR_VISIT_NUMBER_SYSTEM:urn:hospital:visit-number}
+
+patientflow:
+  demo-data: ${PATIENTFLOW_DEMO_DATA:false}
+  analytics:
+    occupancy-warning-percent: ${OCCUPANCY_WARNING_PERCENT:85}
+    occupancy-critical-percent: ${OCCUPANCY_CRITICAL_PERCENT:95}
+    long-stay-days: ${LONG_STAY_DAYS:14}
+    waiting-warning-hours: ${WAITING_WARNING_HOURS:4}
+    waiting-critical-hours: ${WAITING_CRITICAL_HOURS:12}
+    cleaning-warning-beds: ${CLEANING_WARNING_BEDS:3}
+    clinical-warning-hours: ${CLINICAL_WARNING_HOURS:6}
+    forecast-history-days: ${FORECAST_HISTORY_DAYS:14}
+  algorithms:
+    enabled: ${ALGORITHMS_ENABLED:true}
+    url: ${ALGORITHMS_URL:http://localhost:8000}
+    connect-timeout: 500ms
+    request-timeout: 1s
+  events:
+    allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+    ticket-ttl: 30s
+  keycloak:
+    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:http://localhost:9080}
+    realm: ${KEYCLOAK_ADMIN_REALM:patientflow}
+    admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
+    admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
+    admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}

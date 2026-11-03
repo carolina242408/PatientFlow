@@ -1,5 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useKeycloak } from '../auth/context'
+import { fetchAccount } from '../api/account'
 
 const getProfile = (roles: string[] = []) => {
   if (roles.includes('ROLE_ADMIN')) return 'admin'
@@ -26,15 +27,26 @@ const Field = ({ label, value }: { label: string; value: string }) => (
 
 const Account = () => {
   const { t, i18n } = useTranslation()
-  const { user } = useKeycloak()
+  const { data: account, isPending, isError } = useQuery({
+    queryKey: ['account'],
+    queryFn: fetchAccount,
+  })
 
-  const name = user?.name ?? '—'
-  const email = user?.email ?? '—'
-  const profile = getProfile(user?.roles)
+  const name = account?.name || account?.login || '—'
+  const email = account?.email || '—'
+  const profile = getProfile(account?.roles)
   const profileLabel = t(`account.profiles.${profile}`)
   const languageLabel = t(`account.languages.${i18n.resolvedLanguage ?? 'en'}`, {
     defaultValue: i18n.resolvedLanguage ?? 'English',
   })
+
+  if (isPending) {
+    return <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">Loading...</div>
+  }
+
+  if (isError || !account) {
+    return <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">{t('account.error')}</div>
+  }
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">

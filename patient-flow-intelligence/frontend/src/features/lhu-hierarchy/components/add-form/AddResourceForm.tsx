@@ -22,6 +22,7 @@ import { InformationSection } from "./InformationSection"
 import { NotesField } from "./NotesField"
 import { ParentLocationSection } from "./ParentLocationSection"
 import { ResourceCharacteristicsSection } from "./ResourceCharacteristicsSection"
+import { useCreateHierarchyNode } from "../../hooks/useLHUHierarchy"
 
 interface AddResourceFormProps {
   type: OrgType
@@ -39,6 +40,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
     resolver: zodResolver(buildAddNodeSchema(type)) as Resolver<AddNodeValues>,
     defaultValues: getDefaultValues(type),
   })
+  const createNode = useCreateHierarchyNode()
 
   useEffect(() => {
     if (!popup) return
@@ -50,7 +52,25 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
     setPopup((current) => ({ type: popupType, key: (current?.key ?? 0) + 1 }))
   }
 
-  const onSubmit = (_values: AddNodeValues) => showPopup("success")
+  const onSubmit = async (values: AddNodeValues) => {
+    const parentId = Object.values(values.parents).reverse().find(Boolean)
+    const usesCode = type === "room" || type === "bed"
+    try {
+      await createNode.mutateAsync({
+        type,
+        input: {
+          name: usesCode ? undefined : values.name,
+          code: usesCode ? values.internalCode || values.name : undefined,
+          parentId,
+        },
+      })
+      showPopup("success")
+      form.reset(getDefaultValues(type))
+    } catch (error) {
+      console.error("Unable to create hierarchy node", error)
+      showPopup("error")
+    }
+  }
   const onInvalid = () => showPopup("error")
 
   return (

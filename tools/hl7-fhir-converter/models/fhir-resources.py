@@ -204,7 +204,7 @@ class Encounter(FHIRModel):
     id: Optional[str] = None  # noqa: UP045
     text: Optional[dict] = None  # noqa: UP045
     status: str
-    class_: Optional[list[CodeableConcept]] = Field(default=None, alias="class")  # noqa: UP045
+    class_: Optional[Coding] = Field(default=None, alias="class")  # noqa: UP045
     identifier: Optional[list[Identifier]] = None  # noqa: UP045
     subject: Optional[Reference] = None  # noqa: UP045
     participant: Optional[list[EncounterParticipant]] = None  # noqa: UP045
