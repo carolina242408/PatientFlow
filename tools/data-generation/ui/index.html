@@ -201,6 +201,13 @@
             <option value="true">true — Continuous loop</option>
           </select>
         </div>
+        <div class="form-row">
+          <label for="sseAutoGen">Auto Generate:</label>
+          <select id="sseAutoGen" onchange="updateSseCmd()">
+            <option value="false" selected>false — Wait for Run Generation</option>
+            <option value="true">true — Auto-generate if empty</option>
+          </select>
+        </div>
 
         <div class="cmd-box" id="sseCmdPreview"></div>
 
@@ -387,12 +394,13 @@
       const limit = document.getElementById("sseLimit").value;
       const trigger = document.getElementById("sseTrigger").value;
       const loop = document.getElementById("sseLoop").value;
+      const autoGen = document.getElementById("sseAutoGen").value;
 
       if (delay) params.set("delay_ms", delay);
       if (limit) params.set("limit", limit);
       if (trigger) params.set("trigger", trigger);
       if (loop === "true") params.set("loop", "true");
-      params.set("auto_generate", "true");
+      if (autoGen === "true") params.set("auto_generate", "true");
 
       return `${base}/api/hl7/live?${params.toString()}`;
     }
