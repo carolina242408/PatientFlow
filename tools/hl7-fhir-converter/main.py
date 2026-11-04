@@ -783,9 +783,10 @@ def convert_hl7_to_fhir(message: str) -> fhir.Bundle:
     patient = _patient(pid)
     encounter = _encounter(msh, evn, pv1, patient)
 
-    resources: list[fhir.FHIRModel] = [patient, encounter]
+    conditions = _conditions(segments.get("DG1", []), patient, encounter)
+    resources: list[fhir.FHIRModel] = [patient, encounter, *conditions]
     timestamp_str = (
-        datetime.now(timezone.UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+        datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     )
     return fhir.Bundle(
         type="collection",
@@ -825,7 +826,31 @@ def main() -> None:
         type=Path,
         help="Write the FHIR Bundle to this JSON file instead of stdout",
     )
+    parser.add_argument(
+        "--worker",
+        action="store_true",
+        help="Run as a persistent JSON-lines stdin/stdout worker",
+    )
     args = parser.parse_args()
+    if args.worker:
+        import sys
+
+        for raw_line in sys.stdin:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+            try:
+                req = json.loads(raw_line)
+                hl7_msg = req.get("hl7", "")
+                bundle_dict = convert_hl7_to_fhir(hl7_msg).model_dump(
+                    by_alias=True, exclude_none=True, mode="json"
+                )
+                sys.stdout.write(json.dumps({"ok": True, "bundle": bundle_dict}) + "\n")
+                sys.stdout.flush()
+            except Exception as exc:
+                sys.stdout.write(json.dumps({"ok": False, "error": str(exc)}) + "\n")
+                sys.stdout.flush()
+        return
     message = (
         _resolve_message_path(args.message).read_text(encoding="utf-8")
         if args.message
