@@ -49,20 +49,13 @@ const room = (number: number, pattern: string, patientOffset = 4): SpaceNode => 
 const ward = (
   id: string,
   name: string,
-  nursery: { name: string; nurse: string },
+  _nursery: { name: string; nurse: string },
   rooms: SpaceNode[],
 ): SpaceNode => ({
   id,
   level: 'ward',
   name,
-  children: [
-    {
-      id: `${id}-nursery`,
-      level: 'nursery',
-      name: nursery.name,
-      children: rooms,
-    },
-  ],
+  children: rooms,
 })
 
 const service = (id: string, name: string, wards: SpaceNode[]): SpaceNode => ({
