@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createHierarchyNode, fetchLHUHierarchy } from "../api/hierarchy"
+import { createHierarchyNode, fetchCompleteLHUHierarchy } from "../api/hierarchy"
 import type { OrgType } from "../types/tree"
 
 export const LHU_HIERARCHY_KEY = ["lhu-hierarchy"] as const
 
 export function useLHUHierarchy() {
-  return useQuery({ queryKey: LHU_HIERARCHY_KEY, queryFn: fetchLHUHierarchy })
+  return useQuery({
+    queryKey: LHU_HIERARCHY_KEY,
+    queryFn: fetchCompleteLHUHierarchy,
+  })
 }
 
 export function useCreateHierarchyNode() {

@@ -39,7 +39,8 @@ public class OperationalQueries {
         SELECT b.id, b.code, b.status, b.status_reason, b.version, u.uls_id, l.name AS uls_name,
         u.id AS unit_id, u.name AS unit_name, s.id AS service_id, s.name AS service_name,
         w.id AS ward_id, w.code AS ward_code, r.id AS room_id, r.code AS room_code,
-        p.id AS patient_id, p.full_name AS patient_name, e.id AS encounter_id,
+        p.id AS patient_id, p.full_name AS patient_name, p.birth_date AS patient_birth_date,
+        e.id AS encounter_id, e.start_period AS admitted_at,
         e.expected_discharge_at, e.clinical_discharge_at
         """;
     private static final String ENCOUNTER_FROM = """
@@ -65,16 +66,24 @@ public class OperationalQueries {
         Map<String, Object> values = new HashMap<>(access.parameters());
         if (scope.ulsId() != null) values.put("uls", scope.ulsId());
         if (scope.unitId() != null) values.put("unit", scope.unitId());
+        if (scope.buildingId() != null) values.put("building", scope.buildingId());
+        if (scope.floorId() != null) values.put("floor", scope.floorId());
         if (scope.serviceId() != null) values.put("service", scope.serviceId());
+        if (scope.wingId() != null) values.put("wing", scope.wingId());
         if (scope.wardId() != null) values.put("ward", scope.wardId());
+        if (scope.roomId() != null) values.put("room", scope.roomId());
         return values;
     }
 
     private String scope(Scope scope) {
         return " AND " + access.sql("u.uls_id", "u.id", "s.id") + (scope.ulsId() == null ? "" : " AND u.uls_id=:uls")
             + (scope.unitId() == null ? "" : " AND u.id=:unit")
-            + (scope.serviceId() == null ? "" : " AND s.id=:service")
-            + (scope.wardId() == null ? "" : " AND w.id=:ward");
+        + (scope.buildingId() == null ? "" : " AND bu.id=:building")
+        + (scope.floorId() == null ? "" : " AND f.id=:floor")
+        + (scope.serviceId() == null ? "" : " AND s.id=:service")
+        + (scope.wingId() == null ? "" : " AND wi.id=:wing")
+        + (scope.wardId() == null ? "" : " AND w.id=:ward")
+        + (scope.roomId() == null ? "" : " AND r.id=:room");
     }
 
     private <T> PageResult<T> page(String select, String from, String where, Map<String, Object> params,
@@ -185,7 +194,8 @@ public class OperationalQueries {
         uuid(r, "uls_id"), r.getString("uls_name"), uuid(r, "unit_id"), r.getString("unit_name"),
         uuid(r, "service_id"), r.getString("service_name"), uuid(r, "ward_id"), r.getString("ward_code"),
         uuid(r, "room_id"), r.getString("room_code"), uuid(r, "patient_id"), r.getString("patient_name"),
-        uuid(r, "encounter_id"), instant(r, "expected_discharge_at"), instant(r, "clinical_discharge_at"));
+        r.getObject("patient_birth_date", LocalDate.class), uuid(r, "encounter_id"),
+        instant(r, "admitted_at"), instant(r, "expected_discharge_at"), instant(r, "clinical_discharge_at"));
     private static final RowMapper<EncounterView> encounterMapper = (r, n) -> new EncounterView(uuid(r, "id"),
         r.getString("visit_number"), uuid(r, "patient_id"), r.getString("patient_name"), r.getString("status"),
         instant(r, "start_period"), instant(r, "expected_discharge_at"), instant(r, "clinical_discharge_at"),

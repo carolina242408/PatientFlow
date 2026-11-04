@@ -84,10 +84,20 @@ public class AccessPolicy {
     }
 
     public String patientSql(String patientId) {
-        return "(:authAdmin OR EXISTS (SELECT 1 FROM encounters ae JOIN clinical_services aps ON aps.id=ae.service_id"
-            + " JOIN floors apf ON apf.id=aps.floor_id JOIN buildings apb ON apb.id=apf.building_id"
+        return "(:authAdmin OR EXISTS (SELECT 1 FROM encounters ae"
+            + " LEFT JOIN clinical_services direct_service ON direct_service.id=ae.service_id"
+            + " LEFT JOIN location_allocations active_allocation ON active_allocation.encounter_id=ae.id"
+            + " AND active_allocation.discharged_at IS NULL"
+            + " LEFT JOIN beds active_bed ON active_bed.id=active_allocation.bed_id"
+            + " LEFT JOIN rooms active_room ON active_room.id=active_bed.room_id"
+            + " LEFT JOIN wards active_ward ON active_ward.id=active_room.ward_id"
+            + " LEFT JOIN wings active_wing ON active_wing.id=active_ward.wing_id"
+            + " LEFT JOIN clinical_services allocated_service ON allocated_service.id=active_wing.service_id"
+            + " JOIN floors apf ON apf.id=COALESCE(direct_service.floor_id, allocated_service.floor_id)"
+            + " JOIN buildings apb ON apb.id=apf.building_id"
             + " JOIN healthcare_units apu ON apu.id=apb.unit_id WHERE ae.patient_id=" + patientId
-            + " AND " + sql("apu.uls_id", "apu.id", "aps.id") + ") OR EXISTS (SELECT 1 FROM admission_requests aq"
+            + " AND " + sql("apu.uls_id", "apu.id",
+                "COALESCE(direct_service.id, allocated_service.id)") + ") OR EXISTS (SELECT 1 FROM admission_requests aq"
             + " JOIN clinical_services aqs ON aqs.id=aq.service_id JOIN floors aqf ON aqf.id=aqs.floor_id"
             + " JOIN buildings aqb ON aqb.id=aqf.building_id JOIN healthcare_units aqu ON aqu.id=aqb.unit_id"
             + " WHERE aq.patient_id=" + patientId + " AND " + sql("aqu.uls_id", "aqu.id", "aqs.id") + "))";
