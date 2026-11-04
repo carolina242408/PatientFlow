@@ -102,9 +102,14 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       ALGORITHMS_URL: http://algorithms:8000
       DATA_GENERATOR_URL: http://data-generator:8001
+      HAPI_FHIR_URL: ${HAPI_FHIR_URL:-http://hapi-fhir:8080/fhir}
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
+      INGESTION_SOURCES: ${INGESTION_SOURCES:-http://data-generator:8001/api/hl7/live?delay_ms=500&loop=true}
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     ports:
       - "8080:8080"
+    volumes:
+      - ../tools/hl7-fhir-converter:/app/converter:ro
     healthcheck:
       test: [ "CMD", "java", "-cp", "/app", "Healthcheck" ]
       interval: 10s
