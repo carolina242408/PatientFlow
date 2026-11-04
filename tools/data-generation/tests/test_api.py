@@ -83,7 +83,6 @@ class TestPatientFlowAPI(unittest.TestCase):
         self.assertIn("MSH|^~\\&|", res.text)
 
     def test_05_live_sse_stream_endpoint(self) -> None:
-        state.messages = []
         res = self.client.get("/api/hl7/live?delay_ms=10&limit=3")
         self.assertEqual(res.status_code, 200)
         self.assertIn("text/event-stream", res.headers.get("content-type", ""))

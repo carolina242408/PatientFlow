@@ -65,6 +65,7 @@ public class ApiStreamSubscriber {
         this.properties = properties;
         this.pipeline = pipeline;
         this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(properties.connectTimeout())
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();

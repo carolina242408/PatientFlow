@@ -5,6 +5,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -32,11 +34,14 @@ public class HapiFhirClient {
     private final JsonMapper json;
     private final IngestionProperties properties;
     private final HttpClient httpClient;
+    private final AtomicBoolean connected = new AtomicBoolean(false);
+    private final AtomicLong storedBundleCount = new AtomicLong(0);
 
     public HapiFhirClient(JsonMapper json, IngestionProperties properties) {
         this.json = json;
         this.properties = properties;
         this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(properties.connectTimeout())
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
@@ -64,8 +69,17 @@ public class HapiFhirClient {
             int code = response.statusCode();
             boolean ok = code >= 200 && code < 300;
             if (!ok) {
+                connected.set(false);
                 log.warn("HAPI FHIR returned HTTP {} for transaction bundle ({} resources): {}",
                         code, count, truncate(response.body(), 400));
+            } else {
+                long total = storedBundleCount.incrementAndGet();
+                if (connected.compareAndSet(false, true)) {
+                    log.info("Connected to HAPI FHIR at {} — storing FHIR transaction bundles (latest: {} resources, total stored: {})",
+                            targetUri, count, total);
+                } else if (total % 100 == 0) {
+                    log.info("Stored {} FHIR transaction bundles in HAPI FHIR at {}", total, targetUri);
+                }
             }
             return new HapiStoreResponse(ok, code, count, truncate(response.body(), 500));
         } catch (InterruptedException ex) {
@@ -73,8 +87,12 @@ public class HapiFhirClient {
             log.warn("Interrupted while storing bundle in HAPI FHIR at {}", targetUri);
             return new HapiStoreResponse(false, 0, count, "Interrupted: " + ex.getMessage());
         } catch (Exception ex) {
-            log.warn("Failed to store bundle in HAPI FHIR at {}: {}", targetUri, ex.getMessage());
-            return new HapiStoreResponse(false, 0, count, ex.getMessage());
+            connected.set(false);
+            String reason = ex.getMessage() != null
+                    ? ex.getMessage()
+                    : ex.getClass().getSimpleName() + " (connection refused or HAPI FHIR still starting up)";
+            log.warn("Failed to store bundle in HAPI FHIR at {}: {}", targetUri, reason);
+            return new HapiStoreResponse(false, 0, count, reason);
         }
     }
 
@@ -149,4 +167,3 @@ public class HapiFhirClient {
         return text.length() <= maxLen ? text : text.substring(0, maxLen) + "...";
     }
 }
-

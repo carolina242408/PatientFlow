@@ -392,6 +392,7 @@
       if (limit) params.set("limit", limit);
       if (trigger) params.set("trigger", trigger);
       if (loop === "true") params.set("loop", "true");
+      params.set("auto_generate", "true");
 
       return `${base}/api/hl7/live?${params.toString()}`;
     }

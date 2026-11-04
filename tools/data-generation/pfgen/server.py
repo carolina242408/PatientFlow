@@ -68,6 +68,7 @@ class State:
         self.summary: dict[str, Any] = {}
         self.subscribers: dict[str, dict[str, Any]] = {}
         self.output_dir: Path = OUTPUT_DIR
+        self.generation_version: int = 0
 
     def load_from_disk(self) -> None:
         summary_file = self.output_dir / "summary.json"
@@ -241,6 +242,7 @@ def run_generator(
     state.messages = messages
     state.by_id = {m.control_id: m for m in messages}
     state.summary = summary
+    state.generation_version += 1
     return summary
 
 
@@ -271,13 +273,8 @@ def ensure_light_stream(seed: int | None = None) -> list[RenderedMessage]:
 # -----------------------------------------------------------------------------
 @app.on_event("startup")
 def startup_event() -> None:
-    """Initialize a lightweight in-memory stream (20 patients, 10 beds, pure Python) on server startup."""
-    state.load_from_disk()
-    if not state.messages:
-        try:
-            ensure_light_stream()
-        except Exception as e:
-            logger.warning("Initial startup generation skipped: %s", e)
+    """Start in idle mode without auto-generating data; wait for explicit POST /api/generate."""
+    logger.info("Data Generator started in idle mode (waiting for POST /api/generate)")
 
 
 @app.get("/", tags=["Info"])
@@ -439,21 +436,30 @@ def get_hl7_stream():
 async def live_hl7_stream(
     delay_ms: int = Query(default=250, ge=10, le=10000, description="Delay between events in ms"),
     trigger: str | None = Query(default=None, pattern="^(A01|A02|A03)$"),
-    loop: bool = Query(default=False, description="Continuously generate and stream new lightweight batches"),
+    loop: bool = Query(default=False, description="Continuously wait for and stream new generated batches"),
     limit: int | None = Query(default=None, ge=1, le=500, description="Optional maximum number of events to stream"),
+    auto_generate: bool = Query(default=False, description="Generate a lightweight 20-patient batch if none exists yet"),
 ):
-    """Lightweight Server-Sent Events (SSE) stream of HL7 messages.
+    """Server-Sent Events (SSE) stream of HL7 messages.
 
-    The backend can subscribe to `GET /api/hl7/live` to receive events as a real-time stream
-    without needing to call POST /api/generate first.
+    Waits in idle mode until a batch is generated via `POST /api/generate` (unless `auto_generate=true`),
+    streams each generated batch once when `loop=True`, and then waits for the next generation run.
     """
-    ensure_light_stream()
+    if auto_generate and not state.messages:
+        ensure_light_stream()
 
     async def event_generator() -> AsyncGenerator[str, None]:
         sent = 0
-        cycle = 0
+        last_streamed_version = 0
         while True:
-            current_messages = state.messages if cycle == 0 else ensure_light_stream(seed=42 + cycle)
+            if not state.messages or (loop and state.generation_version == last_streamed_version):
+                if not loop:
+                    break
+                await asyncio.sleep(0.5)
+                continue
+
+            current_version = state.generation_version
+            current_messages = list(state.messages)
             for msg in current_messages:
                 if trigger and msg.trigger != trigger:
                     continue
@@ -476,9 +482,9 @@ async def live_hl7_stream(
                     return
                 await asyncio.sleep(delay_ms / 1000.0)
 
+            last_streamed_version = current_version
             if not loop:
                 break
-            cycle += 1
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
