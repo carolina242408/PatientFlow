@@ -6,7 +6,7 @@ import type { AddNodeValues } from "../../utils/add-node-schema"
 import { FieldMessage } from "./FieldMessage"
 
 interface OptionsSelectFieldProps {
-  name: "status" | "service" | "subtype" | "connectivity"
+  name: "status" | "roomType"
   options: readonly string[]
 }
 

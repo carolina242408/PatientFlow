@@ -21,15 +21,19 @@ import { isResourceType } from "../../utils/org-types"
 import { InformationSection } from "./InformationSection"
 import { NotesField } from "./NotesField"
 import { ParentLocationSection } from "./ParentLocationSection"
-import { ResourceCharacteristicsSection } from "./ResourceCharacteristicsSection"
 import { useCreateHierarchyNode } from "../../hooks/useLHUHierarchy"
 
 interface AddResourceFormProps {
   type: OrgType
+  initialParents?: Partial<Record<OrgType, string>>
   onChangeType: () => void
 }
 
-export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
+export function AddResourceForm({
+  type,
+  initialParents,
+  onChangeType,
+}: AddResourceFormProps) {
   const { t } = useTranslation()
   const isResource = isResourceType(type)
   const [popup, setPopup] = useState<{
@@ -38,7 +42,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
   } | null>(null)
   const form = useForm<AddNodeValues>({
     resolver: zodResolver(buildAddNodeSchema(type)) as Resolver<AddNodeValues>,
-    defaultValues: getDefaultValues(type),
+    defaultValues: getDefaultValues(type, initialParents),
   })
   const createNode = useCreateHierarchyNode()
 
@@ -65,7 +69,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
         },
       })
       showPopup("success")
-      form.reset(getDefaultValues(type))
+      form.reset(getDefaultValues(type, initialParents))
     } catch (error) {
       console.error("Unable to create hierarchy node", error)
       showPopup("error")
@@ -108,10 +112,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
             </InformationSection>
 
             {isResource && (
-              <>
-                <ResourceCharacteristicsSection />
-                <NotesField />
-              </>
+              <NotesField />
             )}
           </CardContent>
 
@@ -119,7 +120,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset(getDefaultValues(type))}
+              onClick={() => form.reset(getDefaultValues(type, initialParents))}
             >
               {t("lhuHierarchy.form.actions.clear")}
             </Button>

@@ -46,7 +46,7 @@ const frontendType = (type: string): OrgType => {
 
 const backendType = (type: OrgType) => {
   if (type === "lhu") return "uls"
-  if (type === "operating-room" || type === "treatment-chair") {
+  if (type === "treatment-chair") {
     throw new Error(`O backend ainda não suporta o tipo de recurso ${type}`)
   }
   return type

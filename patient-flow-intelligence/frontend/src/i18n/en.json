@@ -421,6 +421,11 @@
     "error": "Could not load the hierarchy.",
     "root": "Organization root",
     "modes": { "structure": "Structure overview", "add": "Add premise or resource" },
+    "admin": {
+      "endOfBranch": "End of this hierarchy branch",
+      "endOfBranchDescription": "There are no child spaces or resources here. Add an item to continue this branch.",
+      "addHere": "Add space or resource"
+    },
     "stats": { "levels": "Organizational levels", "spaces": "Registered spaces", "resourceGroups": "Resource groups", "operationalItems": "Operational items" },
     "columns": { "name": "Space or resource", "type": "Type", "parent": "Parent", "status": "Status" },
     "add": {
@@ -435,10 +440,10 @@
       "step": "Step 2",
       "title": "Add {{type}}",
       "changeType": "Change type",
-      "sections": { "parentLocation": "Parent location", "information": "{{type}} information", "resourceCharacteristics": "Resource characteristics" },
+      "sections": { "parentLocation": "Parent location", "information": "{{type}} information" },
       "fields": {
-        "name": "Name or number", "internalCode": "Internal code", "status": "Operational status", "service": "Responsible service",
-        "notes": "Notes", "subtype": "Resource subtype", "connectivity": "Connectivity", "capacity": "Capacity"
+        "name": "Name or number", "internalCode": "Internal code", "status": "Operational status",
+        "notes": "Notes", "roomType": "Room Type"
       },
       "placeholders": { "name": "{{type}} name or number", "internalCode": "Automatically suggested if empty", "notes": "Add operational notes", "parent": "Select {{type}}" },
       "actions": { "clear": "Clear", "submit": "Add to LHU hierarchy" },
@@ -456,9 +461,7 @@
     },
     "options": {
       "status": { "operational": "Operational", "maintenance": "Under maintenance", "inactive": "Inactive" },
-      "service": { "cardiology": "Cardiology", "neurology": "Neurology", "orthopedics": "Orthopedics", "general": "General medicine" },
-      "subtype": { "standard": "Standard", "icu": "Intensive care", "isolation": "Isolation" },
-      "connectivity": { "connected": "Connected", "offline": "Offline" }
+      "roomType": { "INPATIENT_ROOM": "Inpatient Room", "OPERATING_ROOM": "Operating Room", "NURSERY_ROOM": "Nursery Room" }
     },
     "typeDescriptions": {
       "lhu": "Top-level local health unit", "unit": "Hospital or care delivery unit", "building": "Physical building within a unit",

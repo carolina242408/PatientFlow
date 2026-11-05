@@ -19,7 +19,12 @@ export function useCreateHierarchyNode() {
       input,
     }: {
       type: OrgType
-      input: { name?: string; code?: string; parentId?: string; serviceId?: string }
+      input: {
+        name?: string
+        code?: string
+        parentId?: string
+        serviceId?: string
+      }
     }) => createHierarchyNode(type, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: LHU_HIERARCHY_KEY }),
   })

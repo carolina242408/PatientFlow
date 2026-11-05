@@ -8,7 +8,6 @@ export type OrgType =
   | "ward"
   | "room"
   | "bed"
-  | "operating-room"
   | "treatment-chair"
 
 export type OrgNode = {
@@ -19,7 +18,3 @@ export type OrgNode = {
   status: string
   children?: OrgNode[]
 }
-
-export type FlatRow = { node: OrgNode; depth: number; hasChildren: boolean }
-
-export type HierarchyStats = Record<"levels" | "spaces" | "resourceGroups" | "operationalItems", number>

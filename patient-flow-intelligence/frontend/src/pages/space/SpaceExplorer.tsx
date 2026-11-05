@@ -6,6 +6,8 @@ import {
   fetchHierarchyLevel,
 } from '@/features/lhu-hierarchy/api/hierarchy'
 import { fetchBedMap, fetchBeds, fetchEncounter, fetchPatient } from '@/api/operational'
+import type { OrgType } from '@/features/lhu-hierarchy/types/tree'
+import { AdminHierarchyOverview } from '@/features/lhu-hierarchy/components/AdminHierarchyOverview'
 import SpaceNavigation from './SpaceNavigation'
 import { LEVELS, type Level, type Open, type SpaceNode, type ViewProps, type Resource } from './types'
 
@@ -37,6 +39,8 @@ interface SpaceExplorerProps {
   startLevel?: Level
   /** Level that is open on first render (defaults to startLevel) */
   initialLevel?: Level
+  adminMode?: boolean
+  onAddChild?: (parentPath: SpaceNode[], types: OrgType[]) => void
 }
 
 /** Converte o estado da cama do backend para o estado interno da UI */
@@ -70,7 +74,12 @@ function calculateAge(birthDate: string | null): number | undefined {
   return age >= 0 ? age : undefined
 }
 
-const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps) => {
+const SpaceExplorer = ({
+  startLevel = 'lhu',
+  initialLevel,
+  adminMode = false,
+  onAddChild,
+}: SpaceExplorerProps) => {
   const { t } = useTranslation()
   const [selectedRoomId, setSelectedRoomId] = useState<string>()
 
@@ -88,7 +97,7 @@ const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps)
   const { data: bedsData } = useQuery({
     queryKey: ['beds-operational', selectedRoomId],
     queryFn: () => fetchBeds({ roomId: selectedRoomId }, undefined, 0, 50),
-    enabled: Boolean(selectedRoomId),
+    enabled: !adminMode && Boolean(selectedRoomId),
     refetchInterval: 60_000,
   })
 
@@ -127,7 +136,7 @@ const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps)
         ]),
       )
     },
-    enabled: Boolean(selectedRoomId && occupiedBeds.length),
+    enabled: !adminMode && Boolean(selectedRoomId && occupiedBeds.length),
     refetchInterval: 60_000,
   })
 
@@ -233,7 +242,7 @@ const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps)
   const { data: currentBedSummary } = useQuery({
     queryKey: ['space-bed-summary-current', current?.level, current?.id],
     queryFn: () => fetchBedMap(currentSummaryScope, undefined, 0, 1),
-    enabled: Boolean(
+    enabled: !adminMode && Boolean(
       current && ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'room'].includes(current.level),
     ),
   })
@@ -296,6 +305,23 @@ const SpaceExplorer = ({ startLevel = 'lhu', initialLevel }: SpaceExplorerProps)
 
   const View = VIEWS[syncedCurrent.level]
 
+  if (adminMode) {
+    return (
+      <div className="flex flex-col gap-5">
+        <SpaceNavigation crumbs={crumbs} onSelect={goTo} />
+        {loadingChildren && <div className="text-sm text-gray-500">Loading...</div>}
+        {childrenError && <div className="text-sm text-red-600">{t('lhuHierarchy.error')}</div>}
+        <AdminHierarchyOverview
+          node={syncedCurrent}
+          path={syncedPath}
+          loadingChildren={loadingChildren}
+          onOpen={open}
+          onAddChild={onAddChild}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <SpaceNavigation crumbs={crumbs} onSelect={goTo} />
@@ -321,7 +347,7 @@ function toSpaceNode(
   bedsByRoom: Map<string, Resource[]>,
   bedCounts?: SpaceNode['bedCounts'],
 ): SpaceNode {
-  if (node.type === 'operating-room' || node.type === 'treatment-chair') {
+  if (node.type === 'treatment-chair') {
     throw new Error(`Unsupported hierarchy type: ${node.type}`)
   }
 
