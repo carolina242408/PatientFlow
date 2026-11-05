@@ -7,20 +7,24 @@ algorithms/   FastAPI, Python (porta 8000, corre no compose)
 keycloak/     realm "patientflow" e tema de login custom
 postgres-init/ SQL de criação das bases de dados
 docker-compose.yml  infraestrutura de desenvolvimento
+compose.mvp.yml     demonstração separada do backend, sem frontend
 ```
 
 ## Como correr
 
-Para uma demonstração do backend e algoritmos apenas com Docker:
+Para iniciar o ambiente separado do backend e algoritmos, na pasta
+`patient-flow-intelligence`, com Docker Compose v2:
 
 ```sh
 docker compose --env-file .env.example -f compose.mvp.yml -p patientflow-mvp up -d --build --wait --wait-timeout 300
 ```
 
 A API fica em http://localhost:18080/api e o Keycloak em http://localhost:19080.
-Perfis de gestores, obtenção de tokens, atribuição de âmbitos pela API, cenários
-sintéticos e validação automática estão em [DEMO.md](DEMO.md). Este ambiente
-tem volume próprio e não compila nem executa o frontend.
+Este ambiente tem volume próprio e não compila nem executa o frontend. Numa
+base nova, o perfil `demo` cria 22 camas, 60 doentes, 52 episódios e oito pedidos
+em espera. A localização mínima dos exemplos FHIR está desativada. A consulta
+como administrador, a configuração manual dos grupos dos gestores e as
+limitações dos scripts de validação estão em [DEMO.md](DEMO.md).
 
 Para desenvolver o backend no host: Docker, JDK 21+ e `JAVA_HOME` configurado.
 
@@ -34,28 +38,51 @@ cd backend
 No PowerShell usar `./mvnw.cmd`. O realm de desenvolvimento é importado de
 `keycloak/realm`; gerir as contas/papéis no Keycloak. Um realm já existente
 não é sobrescrito pela importação no arranque. Um gestor precisa do papel
-Keycloak e de associação organizacional criada pelo administrador em
-`/api/access/grants`; ver [SECURITY.md](backend/SECURITY.md).
+Keycloak e de um grupo organizacional compatível no claim `groups` do JWT.
+A atribuição faz-se no Keycloak e exige renovar o token;
+`/api/access/grants` mantém apenas registos legados, sem efeito na autorização.
+Ver [SECURITY.md](backend/SECURITY.md).
+
+Criar ULS, unidade ou serviço pela API exige credenciais de administração
+Keycloak no backend. O Compose de desenvolvimento injeta-as a partir de `.env`;
+ao executar no host, exportar `KEYCLOAK_ADMIN_USERNAME` e
+`KEYCLOAK_ADMIN_PASSWORD` antes do arranque, conforme
+[backend/README.md](backend/README.md#executar).
+
+Para executar também o frontend e o backend em contentores, na pasta
+`patient-flow-intelligence`:
+
+```sh
+docker compose up -d --build
+```
+
+Usar este modo ou o backend no host, pois ambos usam a porta 8080.
 
 | Serviço | URL |
 |---|---|
-| Frontend existente (opcional, integração pendente) | http://localhost:5173 |
+| Frontend (integração parcial) | http://localhost:5173 |
 | Backend API | http://localhost:8080/api |
 | Keycloak admin | http://localhost:9080 (admin/admin) |
 | algorithms | http://localhost:8000/health |
 | HAPI FHIR | http://localhost:8081 |
 | RabbitMQ UI | http://localhost:15672 (pfi/pfi) |
-| MinIO console | http://localhost:9001 (pfi/pfi12345) |
 
 Credenciais de desenvolvimento em `.env` (criado a partir de `.env.example`, não vai para o git).
 
-O MVP usa diretamente PostgreSQL, Keycloak e algorithms. RabbitMQ, Redis,
-HAPI FHIR e MinIO são opcionais; não constituem integrações ativas do fluxo atual.
+O fluxo atual usa diretamente PostgreSQL, Keycloak e algorithms. RabbitMQ, Redis
+e HAPI FHIR existem no Compose alargado, mas não constituem integrações ativas
+do fluxo atual. A definição MinIO está comentada e a consola não é iniciada.
 O backend expõe indicadores, decisões determinísticas `rules-v1` e eventos
-WebSocket. A integração com o frontend está planeada no passo 9; o frontend
-atual mantém a implementação anterior e os seus dados de demonstração.
-Modelos treinados estão reservados ao futuro passo 10.
+WebSocket. O frontend já consulta hierarquia, camas, ocupantes e episódios;
+o dashboard mantém dados fixos e ainda não consome as APIs analíticas nem os
+eventos WebSocket. Modelos treinados são trabalho futuro.
+
+A hierarquia atual é ULS → unidade → edifício → piso → serviço → ala →
+enfermaria → quarto → cama. A migração V2 foi alterada; não está garantida a
+atualização de bases que tenham aplicado a hierarquia anterior. A suite Java
+e a validação Docker mantêm dependências do seed e dos grants antigos, com
+bloqueios descritos no [README do backend](backend/README.md#testes).
 
 Contratos: [API/FHIR](backend/README.md), [gestão operacional](backend/OPERATIONS.md),
 [permissões/eventos](backend/SECURITY.md), [indicadores/algoritmos](backend/ANALYTICS.md).
-Estado das etapas: [PLAN.md](backend/PLAN.md).
+Trabalho futuro sobre modelos inteligentes: [PLAN.md](backend/PLAN.md).

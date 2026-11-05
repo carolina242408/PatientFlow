@@ -3,8 +3,10 @@
 ## Modelos inteligentes — futuro distante
 
 Estado: apenas planeado. Implementar muito futuramente, após estabilizar o MVP,
-dispor de dados adequados e definir objetivos de avaliação. Este passo não é
-uma dependência dos passos 8 ou 9 e não inclui implementação na fase atual.
+dispor de dados adequados e definir objetivos de avaliação. Este documento
+descreve apenas trabalho futuro sobre modelos; não é um plano numerado do
+estado de todas as funcionalidades. Modelos treinados não são uma dependência
+da demonstração do backend nem da integração do frontend.
 
 - Definir alvos concretos: ocupação futura, procura por serviço, probabilidade
   de alta ou adequação de uma cama, conforme os dados e necessidades então existentes.

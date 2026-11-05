@@ -1,8 +1,8 @@
-# Indicadores e apoio operacional — passo 7
+# Indicadores e apoio operacional
 
 Esta implementação usa regras determinísticas e médias históricas simples,
 identificadas por `rules-v1`. O treino e utilização de modelos inteligentes
-pertencem exclusivamente ao passo 10 futuro do [plano](PLAN.md).
+são trabalho futuro descrito no [plano](PLAN.md).
 
 ## API e autorização
 
@@ -18,11 +18,13 @@ recebem apenas dados dos seus âmbitos. Filtros nunca ampliam esse acesso.
 | `GET /api/admission-requests/{id}/bed-suggestions` | `preferredWardId`, `limit` |
 
 A análise agrega ULS, unidade ou serviço. `wardId` é rejeitado para evitar
-atribuir a uma enfermaria uma fila que só tem serviço de destino. Os episódios
+atribuir a uma enfermaria uma fila que só tem serviço de destino. Os campos
+`buildingId`, `floorId`, `wingId` e `roomId` do DTO partilhado não são aplicados
+pelas consultas analíticas; usar apenas os filtros da tabela. Os episódios
 históricos sem serviço só participam nos indicadores globais do administrador;
 não podem ser classificados em cenários de um serviço.
 
-Uma coleção num âmbito sem correspondência fica vazia; rates/médias sem
+Uma coleção num âmbito sem correspondência fica vazia; percentagens/médias sem
 denominador ou amostras são `null`. Um pedido de admissão externo ao âmbito
 devolve `404`. Falta de papel/associação devolve `403`.
 
@@ -92,8 +94,10 @@ com duas casas decimais; amostras desconhecidas não são substituídas por zero
 
 Para localizar pressão num serviço, filtrar por `serviceId`. Alertas são
 calculados no pedido, sem estado de reconhecimento/persistência. Os eventos
-da etapa 6 permitem invalidar as vistas após alterações; o cliente deve também
-atualizar periodicamente os alertas que dependem apenas da passagem do tempo.
+WebSocket permitem a um cliente invalidar as vistas após alterações; esse
+cliente deve também atualizar periodicamente os alertas que dependem apenas
+da passagem do tempo. O frontend atual ainda não consome estes endpoints
+analíticos nem os eventos WebSocket; o dashboard mantém dados de exemplo.
 
 Valores iniciais de demonstração, configuráveis no arranque:
 
@@ -189,14 +193,17 @@ As respostas identificam `engine.source`, `algorithmVersion`, `degraded` e
 Desativar explicitamente o serviço usa a referência local sem marcar uma avaria.
 
 Os contratos de exemplo em `algorithms/tests/fixtures/rules-v1.json` são usados
-pelos testes Java e Python. Uma evolução para modelos treinados exigirá um novo
-contrato no passo 10, sem substituir silenciosamente o significado de `rules-v1`.
+pelos testes Java e Python. A suite Java tem os bloqueios descritos no
+[README](README.md#testes). Uma evolução para modelos treinados exigirá um novo
+contrato, sem substituir silenciosamente o significado de `rules-v1`.
 
-Para atualizar o serviço no ambiente de desenvolvimento:
+Para atualizar o serviço a partir da pasta `patient-flow-intelligence`:
 
 ```bash
 docker compose up -d --build algorithms
 ```
 
-O backend corre localmente e usa a porta publicada 8000. Se for executado numa
-rede Docker, configurar `ALGORITHMS_URL` para o endereço interno adequado.
+Quando o backend corre no host, usa por omissão `http://localhost:8000`.
+Tanto `docker-compose.yml` como `compose.mvp.yml` configuram o backend com
+`ALGORITHMS_URL=http://algorithms:8000`. O Compose MVP não publica a porta
+do serviço Python no host.
