@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
+import { Badge } from '@/components/Badge'
 import type { ViewProps } from '../types'
 
 const BedView = ({ node }: ViewProps) => {
   const { t, i18n } = useTranslation()
   const lang = i18n.resolvedLanguage
 
-  // A cama é criada a partir dos dados operacionais carregados para o quarto.
   const resource = node.resources?.[0]
   const patient = resource?.occupant
 
@@ -141,9 +141,9 @@ const BedView = ({ node }: ViewProps) => {
                   {patient?.name}
                 </h2>
               </div>
-              <span className="rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-medium text-emerald-700">
+              <Badge className="rounded-full border-0 bg-emerald-50 px-3.5 py-1 text-xs font-medium text-emerald-700">
                 {t('space.bedView.activeAdmission', 'Active admission')}
-              </span>
+              </Badge>
             </header>
 
             <div className="mt-6">

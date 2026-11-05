@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
 import { useKeycloak } from '../auth/context'
+import { Button } from '@/components/Button'
 
 import logoIcon from '/assets/app-logo.png'
 
@@ -92,14 +93,15 @@ const Sidebar = () => {
           </div>
         )}
         
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setCollapsed((c) => !c)}
           className="absolute -right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-slate-400 shadow-sm hover:bg-gray-50 hover:text-slate-600 z-10"
           title={t(collapsed ? 'nav.expand' : 'nav.collapse')}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        </Button>
       </div>
 
       {/* Main Menu */}
@@ -147,21 +149,22 @@ const Sidebar = () => {
       {/* Footer */}
       <div className={`border-t border-gray-100 py-4 ${collapsed ? 'px-2' : 'px-3'}`}>
         {/* Logout Button */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setLogoutConfirmationOpen(true)}
-          className={`mb-1 flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[14px] font-semibold text-red-600 transition-colors hover:bg-red-50 ${
+          className={`mb-1 flex w-full items-center justify-start gap-3.5 rounded-xl px-3.5 py-2.5 text-left text-[14px] font-semibold text-red-600 transition-colors hover:bg-red-50 ${
             collapsed ? 'justify-center px-0' : ''
           }`}
           title={collapsed ? t('nav.logout') : undefined}
         >
           <LogOut className="h-4 w-4 shrink-0 object-contain sidebar-icon-danger" />
           {!collapsed && (
-            <span className="overflow-hidden whitespace-nowrap text-ellipsis">
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
               {t('nav.logout')}
             </span>
           )}
-        </button>
+        </Button>
 
         {/* Help Center Link */}
         <NavLink
@@ -205,20 +208,21 @@ const Sidebar = () => {
             {t('nav.logoutConfirmation.description')}
           </p>
           <div className="mt-8 flex flex-col gap-3 border-t border-gray-200 pt-7 sm:flex-row">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => logoutDialogRef.current?.close()}
               className="h-14 flex-1 rounded-xl border border-gray-200 bg-gray-100 px-5 text-base font-semibold text-slate-700 transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               {t('nav.logoutConfirmation.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => keycloak.logout()}
               className="h-14 flex-1 rounded-xl bg-red-500 px-5 text-base font-semibold text-white shadow-md transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
             >
               {t('nav.logout')}
-            </button>
+            </Button>
           </div>
         </div>
       </dialog>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Card } from '@/components/Card'
 import { fetchAccount } from '../api/account'
 
 const getProfile = (roles: string[] = []) => {
@@ -41,15 +42,15 @@ const Account = () => {
   })
 
   if (isPending) {
-    return <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">Loading...</div>
+    return <Card className="gap-0 rounded-2xl p-10 shadow-sm">Loading...</Card>
   }
 
   if (isError || !account) {
-    return <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">{t('account.error')}</div>
+    return <Card className="gap-0 rounded-2xl p-10 shadow-sm">{t('account.error')}</Card>
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">
+    <Card className="gap-0 rounded-2xl p-10 shadow-sm">
       {/* Header */}
       <header className="flex items-center gap-5 border-b border-gray-200 pb-8">
         <div
@@ -83,7 +84,7 @@ const Account = () => {
           {t(`account.access.${profile}`)}
         </p>
       </section>
-    </div>
+    </Card>
   )
 }
 

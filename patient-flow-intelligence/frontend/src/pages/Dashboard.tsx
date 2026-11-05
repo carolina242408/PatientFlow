@@ -2,6 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Maximize2, X } from 'lucide-react'
+import { Button } from '@/components/Button'
+import { Badge } from '@/components/Badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/Table'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
 
@@ -183,12 +193,12 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                 {occupancyPercent === null ? '—' : `${occupancyPercent}%`}
               </p>
             </div>
-            <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">
+            <Badge className="shrink-0 rounded-full border-0 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">
               {t('dashboard.beds', {
                 occupied: occupancySummary.occupiedBeds,
                 total: occupancySummary.totalBeds,
               })}
-            </span>
+            </Badge>
           </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
             <div
@@ -207,9 +217,9 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
         {forecasts.map((item) => (
           <article key={item.label} className="rounded-xl border border-gray-200 bg-white p-5">
-            <span className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${item.tone}`}>
+            <Badge className={`inline-flex rounded-md border-0 px-2 py-1 text-xs font-medium ${item.tone}`}>
               {t('dashboard.forecast.badge')}
-            </span>
+            </Badge>
             <p className="mt-3 text-3xl font-semibold text-slate-900">{item.value}</p>
             <p className="mt-1 text-sm font-medium text-gray-600">{item.label}</p>
             <p className="mt-2 text-xs text-gray-400">{item.detail}</p>
@@ -230,15 +240,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perService.title')}</h2>
               <p className="mt-1 text-sm text-gray-400">{t('dashboard.perService.body')}</p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               aria-haspopup="dialog"
               aria-label={`${t('dashboard.perService.title')}. ${t('dashboard.expandChart')}`}
               onClick={() => setExpandedItem('service')}
               className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <Maximize2 aria-hidden="true" className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
 
           {/* Service Occupancy */}
@@ -282,15 +293,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                 <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perUnit.title')}</h2>
                 <p className="mt-1 text-sm text-gray-400">{t('dashboard.perUnit.body')}</p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 aria-haspopup="dialog"
                 aria-label={`${t('dashboard.perUnit.title')}. ${t('dashboard.expandChart')}`}
                 onClick={() => setExpandedItem('unit')}
                 className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <Maximize2 aria-hidden="true" className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
@@ -337,15 +349,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               <h2 className="text-base font-semibold text-slate-900">{t('dashboard.forecastChart.title')}</h2>
               <p className="mt-1 text-sm text-gray-400">{t('dashboard.forecastChart.body')}</p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               aria-haspopup="dialog"
               aria-label={`${t('dashboard.forecastChart.title')}. ${t('dashboard.expandChart')}`}
               onClick={() => setExpandedItem('discharges')}
               className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <Maximize2 aria-hidden="true" className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
 
           <div className="mt-6 flex h-48 items-end gap-2 border-b border-gray-200 pt-6">
@@ -390,45 +403,46 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                   {t('dashboard.lengthOfStay.body')}
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 aria-haspopup="dialog"
                 aria-label={`${t('dashboard.lengthOfStay.title')}. ${t('dashboard.expandTable')}`}
                 onClick={() => setExpandedItem('lengthOfStay')}
                 className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <Maximize2 aria-hidden="true" className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             <div
               className="cursor-zoom-in overflow-x-auto"
               onClick={() => setExpandedItem('lengthOfStay')}
             >
-              <table className="w-full min-w-[480px] border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400">
-                    <th scope="col" className="px-6 py-3 text-left">
+              <Table className="min-w-[480px] border-collapse">
+                <TableHeader>
+                  <TableRow className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400 hover:bg-transparent">
+                    <TableHead scope="col" className="px-6 py-3 text-left">
                       {t('dashboard.lengthOfStay.condition')}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-center">
+                    </TableHead>
+                    <TableHead scope="col" className="px-4 py-3 text-center">
                       {t('dashboard.lengthOfStay.estimatedStay')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {LENGTH_OF_STAY_FORECAST.map(({ condition, minimumDays, maximumDays }) => (
-                    <tr key={condition} className="border-t border-gray-100 text-sm text-gray-600">
-                      <th scope="row" className="px-6 py-3.5 text-left font-medium text-slate-900">
+                    <TableRow key={condition} className="border-t border-gray-100 border-b-0 text-sm text-gray-600 hover:bg-transparent">
+                      <TableHead scope="row" className="px-6 py-3.5 text-left font-medium text-slate-900">
                         {t(`dashboard.lengthOfStay.conditions.${condition}`)}
-                      </th>
-                      <td className="px-4 py-3.5 text-center">
+                      </TableHead>
+                      <TableCell className="px-4 py-3.5 text-center">
                         {t('dashboard.lengthOfStay.daysRange', { minimum: minimumDays, maximum: maximumDays })}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </section>
         </article>
@@ -471,15 +485,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                   )}
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
                 autoFocus
+                variant="ghost"
                 onClick={() => dashboardDialogRef.current?.close()}
                 aria-label={t('dashboard.closeExpandedItem')}
                 className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <X aria-hidden="true" className="h-5 w-5" />
-              </button>
+              </Button>
             </header>
 
             {expandedItem === 'service' && (
@@ -574,68 +589,68 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
             {expandedItem === 'lengthOfStay' && (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[480px] border-collapse text-base">
-                  <thead>
-                    <tr className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500">
-                      <th scope="col" className="px-8 py-5 text-left">
+                <Table className="min-w-[480px] border-collapse text-base">
+                  <TableHeader>
+                    <TableRow className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500 hover:bg-transparent">
+                      <TableHead scope="col" className="px-8 py-5 text-left">
                         {t('dashboard.lengthOfStay.condition')}
-                      </th>
-                      <th scope="col" className="px-8 py-5 text-center">
+                      </TableHead>
+                      <TableHead scope="col" className="px-8 py-5 text-center">
                         {t('dashboard.lengthOfStay.estimatedStay')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {LENGTH_OF_STAY_FORECAST.map(({ condition, minimumDays, maximumDays }) => (
-                      <tr key={condition} className="border-t border-gray-100 text-gray-600">
-                        <th scope="row" className="px-8 py-6 text-left font-medium text-slate-900">
+                      <TableRow key={condition} className="border-t border-gray-100 border-b-0 text-gray-600 hover:bg-transparent">
+                        <TableHead scope="row" className="px-8 py-6 text-left font-medium text-slate-900">
                           {t(`dashboard.lengthOfStay.conditions.${condition}`)}
-                        </th>
-                        <td className="px-8 py-6 text-center">
+                        </TableHead>
+                        <TableCell className="px-8 py-6 text-center">
                           {t('dashboard.lengthOfStay.daysRange', { minimum: minimumDays, maximum: maximumDays })}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
 
             {expandedItem === 'upcomingDischarges' && (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] border-collapse text-base text-left">
-                  <thead>
-                    <tr className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500">
+                <Table className="min-w-[900px] border-collapse text-base text-left">
+                  <TableHeader>
+                    <TableRow className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500 hover:bg-transparent">
                       {(['patient', 'location', 'service', 'expected', 'destination', 'readiness'] as const).map(
                         (column) => (
-                          <th key={column} scope="col" className="px-6 py-5">
+                          <TableHead key={column} scope="col" className="px-6 py-5">
                             {t(`dashboard.discharges.columns.${column}`)}
-                          </th>
+                          </TableHead>
                         ),
                       )}
-                    </tr>
-                  </thead>
-                  <tbody>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {UPCOMING_DISCHARGES.map((discharge) => (
-                      <tr key={discharge.patient} className="border-t border-gray-100 text-gray-600">
-                        <th scope="row" className="px-6 py-5 font-medium text-slate-900">
+                      <TableRow key={discharge.patient} className="border-t border-gray-100 border-b-0 text-gray-600 hover:bg-transparent">
+                        <TableHead scope="row" className="px-6 py-5 font-medium text-slate-900">
                           {discharge.patient}
-                        </th>
-                        <td className="px-6 py-5">
+                        </TableHead>
+                        <TableCell className="px-6 py-5">
                           {t('dashboard.discharges.location', { room: discharge.room, bed: discharge.bed })}
-                        </td>
-                        <td className="px-6 py-5">{discharge.service}</td>
-                        <td className="px-6 py-5">{formatWhen(discharge.day, discharge.time)}</td>
-                        <td className="px-6 py-5">{t(`dashboard.destinations.${discharge.destination}`)}</td>
-                        <td className="px-6 py-5">
-                          <span className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLES[discharge.status]}`}>
+                        </TableCell>
+                        <TableCell className="px-6 py-5">{discharge.service}</TableCell>
+                        <TableCell className="px-6 py-5">{formatWhen(discharge.day, discharge.time)}</TableCell>
+                        <TableCell className="px-6 py-5">{t(`dashboard.destinations.${discharge.destination}`)}</TableCell>
+                        <TableCell className="px-6 py-5">
+                          <Badge className={`whitespace-nowrap rounded-full border-0 px-3 py-1 text-sm font-medium ${STATUS_STYLES[discharge.status]}`}>
                             {t(`dashboard.status.${discharge.status}`)}
-                          </span>
-                        </td>
-                      </tr>
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>
@@ -649,54 +664,53 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             <h2 className="text-base font-semibold text-slate-900">{t('dashboard.discharges.title')}</h2>
             <p className="mt-1 text-sm text-gray-400">{t('dashboard.discharges.body')}</p>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             aria-haspopup="dialog"
             aria-label={`${t('dashboard.discharges.title')}. ${t('dashboard.expandTable')}`}
             onClick={() => setExpandedItem('upcomingDischarges')}
             className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <Maximize2 aria-hidden="true" className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
         <div
           className="cursor-zoom-in overflow-x-auto"
           onClick={() => setExpandedItem('upcomingDischarges')}
         >
-          <table className="w-full min-w-[720px] border-collapse text-left">
-            <thead>
-              <tr className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400">
+          <Table className="min-w-[720px] border-collapse text-left">
+            <TableHeader>
+              <TableRow className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400 hover:bg-transparent">
                 {(['patient', 'location', 'service', 'expected', 'destination', 'readiness'] as const).map(
                   (col, i) => (
-                    <th key={col} className={`py-3 ${i === 0 ? 'px-6' : 'px-4'}`}>
+                    <TableHead key={col} className={`py-3 ${i === 0 ? 'px-6' : 'px-4'}`}>
                       {t(`dashboard.discharges.columns.${col}`)}
-                    </th>
+                    </TableHead>
                   ),
                 )}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {UPCOMING_DISCHARGES.map((d) => (
-                <tr key={d.patient} className="border-t border-gray-100 text-sm text-gray-600">
-                  <td className="px-6 py-3.5 font-medium text-slate-900">{d.patient}</td>
-                  <td className="px-4 py-3.5">
+                <TableRow key={d.patient} className="border-t border-gray-100 border-b-0 text-sm text-gray-600 hover:bg-transparent">
+                  <TableCell className="px-6 py-3.5 font-medium text-slate-900">{d.patient}</TableCell>
+                  <TableCell className="px-4 py-3.5">
                     {t('dashboard.discharges.location', { room: d.room, bed: d.bed })}
-                  </td>
-                  <td className="px-4 py-3.5">{d.service}</td>
-                  <td className="px-4 py-3.5">{formatWhen(d.day, d.time)}</td>
-                  <td className="px-4 py-3.5">{t(`dashboard.destinations.${d.destination}`)}</td>
-                  <td className="px-4 py-3.5">
-                    <span
-                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[d.status]}`}
-                    >
+                  </TableCell>
+                  <TableCell className="px-4 py-3.5">{d.service}</TableCell>
+                  <TableCell className="px-4 py-3.5">{formatWhen(d.day, d.time)}</TableCell>
+                  <TableCell className="px-4 py-3.5">{t(`dashboard.destinations.${d.destination}`)}</TableCell>
+                  <TableCell className="px-4 py-3.5">
+                    <Badge className={`whitespace-nowrap rounded-full border-0 px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[d.status]}`}>
                       {t(`dashboard.status.${d.status}`)}
-                    </span>
-                  </td>
-                </tr>
+                    </Badge>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
     </div>

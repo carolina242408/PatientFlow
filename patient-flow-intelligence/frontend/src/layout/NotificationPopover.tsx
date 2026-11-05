@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, BedSingle, CalendarDays, CircleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/Button'
+import { Badge } from '@/components/Badge'
 
 const INITIAL_NOTIFICATIONS = [
   {
@@ -59,8 +61,9 @@ const NotificationPopover = () => {
 
   return (
     <div ref={popoverRef} className="relative">
-      <button
+      <Button
         type="button"
+        variant="ghost"
         aria-label={t('topbar.notifications')}
         aria-expanded={isOpen}
         aria-controls="user-notifications"
@@ -74,7 +77,7 @@ const NotificationPopover = () => {
             className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500"
           />
         )}
-      </button>
+      </Button>
 
       {isOpen && (
         <section
@@ -87,19 +90,20 @@ const NotificationPopover = () => {
               <h2 className="text-base font-semibold text-slate-900">
                 {t('topbar.notifications')}
               </h2>
-              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+              <Badge className="rounded-full border-0 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
                 {t('topbar.unreadCount', { count: unreadCount })}
-              </span>
+              </Badge>
             </div>
             <p className="mt-1 text-xs text-gray-500">{t('topbar.sampleNotifications')}</p>
             {unreadCount > 0 && (
-              <button
+              <Button
                 type="button"
+                variant="link"
                 onClick={() => setUnreadIds([])}
                 className="mt-3 text-xs font-medium text-blue-600 hover:underline"
               >
                 {t('topbar.markAllRead')}
-              </button>
+              </Button>
             )}
           </header>
 
@@ -108,11 +112,12 @@ const NotificationPopover = () => {
               const isUnread = unreadIds.includes(id)
               return (
                 <li key={id}>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => markRead(id)}
                     aria-label={`${t(titleKey)}. ${t(bodyKey)} ${isUnread ? t('topbar.markRead') : ''}`}
-                    className={`notification-row flex w-full items-start gap-3 border-b border-gray-100 px-5 py-4 text-left transition-colors hover:bg-gray-50 ${
+                    className={`notification-row h-auto flex w-full items-start gap-3 border-b border-gray-100 px-5 py-4 text-left transition-colors hover:bg-gray-50 ${
                       isUnread ? 'notification-unread bg-blue-50/60' : 'bg-white'
                     }`}
                   >
@@ -132,7 +137,7 @@ const NotificationPopover = () => {
                       <span className="mt-1 block text-sm leading-5 text-gray-600">{t(bodyKey)}</span>
                       <span className="mt-2 block text-xs text-gray-400">{t(timeKey)}</span>
                     </span>
-                  </button>
+                  </Button>
                 </li>
               )
             })}

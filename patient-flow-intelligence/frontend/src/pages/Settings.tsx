@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Card } from '@/components/Card'
+import { Select, SelectOption } from '@/components/Select'
+import { Button } from '@/components/Button'
 
 type Theme = 'light' | 'dark'
 
@@ -8,16 +11,14 @@ const LANGUAGES = [
   { code: 'pt-PT', label: 'Português' },
 ]
 
-const THEMES: { value: Theme; titleKey: string; descKey: string; iconClass: string }[] = [
+const THEMES: { value: Theme; descKey: string; iconClass: string }[] = [
   {
     value: 'light',
-    titleKey: 'settings.appearance.light',
     descKey: 'settings.appearance.lightDesc',
     iconClass: 'theme-light-swatch border-amber-100 bg-amber-50',
   },
   {
     value: 'dark',
-    titleKey: 'settings.appearance.dark',
     descKey: 'settings.appearance.darkDesc',
     iconClass: 'border-slate-600 bg-slate-900',
   },
@@ -70,7 +71,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">
+    <Card className="gap-0 rounded-2xl p-10 shadow-sm">
       {/* Header */}
       <header className="pb-8">
         <h1 className="text-2xl font-semibold text-slate-900">{t('settings.title')}</h1>
@@ -85,17 +86,18 @@ const Settings = () => {
           </h2>
           <p className="mt-1 text-sm text-gray-500">{t('settings.appearance.body')}</p>
 
-          <div role="radiogroup" className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div role="radiogroup" className="mt-5 grid grid-cols-1 gap-4 md:auto-rows-fr md:grid-cols-2">
             {THEMES.map((option) => {
               const selected = theme === option.value
               return (
-                <button
+                <Button
                   key={option.value}
                   type="button"
+                  variant="ghost"
                   role="radio"
                   aria-checked={selected}
                   onClick={() => handleThemePreview(option.value)}
-                  className={`flex items-center gap-4 rounded-xl border p-5 text-left transition-colors ${
+                  className={`h-full w-full min-w-0 flex items-center justify-start gap-4 whitespace-normal rounded-xl border p-5 text-left transition-colors ${
                     selected
                       ? 'border-blue-600 bg-blue-50'
                       : 'border-gray-200 bg-white hover:bg-gray-50'
@@ -105,13 +107,12 @@ const Settings = () => {
                     aria-hidden="true"
                     className={`h-12 w-12 shrink-0 rounded-full border-[6px] ${option.iconClass}`}
                   />
-                  <span className="flex flex-col">
+                  <span className="flex min-w-0 flex-col gap-1 break-words">
                     <span className="text-base font-semibold text-slate-900">
                       {t(option.titleKey)}
                     </span>
-                    <span className="text-sm text-gray-500">{t(option.descKey)}</span>
                   </span>
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -124,28 +125,30 @@ const Settings = () => {
           </h2>
           <p className="mt-1 text-sm text-gray-500">{t('settings.language.body')}</p>
 
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="mt-5 w-full max-w-md rounded-lg border border-gray-200 bg-white px-4 py-3 text-base text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            {LANGUAGES.map((lang) => (
-              <option key={lang.code} value={lang.code}>
-                {lang.label}
-              </option>
-            ))}
-          </select>
+          <div className="mt-5 w-full max-w-md">
+            <Select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="h-auto rounded-lg px-4 py-3 text-base text-slate-900 focus-visible:border-blue-600 focus-visible:ring-blue-100"
+            >
+              {LANGUAGES.map((lang) => (
+                <SelectOption key={lang.code} value={lang.code}>
+                  {lang.label}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
         </section>
 
         {/* Actions */}
         <div className="flex justify-end pt-8">
-          <button
+          <Button
             type="button"
             onClick={handleSave}
-            className="rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700"
+            className="h-auto rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700"
           >
             {t('settings.save')}
-          </button>
+          </Button>
         </div>
       </div>
       {popup && (
@@ -159,7 +162,7 @@ const Settings = () => {
           <p className="mt-1 text-sm">{t(`settings.popup.${popup.type}.description`)}</p>
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
