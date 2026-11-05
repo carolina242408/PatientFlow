@@ -11,14 +11,16 @@ const LANGUAGES = [
   { code: 'pt-PT', label: 'Português' },
 ]
 
-const THEMES: { value: Theme; descKey: string; iconClass: string }[] = [
+const THEMES: { value: Theme; titleKey: string; descKey: string; iconClass: string }[] = [
   {
     value: 'light',
+    titleKey: 'settings.appearance.light',
     descKey: 'settings.appearance.lightDesc',
     iconClass: 'theme-light-swatch border-amber-100 bg-amber-50',
   },
   {
     value: 'dark',
+    titleKey: 'settings.appearance.dark',
     descKey: 'settings.appearance.darkDesc',
     iconClass: 'border-slate-600 bg-slate-900',
   },
