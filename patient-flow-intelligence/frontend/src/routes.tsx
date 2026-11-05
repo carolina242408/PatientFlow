@@ -19,11 +19,26 @@ const AdminRoute = () => {
   return hasAdminRole(user?.roles) ? <Outlet /> : <Navigate to="/dashboard" replace />
 }
 
+const HomeRoute = () => {
+  const { user } = useKeycloak()
+  return (
+    <Navigate
+      to={hasAdminRole(user?.roles) ? "/lhu-hierarchy" : "/dashboard"}
+      replace
+    />
+  )
+}
+
+const DashboardRoute = () => {
+  const { user } = useKeycloak()
+  return hasAdminRole(user?.roles) ? <Navigate to="/lhu-hierarchy" replace /> : <Dashboard />
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route element={<AppLayout />}>
-      <Route index element={<Navigate to="/dashboard" replace />} />
-      <Route path="dashboard" element={<Dashboard />} />
+      <Route index element={<HomeRoute />} />
+      <Route path="dashboard" element={<DashboardRoute />} />
       <Route path="lhu" element={<Lhu />} />
       <Route path="unit" element={<Unit />} />
       <Route path="service" element={<Service />} />
