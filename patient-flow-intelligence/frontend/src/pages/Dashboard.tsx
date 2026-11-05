@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { Maximize2, X } from 'lucide-react'
 import { useKeycloak } from '../auth/context'
+import { fetchOccupancy } from '../api/operational'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
 
@@ -24,22 +26,6 @@ const SCOPE_METRICS: Record<
   Unit: { occupancy: 81, occupiedBeds: 96, totalBeds: 118, discharges: 5, next48Hours: 9, available: 31 },
   Service: { occupancy: 88, occupiedBeds: 42, totalBeds: 48, discharges: 3, next48Hours: 5, available: 9 },
 }
-
-const SERVICE_OCCUPANCY = [
-  { service: 'Cardiology', occupancy: 88, beds: '42 / 48' },
-  { service: 'Internal Medicine', occupancy: 82, beds: '54 / 66' },
-  { service: 'Surgery', occupancy: 76, beds: '38 / 50' },
-  { service: 'Orthopedics', occupancy: 69, beds: '29 / 42' },
-  { service: 'Pediatrics', occupancy: 63, beds: '22 / 35' },
-  { service: 'Maternity', occupancy: 57, beds: '17 / 30' },
-]
-
-const UNIT_OCCUPANCY = [
-  { unit: 'Hospital Unit', occupancy: 81, beds: '96 / 118' },
-  { unit: 'Outpatient Unit', occupancy: 74, beds: '52 / 70' },
-  { unit: 'Maternity Unit', occupancy: 68, beds: '34 / 50' },
-  { unit: 'Surgical Unit', occupancy: 63, beds: '44 / 70' },
-]
 
 const DISCHARGE_FORECAST = [
   { day: 'mon', count: 3 },
@@ -109,6 +95,10 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
   const profileScope = getProfileScope(user?.roles) ?? scope
   const metrics = SCOPE_METRICS[scope]
+  const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
+    queryKey: ['dashboard-occupancy'],
+    queryFn: () => fetchOccupancy(),
+  })
 
   useEffect(() => {
     const dialog = dashboardDialogRef.current
@@ -121,9 +111,23 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     month: 'long',
   }).format(new Date())
 
-  const gap = CRITICAL_THRESHOLD - metrics.occupancy
   const weekTotal = DISCHARGE_FORECAST.reduce((sum, item) => sum + item.count, 0)
   const maxForecast = Math.max(...DISCHARGE_FORECAST.map((item) => item.count))
+  const serviceOccupancy = occupancy?.services ?? []
+  const unitOccupancy = occupancy?.units ?? []
+  const occupancySummary = serviceOccupancy.reduce(
+    (summary, item) => ({
+      occupiedBeds: summary.occupiedBeds + item.occupied,
+      totalBeds: summary.totalBeds + item.capacity,
+    }),
+    { occupiedBeds: 0, totalBeds: 0 },
+  )
+  const occupancyPercent =
+    occupancySummary.totalBeds > 0
+      ? Math.round((occupancySummary.occupiedBeds / occupancySummary.totalBeds) * 10000) / 100
+      : null
+  const criticalThreshold = occupancy?.criticalOccupancyPercent ?? CRITICAL_THRESHOLD
+  const occupancyGap = occupancyPercent === null ? null : criticalThreshold - occupancyPercent
 
   const forecasts = [
     {
@@ -175,22 +179,29 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               <p className="text-sm font-medium text-gray-500">
                 {t('dashboard.occupancyRate', { scope: t(`dashboard.scopes.${scope}.name`) })}
               </p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{metrics.occupancy}%</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900">
+                {occupancyPercent === null ? '—' : `${occupancyPercent}%`}
+              </p>
             </div>
             <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">
-              {t('dashboard.beds', { occupied: metrics.occupiedBeds, total: metrics.totalBeds })}
+              {t('dashboard.beds', {
+                occupied: occupancySummary.occupiedBeds,
+                total: occupancySummary.totalBeds,
+              })}
             </span>
           </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
             <div
               className="h-full rounded-full bg-blue-500"
-              style={{ width: `${metrics.occupancy}%` }}
+              style={{ width: `${occupancyPercent ?? 0}%` }}
             />
           </div>
           <p className="mt-2 text-xs text-gray-400">
-            {gap >= 0
-              ? t('dashboard.thresholdBelow', { value: gap })
-              : t('dashboard.thresholdAbove', { value: Math.abs(gap) })}
+            {occupancyGap === null
+              ? t('dashboard.occupancyLoading')
+              : occupancyGap >= 0
+                ? t('dashboard.thresholdBelow', { value: occupancyGap })
+                : t('dashboard.thresholdAbove', { value: Math.abs(occupancyGap) })}
           </p>
         </article>
 
@@ -232,14 +243,14 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
           {/* Service Occupancy */}
           <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
-            {SERVICE_OCCUPANCY.map((item) => (
-              <div key={item.service} className="flex h-full min-w-0 flex-1 items-end justify-center">
+            {serviceOccupancy.map((item) => (
+              <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
                 <div
-                  className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
-                  style={{ height: `${item.occupancy}%` }}
+                  className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
+                  style={{ height: `${item.occupancyPercent ?? 0}%` }}
                 >
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
-                    {item.occupancy}%
+                    {item.occupancyPercent ?? 0}%
                   </span>
                 </div>
               </div>
@@ -248,15 +259,17 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
           {/* Legendas (mesmo gap e flex-1 para alinhar com as barras) */}
           <div className="flex gap-3 px-1 pt-2">
-            {SERVICE_OCCUPANCY.map((item) => (
-              <div key={item.service} className="min-w-0 flex-1 text-center">
-                <span className="block min-h-8 whitespace-normal break-words text-xs font-medium leading-tight text-gray-500" title={item.service}>
-                  {item.service}
+            {serviceOccupancy.map((item) => (
+              <div key={item.id} className="min-w-0 flex-1 text-center">
+                <span className="block min-h-8 whitespace-normal break-words text-xs font-medium leading-tight text-gray-500" title={item.name}>
+                  {item.name}
                 </span>
-                <span className="mt-0.5 block text-xs text-gray-400">{item.beds}</span>
+                <span className="mt-0.5 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
               </div>
             ))}
           </div>
+          {occupancyPending && <p className="mt-4 text-xs text-gray-400">{t('dashboard.occupancyLoading')}</p>}
+          {occupancyError && <p className="mt-4 text-xs text-red-600">{t('dashboard.occupancyError')}</p>}
         </article>
 
         {profileScope !== 'Service' && (
@@ -281,14 +294,14 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             </div>
 
             <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
-              {UNIT_OCCUPANCY.map((item) => (
-                <div key={item.unit} className="flex h-full min-w-0 flex-1 items-end justify-center">
+              {unitOccupancy.map((item) => (
+                <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
                   <div
-                    className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
-                    style={{ height: `${item.occupancy}%` }}
+                    className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
+                    style={{ height: `${item.occupancyPercent ?? 0}%` }}
                   >
                     <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
-                      {item.occupancy}%
+                      {item.occupancyPercent ?? 0}%
                     </span>
                   </div>
                 </div>
@@ -296,15 +309,17 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             </div>
 
             <div className="flex gap-3 px-1 pt-2">
-              {UNIT_OCCUPANCY.map((item) => (
-                <div key={item.unit} className="min-w-0 flex-1 text-center">
-                  <span className="block min-h-8 whitespace-normal break-words text-xs font-medium leading-tight text-gray-500" title={item.unit}>
-                    {item.unit}
+              {unitOccupancy.map((item) => (
+                <div key={item.id} className="min-w-0 flex-1 text-center">
+                  <span className="block min-h-8 whitespace-normal break-words text-xs font-medium leading-tight text-gray-500" title={item.name}>
+                    {item.name}
                   </span>
-                  <span className="mt-0.5 block text-xs text-gray-400">{item.beds}</span>
+                  <span className="mt-0.5 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
                 </div>
               ))}
             </div>
+            {occupancyPending && <p className="mt-4 text-xs text-gray-400">{t('dashboard.occupancyLoading')}</p>}
+            {occupancyError && <p className="mt-4 text-xs text-red-600">{t('dashboard.occupancyError')}</p>}
           </article>
         )}
       </section>
@@ -470,26 +485,26 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {expandedItem === 'service' && (
               <div>
                 <div className="flex h-[min(55vh,480px)] items-end gap-6 border-b border-gray-200 px-4 pt-12 sm:gap-10">
-                  {SERVICE_OCCUPANCY.map((item) => (
-                    <div key={item.service} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                  {serviceOccupancy.map((item) => (
+                    <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
                       <div
-                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
-                        style={{ height: `${item.occupancy}%` }}
+                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
+                        style={{ height: `${item.occupancyPercent ?? 0}%` }}
                       >
                         <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
-                          {item.occupancy}%
+                          {item.occupancyPercent ?? 0}%
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-6 px-4 pt-3 sm:gap-10">
-                  {SERVICE_OCCUPANCY.map((item) => (
-                    <div key={item.service} className="min-w-0 flex-1 text-center">
+                  {serviceOccupancy.map((item) => (
+                    <div key={item.id} className="min-w-0 flex-1 text-center">
                       <span className="block min-h-10 whitespace-normal break-words text-sm font-medium text-gray-600">
-                        {item.service}
+                        {item.name}
                       </span>
-                      <span className="mt-1 block text-xs text-gray-400">{item.beds}</span>
+                      <span className="mt-1 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
                     </div>
                   ))}
                 </div>
@@ -499,26 +514,26 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {expandedItem === 'unit' && (
               <div>
                 <div className="flex h-[min(55vh,480px)] items-end gap-6 border-b border-gray-200 px-4 pt-12 sm:gap-10">
-                  {UNIT_OCCUPANCY.map((item) => (
-                    <div key={item.unit} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                  {unitOccupancy.map((item) => (
+                    <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
                       <div
-                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancy)}`}
-                        style={{ height: `${item.occupancy}%` }}
+                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
+                        style={{ height: `${item.occupancyPercent ?? 0}%` }}
                       >
                         <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
-                          {item.occupancy}%
+                          {item.occupancyPercent ?? 0}%
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-6 px-4 pt-3 sm:gap-10">
-                  {UNIT_OCCUPANCY.map((item) => (
-                    <div key={item.unit} className="min-w-0 flex-1 text-center">
+                  {unitOccupancy.map((item) => (
+                    <div key={item.id} className="min-w-0 flex-1 text-center">
                       <span className="block min-h-10 whitespace-normal break-words text-sm font-medium text-gray-600">
-                        {item.unit}
+                        {item.name}
                       </span>
-                      <span className="mt-1 block text-xs text-gray-400">{item.beds}</span>
+                      <span className="mt-1 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
                     </div>
                   ))}
                 </div>

@@ -171,6 +171,8 @@
   "dashboard": {
     "expandChart": "Selecionar para ampliar",
     "expandTable": "Selecionar para ampliar",
+    "occupancyLoading": "A carregar ocupação...",
+    "occupancyError": "Não foi possível carregar a ocupação.",
     "closeExpandedItem": "Fechar vista ampliada",
     "lastUpdated": "Última atualização hoje às {{time}}",
     "occupancyRate": "Taxa de ocupação ({{scope}})",
