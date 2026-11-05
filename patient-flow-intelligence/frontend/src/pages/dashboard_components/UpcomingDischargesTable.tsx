@@ -1,13 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/Badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/Table'
+import DashboardTable, { type DashboardTableColumn } from './DashboardTable'
 
 type DischargeStatus = 'ready' | 'pendingTransport' | 'medicationReview' | 'clinicalReview'
 type Destination = 'home' | 'rehabilitation' | 'primaryCare'
@@ -35,90 +28,68 @@ const STATUS_STYLES: Record<DischargeStatus, string> = {
   clinicalReview: 'bg-purple-50 text-purple-700',
 }
 
-const COLUMNS = ['patient', 'location', 'service', 'expected', 'destination', 'readiness'] as const
-
 function UpcomingDischargesTable({
   discharges,
   expanded = false,
 }: UpcomingDischargesTableProps) {
   const { t } = useTranslation()
-  const cellPadding = expanded ? 'px-6 py-5' : 'px-4 py-3.5'
-  const patientCellPadding = expanded ? cellPadding : 'px-6 py-3.5'
   const formatWhen = (day: string, time: string) =>
     day === 'today' || day === 'tomorrow'
       ? `${t(`dashboard.days.${day}`)}, ${time}`
       : `${day}, ${time}`
 
-  return (
-    <Table
-      className={
-        expanded
-          ? 'min-w-[900px] border-collapse text-base text-left'
-          : 'min-w-[720px] border-collapse text-left'
-      }
-    >
-      <TableHeader>
-        <TableRow
-          className={`bg-gray-50 ${expanded ? 'text-sm text-gray-500' : 'text-xs text-gray-400'} font-medium uppercase tracking-wide hover:bg-transparent`}
+  const columns: DashboardTableColumn<UpcomingDischarge>[] = [
+    {
+      key: 'patient',
+      header: t('dashboard.discharges.columns.patient'),
+      rowHeader: expanded,
+      renderCell: ({ patient }) => patient,
+    },
+    {
+      key: 'location',
+      header: t('dashboard.discharges.columns.location'),
+      renderCell: ({ room, bed }) => t('dashboard.discharges.location', { room, bed }),
+    },
+    {
+      key: 'service',
+      header: t('dashboard.discharges.columns.service'),
+      renderCell: ({ service }) => service,
+    },
+    {
+      key: 'expected',
+      header: t('dashboard.discharges.columns.expected'),
+      renderCell: ({ day, time }) => formatWhen(day, time),
+    },
+    {
+      key: 'destination',
+      header: t('dashboard.discharges.columns.destination'),
+      renderCell: ({ destination }) => t(`dashboard.destinations.${destination}`),
+    },
+    {
+      key: 'readiness',
+      header: t('dashboard.discharges.columns.readiness'),
+      renderCell: ({ status }) => (
+        <Badge
+          className={`whitespace-nowrap rounded-full border-0 ${
+            expanded ? 'px-3 py-1 text-sm' : 'px-2.5 py-1 text-xs'
+          } font-medium ${STATUS_STYLES[status]}`}
         >
-          {COLUMNS.map((column, index) => (
-            <TableHead
-              key={column}
-              scope="col"
-              className={
-                expanded
-                  ? 'px-6 py-5'
-                  : `py-3 ${index === 0 ? 'px-6' : 'px-4'}`
-              }
-            >
-              {t(`dashboard.discharges.columns.${column}`)}
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {discharges.map((discharge) => (
-          <TableRow
-            key={discharge.patient}
-            className="border-t border-gray-100 border-b-0 text-gray-600 hover:bg-transparent"
-          >
-            {expanded ? (
-              <TableHead scope="row" className={`${patientCellPadding} font-medium text-slate-900`}>
-                {discharge.patient}
-              </TableHead>
-            ) : (
-              <TableCell className={`${patientCellPadding} font-medium text-slate-900`}>
-                {discharge.patient}
-              </TableCell>
-            )}
-            <TableCell className={cellPadding}>
-              {t('dashboard.discharges.location', {
-                room: discharge.room,
-                bed: discharge.bed,
-              })}
-            </TableCell>
-            <TableCell className={cellPadding}>{discharge.service}</TableCell>
-            <TableCell className={cellPadding}>
-              {formatWhen(discharge.day, discharge.time)}
-            </TableCell>
-            <TableCell className={cellPadding}>
-              {t(`dashboard.destinations.${discharge.destination}`)}
-            </TableCell>
-            <TableCell className={cellPadding}>
-              <Badge
-                className={`whitespace-nowrap rounded-full border-0 ${
-                  expanded
-                    ? 'px-3 py-1 text-sm'
-                    : 'px-2.5 py-1 text-xs'
-                } font-medium ${STATUS_STYLES[discharge.status]}`}
-              >
-                {t(`dashboard.status.${discharge.status}`)}
-              </Badge>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+          {t(`dashboard.status.${status}`)}
+        </Badge>
+      ),
+    },
+  ]
+
+  return (
+    <DashboardTable
+      columns={columns}
+      rows={discharges}
+      getRowKey={({ patient }) => patient}
+      tableClassName={`${
+        expanded ? 'min-w-[900px] border-collapse text-base text-left' : 'min-w-[720px] border-collapse text-left'
+      }`}
+      expanded={expanded}
+    />
   )
 }
 

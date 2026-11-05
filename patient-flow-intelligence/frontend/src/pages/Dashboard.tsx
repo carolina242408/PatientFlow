@@ -1,22 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { Maximize2, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/Table'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
 import UpcomingDischargesTable, {
   type UpcomingDischarge,
 } from './dashboard_components/UpcomingDischargesTable'
+import HospitalStayByConditionTable from './dashboard_components/HospitalStayByConditionTable'
+import OccupancyBarChart from './dashboard_components/OccupancyBarChart'
+import DashboardPanel from './dashboard_components/DashboardPanel'
+import ForecastCard, {
+  type ForecastCardData,
+} from './dashboard_components/ForecastCard'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
 
@@ -65,9 +63,6 @@ const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
   { patient: 'Marta Correia', room: '301', bed: '5', service: 'Cardiology', day: 'tomorrow', time: '14:30', destination: 'primaryCare', status: 'ready' },
   { patient: 'Nuno Costa', room: '305', bed: '2', service: 'Cardiology', day: '26 Jun', time: '09:30', destination: 'home', status: 'clinicalReview' },
 ]
-
-const barColor = (occupancy: number) =>
-  occupancy >= 85 ? 'bg-violet-500' : occupancy >= 75 ? 'bg-blue-500' : 'bg-blue-400'
 
 type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
 
@@ -123,20 +118,23 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const criticalThreshold = occupancy?.criticalOccupancyPercent ?? CRITICAL_THRESHOLD
   const occupancyGap = occupancyPercent === null ? null : criticalThreshold - occupancyPercent
 
-  const forecasts = [
+  const forecasts: ForecastCardData[] = [
     {
+      id: 'today',
       label: t('dashboard.forecast.todayLabel'),
       value: metrics.discharges,
       detail: t('dashboard.forecast.todayDetail', { confirmed: 6, pending: 2 }),
       tone: 'bg-emerald-50 text-emerald-700',
     },
     {
+      id: 'next48Hours',
       label: t('dashboard.forecast.next48Label'),
       value: metrics.next48Hours,
       detail: t('dashboard.forecast.next48Detail', { count: 5 }),
       tone: 'bg-purple-50 text-purple-700',
     },
     {
+      id: 'available',
       label: t('dashboard.forecast.availableLabel'),
       value: metrics.available,
       detail: t('dashboard.forecast.availableDetail', { time: '18:00' }),
@@ -196,15 +194,12 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           </p>
         </article>
 
-        {forecasts.map((item) => (
-          <article key={item.label} className="rounded-xl border border-gray-200 bg-white p-5">
-            <Badge className={`inline-flex rounded-md border-0 px-2 py-1 text-xs font-medium ${item.tone}`}>
-              {t('dashboard.forecast.badge')}
-            </Badge>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{item.value}</p>
-            <p className="mt-1 text-sm font-medium text-gray-600">{item.label}</p>
-            <p className="mt-2 text-xs text-gray-400">{item.detail}</p>
-          </article>
+        {forecasts.map((forecast) => (
+          <ForecastCard
+            key={forecast.id}
+            forecast={forecast}
+            badgeLabel={t('dashboard.forecast.badge')}
+          />
         ))}
       </section>
 
@@ -212,108 +207,36 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       <section
         className={`grid min-w-0 grid-cols-1 gap-4 ${profileScope !== 'Service' ? '2xl:grid-cols-2' : ''}`}
       >
-        <article
+        <DashboardPanel
+          title={t('dashboard.perService.title')}
+          description={t('dashboard.perService.body')}
+          expandLabel={t('dashboard.expandChart')}
+          onExpand={() => setExpandedItem('service')}
           onClick={() => setExpandedItem('service')}
-          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
+          contentClassName="p-6"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perService.title')}</h2>
-              <p className="mt-1 text-sm text-gray-400">{t('dashboard.perService.body')}</p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              aria-haspopup="dialog"
-              aria-label={`${t('dashboard.perService.title')}. ${t('dashboard.expandChart')}`}
-              onClick={() => setExpandedItem('service')}
-              className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              <Maximize2 aria-hidden="true" className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Service Occupancy */}
-          <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
-            {serviceOccupancy.map((item) => (
-              <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
-                <div
-                  className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
-                  style={{ height: `${item.occupancyPercent ?? 0}%` }}
-                >
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
-                    {item.occupancyPercent ?? 0}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Legendas (mesmo gap e flex-1 para alinhar com as barras) */}
-          <div className="flex gap-3 px-1 pt-2">
-            {serviceOccupancy.map((item) => (
-              <div key={item.id} className="min-w-0 flex-1 text-center">
-                <span className="block min-h-8 whitespace-normal break-words text-xs font-medium leading-tight text-gray-500" title={item.name}>
-                  {item.name}
-                </span>
-                <span className="mt-0.5 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
-              </div>
-            ))}
-          </div>
-          {occupancyPending && <p className="mt-4 text-xs text-gray-400">{t('dashboard.occupancyLoading')}</p>}
-          {occupancyError && <p className="mt-4 text-xs text-red-600">{t('dashboard.occupancyError')}</p>}
-        </article>
+          <OccupancyBarChart
+            rows={serviceOccupancy}
+            isPending={occupancyPending}
+            isError={occupancyError}
+          />
+        </DashboardPanel>
 
         {profileScope !== 'Service' && (
-          <article
+          <DashboardPanel
+            title={t('dashboard.perUnit.title')}
+            description={t('dashboard.perUnit.body')}
+            expandLabel={t('dashboard.expandChart')}
+            onExpand={() => setExpandedItem('unit')}
             onClick={() => setExpandedItem('unit')}
-            className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
+            contentClassName="p-6"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">{t('dashboard.perUnit.title')}</h2>
-                <p className="mt-1 text-sm text-gray-400">{t('dashboard.perUnit.body')}</p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-haspopup="dialog"
-                aria-label={`${t('dashboard.perUnit.title')}. ${t('dashboard.expandChart')}`}
-                onClick={() => setExpandedItem('unit')}
-                className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <Maximize2 aria-hidden="true" className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="mt-6 flex h-48 items-end gap-3 border-b border-gray-200 px-1 pt-6">
-              {unitOccupancy.map((item) => (
-                <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
-                  <div
-                    className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
-                    style={{ height: `${item.occupancyPercent ?? 0}%` }}
-                  >
-                    <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
-                      {item.occupancyPercent ?? 0}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3 px-1 pt-2">
-              {unitOccupancy.map((item) => (
-                <div key={item.id} className="min-w-0 flex-1 text-center">
-                  <span className="block min-h-8 whitespace-normal break-words text-xs font-medium leading-tight text-gray-500" title={item.name}>
-                    {item.name}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
-                </div>
-              ))}
-            </div>
-            {occupancyPending && <p className="mt-4 text-xs text-gray-400">{t('dashboard.occupancyLoading')}</p>}
-            {occupancyError && <p className="mt-4 text-xs text-red-600">{t('dashboard.occupancyError')}</p>}
-          </article>
+            <OccupancyBarChart
+              rows={unitOccupancy}
+              isPending={occupancyPending}
+              isError={occupancyError}
+            />
+          </DashboardPanel>
         )}
       </section>
 
@@ -321,27 +244,14 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
 
         {/* Discharge Forecast */}
-        <article
+        <DashboardPanel
+          title={t('dashboard.forecastChart.title')}
+          description={t('dashboard.forecastChart.body')}
+          expandLabel={t('dashboard.expandChart')}
+          onExpand={() => setExpandedItem('discharges')}
           onClick={() => setExpandedItem('discharges')}
-          className="cursor-zoom-in rounded-2xl border border-gray-200 bg-white p-6"
+          contentClassName="p-6"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.forecastChart.title')}</h2>
-              <p className="mt-1 text-sm text-gray-400">{t('dashboard.forecastChart.body')}</p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              aria-haspopup="dialog"
-              aria-label={`${t('dashboard.forecastChart.title')}. ${t('dashboard.expandChart')}`}
-              onClick={() => setExpandedItem('discharges')}
-              className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              <Maximize2 aria-hidden="true" className="h-4 w-4" />
-            </Button>
-          </div>
-
           <div className="mt-6 flex h-48 items-end gap-2 border-b border-gray-200 pt-6">
             {DISCHARGE_FORECAST.map((item) => (
               <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
@@ -370,63 +280,19 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               {t('dashboard.forecastChart.patients', { count: weekTotal })}
             </span>
           </div>
-        </article>
+        </DashboardPanel>
 
         {/* Length-of-stay forecast */}
-        <article>
-          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-            <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-7">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">
-                  {t('dashboard.lengthOfStay.title')}
-                </h2>
-                <p className="mt-1 text-sm text-gray-400">
-                  {t('dashboard.lengthOfStay.body')}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-haspopup="dialog"
-                aria-label={`${t('dashboard.lengthOfStay.title')}. ${t('dashboard.expandTable')}`}
-                onClick={() => setExpandedItem('lengthOfStay')}
-                className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <Maximize2 aria-hidden="true" className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div
-              className="cursor-zoom-in overflow-x-auto"
-              onClick={() => setExpandedItem('lengthOfStay')}
-            >
-              <Table className="min-w-[480px] border-collapse">
-                <TableHeader>
-                  <TableRow className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400 hover:bg-transparent">
-                    <TableHead scope="col" className="px-6 py-3 text-left">
-                      {t('dashboard.lengthOfStay.condition')}
-                    </TableHead>
-                    <TableHead scope="col" className="px-4 py-3 text-center">
-                      {t('dashboard.lengthOfStay.estimatedStay')}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {LENGTH_OF_STAY_FORECAST.map(({ condition, minimumDays, maximumDays }) => (
-                    <TableRow key={condition} className="border-t border-gray-100 border-b-0 text-sm text-gray-600 hover:bg-transparent">
-                      <TableHead scope="row" className="px-6 py-3.5 text-left font-medium text-slate-900">
-                        {t(`dashboard.lengthOfStay.conditions.${condition}`)}
-                      </TableHead>
-                      <TableCell className="px-4 py-3.5 text-center">
-                        {t('dashboard.lengthOfStay.daysRange', { minimum: minimumDays, maximum: maximumDays })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </section>
-        </article>
+        <DashboardPanel
+          title={t('dashboard.lengthOfStay.title')}
+          description={t('dashboard.lengthOfStay.body')}
+          expandLabel={t('dashboard.expandTable')}
+          onExpand={() => setExpandedItem('lengthOfStay')}
+          onContentClick={() => setExpandedItem('lengthOfStay')}
+          contentClassName="cursor-zoom-in overflow-x-auto"
+        >
+          <HospitalStayByConditionTable forecasts={LENGTH_OF_STAY_FORECAST} />
+        </DashboardPanel>
       </section>
 
       <dialog
@@ -479,61 +345,11 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             </header>
 
             {expandedItem === 'service' && (
-              <div>
-                <div className="flex h-[min(55vh,480px)] items-end gap-6 border-b border-gray-200 px-4 pt-12 sm:gap-10">
-                  {serviceOccupancy.map((item) => (
-                    <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
-                      <div
-                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
-                        style={{ height: `${item.occupancyPercent ?? 0}%` }}
-                      >
-                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
-                          {item.occupancyPercent ?? 0}%
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-6 px-4 pt-3 sm:gap-10">
-                  {serviceOccupancy.map((item) => (
-                    <div key={item.id} className="min-w-0 flex-1 text-center">
-                      <span className="block min-h-10 whitespace-normal break-words text-sm font-medium text-gray-600">
-                        {item.name}
-                      </span>
-                      <span className="mt-1 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <OccupancyBarChart rows={serviceOccupancy} expanded />
             )}
 
             {expandedItem === 'unit' && (
-              <div>
-                <div className="flex h-[min(55vh,480px)] items-end gap-6 border-b border-gray-200 px-4 pt-12 sm:gap-10">
-                  {unitOccupancy.map((item) => (
-                    <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
-                      <div
-                        className={`relative w-full max-w-32 rounded-t-md ${barColor(item.occupancyPercent ?? 0)}`}
-                        style={{ height: `${item.occupancyPercent ?? 0}%` }}
-                      >
-                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
-                          {item.occupancyPercent ?? 0}%
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-6 px-4 pt-3 sm:gap-10">
-                  {unitOccupancy.map((item) => (
-                    <div key={item.id} className="min-w-0 flex-1 text-center">
-                      <span className="block min-h-10 whitespace-normal break-words text-sm font-medium text-gray-600">
-                        {item.name}
-                      </span>
-                      <span className="mt-1 block text-xs text-gray-400">{item.occupied} / {item.capacity}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <OccupancyBarChart rows={unitOccupancy} expanded />
             )}
 
             {expandedItem === 'discharges' && (
@@ -570,30 +386,10 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
             {expandedItem === 'lengthOfStay' && (
               <div className="overflow-x-auto">
-                <Table className="min-w-[480px] border-collapse text-base">
-                  <TableHeader>
-                    <TableRow className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500 hover:bg-transparent">
-                      <TableHead scope="col" className="px-8 py-5 text-left">
-                        {t('dashboard.lengthOfStay.condition')}
-                      </TableHead>
-                      <TableHead scope="col" className="px-8 py-5 text-center">
-                        {t('dashboard.lengthOfStay.estimatedStay')}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {LENGTH_OF_STAY_FORECAST.map(({ condition, minimumDays, maximumDays }) => (
-                      <TableRow key={condition} className="border-t border-gray-100 border-b-0 text-gray-600 hover:bg-transparent">
-                        <TableHead scope="row" className="px-8 py-6 text-left font-medium text-slate-900">
-                          {t(`dashboard.lengthOfStay.conditions.${condition}`)}
-                        </TableHead>
-                        <TableCell className="px-8 py-6 text-center">
-                          {t('dashboard.lengthOfStay.daysRange', { minimum: minimumDays, maximum: maximumDays })}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <HospitalStayByConditionTable
+                  forecasts={LENGTH_OF_STAY_FORECAST}
+                  expanded
+                />
               </div>
             )}
 
@@ -610,31 +406,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       </dialog>
 
       {/* Upcoming discharges */}
-      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-4">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-slate-900">{t('dashboard.discharges.title')}</h2>
-            <p className="mt-1 text-sm text-gray-400">{t('dashboard.discharges.body')}</p>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            aria-haspopup="dialog"
-            aria-label={`${t('dashboard.discharges.title')}. ${t('dashboard.expandTable')}`}
-            onClick={() => setExpandedItem('upcomingDischarges')}
-            className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            <Maximize2 aria-hidden="true" className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div
-          className="cursor-zoom-in overflow-x-auto"
-          onClick={() => setExpandedItem('upcomingDischarges')}
-        >
+      <DashboardPanel
+        title={t('dashboard.discharges.title')}
+        description={t('dashboard.discharges.body')}
+        expandLabel={t('dashboard.expandTable')}
+        onExpand={() => setExpandedItem('upcomingDischarges')}
+        onContentClick={() => setExpandedItem('upcomingDischarges')}
+        contentClassName="cursor-zoom-in overflow-x-auto"
+      >
           <UpcomingDischargesTable discharges={UPCOMING_DISCHARGES} />
-        </div>
-      </section>
+      </DashboardPanel>
     </div>
   )
 }
