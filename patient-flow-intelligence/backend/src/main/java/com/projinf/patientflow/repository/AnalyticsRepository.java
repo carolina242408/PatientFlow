@@ -94,6 +94,44 @@ public class AnalyticsRepository {
         return new Indicators(now,from,to,scope,beds,stays,waiting,settings.thresholds());
     }
 
+    public Occupancy occupancy(Scope scope,Instant asOf) {
+        validateScope(scope);
+        var p=access.parameters();
+        if(scope.ulsId()!=null) p.put("uls",scope.ulsId());
+        if(scope.unitId()!=null) p.put("unit",scope.unitId());
+        if(scope.serviceId()!=null) p.put("service",scope.serviceId());
+        String permitted=access.sql("u.uls_id","u.id","s.id");
+        String requested=(scope.ulsId()==null ? "" : " AND u.uls_id=:uls")
+            +(scope.unitId()==null ? "" : " AND u.id=:unit")
+            +(scope.serviceId()==null ? "" : " AND s.id=:service");
+        String serviceSql="""
+            SELECT s.id,s.name,
+                count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied,
+                count(*) FILTER(WHERE b.status<>'BLOCKED') AS capacity
+            FROM beds b JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
+            JOIN wings wi ON wi.id=w.wing_id JOIN clinical_services s ON s.id=wi.service_id
+            JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id
+            JOIN healthcare_units u ON u.id=bu.unit_id
+            WHERE %s%s GROUP BY s.id,s.name ORDER BY s.name,s.id
+            """.formatted(permitted,requested);
+        String unitSql="""
+            SELECT u.id,u.name,
+                count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied,
+                count(*) FILTER(WHERE b.status<>'BLOCKED') AS capacity
+            FROM beds b JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
+            JOIN wings wi ON wi.id=w.wing_id JOIN clinical_services s ON s.id=wi.service_id
+            JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id
+            JOIN healthcare_units u ON u.id=bu.unit_id
+            WHERE %s%s GROUP BY u.id,u.name ORDER BY u.name,u.id
+            """.formatted(permitted,requested);
+        var mapper=(org.springframework.jdbc.core.RowMapper<OccupancyRow>)(r,n)->{
+            long capacity=r.getLong("capacity"),occupied=r.getLong("occupied");
+            return new OccupancyRow(r.getObject("id",UUID.class),r.getString("name"),occupied,capacity,
+                capacity==0 ? null : round(occupied*100d/capacity));
+        };
+        return new Occupancy(asOf,scope,0,jdbc.query(serviceSql,p,mapper),jdbc.query(unitSql,p,mapper));
+    }
+
     public PageResult<ServiceInput> forecastInputs(Scope scope,Instant from,Instant now,int page,int size,AnalyticsSettings settings) {
         HierarchyRepository.page(page,size);
         var p=parameters(scope,from,now,now,settings);

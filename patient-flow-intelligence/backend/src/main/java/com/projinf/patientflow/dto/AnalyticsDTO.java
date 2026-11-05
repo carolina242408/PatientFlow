@@ -21,6 +21,9 @@ public final class AnalyticsDTO {
     public enum Severity { WARNING, CRITICAL }
     public record Alert(String code,Severity severity,String explanation,double observed,double threshold,String unit,long affectedCount) { }
     public record Alerts(Instant asOf,Scope scope,Thresholds thresholds,List<Alert> alerts) { }
+    public record OccupancyRow(UUID id,String name,long occupied,long capacity,Double occupancyPercent) { }
+    public record Occupancy(Instant asOf,Scope scope,double criticalOccupancyPercent,
+            List<OccupancyRow> services,List<OccupancyRow> units) { }
 
     // Versioned data-only contract with algorithms: no SNS, name, birth date or access token.
     public record Candidate(UUID bedId,String wardCode,String roomCode,String bedCode,long occupiedInRoom,boolean preferredWard) { }
