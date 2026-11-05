@@ -11,7 +11,7 @@ interface ModeTabsProps {
 }
 
 const triggerClass =
-  "-mb-px flex-none rounded-none border-0 border-b-2 border-transparent px-1 pb-3 pt-1 text-sm font-medium text-gray-500 shadow-none hover:text-gray-700 data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
+  "-mb-px flex-none rounded-none border-0 border-b-2 border-transparent px-1 pb-3 pt-1 text-sm font-medium text-gray-500 shadow-none hover:text-gray-700 focus-visible:ring-0 data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
 
 export function ModeTabs({
   value,
