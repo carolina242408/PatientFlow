@@ -86,8 +86,8 @@
       "building": "Building",
       "floor": "Floor",
       "service": "Service",
+      "wing": "Wing",
       "ward": "Ward",
-      "nursery": "Nursery",
       "room": "Room",
       "bed": "Bed"
     },

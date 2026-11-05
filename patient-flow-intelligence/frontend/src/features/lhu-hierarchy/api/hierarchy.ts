@@ -112,6 +112,9 @@ export async function fetchHierarchyChildren(node: OrgNode): Promise<OrgNode[]> 
   return nextType ? fetchHierarchyLevel(nextType, node.id) : []
 }
 
+export const hierarchyChildrenQueryKey = (node: OrgNode) =>
+  ["space-hierarchy-children", node.type, node.id] as const
+
 export async function createHierarchyNode(
   type: OrgType,
   input: { name?: string; code?: string; parentId?: string; serviceId?: string },

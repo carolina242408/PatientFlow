@@ -86,8 +86,8 @@
       "building": "Edifício",
       "floor": "Piso",
       "service": "Serviço",
-      "ward": "Ala",
-      "nursery": "Enfermaria",
+      "wing": "Ala",
+      "ward": "Enfermaria",
       "room": "Sala",
       "bed": "Cama"
     },

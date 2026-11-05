@@ -1,6 +1,11 @@
 import { useTranslation } from "react-i18next"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/Button"
-import type { OrgType } from "../types/tree"
+import {
+  fetchHierarchyChildren,
+  hierarchyChildrenQueryKey,
+} from "../api/hierarchy"
+import type { OrgNode, OrgType } from "../types/tree"
 import { PARENT_TYPE } from "../utils/org-types"
 import type { Open, SpaceNode } from "@/pages/space/types"
 
@@ -31,6 +36,7 @@ export function AdminHierarchyOverview({
   onAddChild,
 }: AdminHierarchyOverviewProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const isLeaf = node.level === "bed" || node.children?.length === 0
   const children = node.children ?? []
 
@@ -52,6 +58,21 @@ export function AdminHierarchyOverview({
 
   const addTarget = getAddTarget()
   const addLocation = () => onAddChild?.(addTarget.parentPath, addTarget.types)
+  const prefetchChildren = (child: SpaceNode) => {
+    if (child.level === "bed") return
+    const orgNode: OrgNode = {
+      id: child.id,
+      name: child.name,
+      type: child.level,
+      parentId: node.id,
+      status: "operational",
+    }
+    void queryClient.prefetchQuery({
+      queryKey: hierarchyChildrenQueryKey(orgNode),
+      queryFn: () => fetchHierarchyChildren(orgNode),
+      staleTime: 30_000,
+    })
+  }
 
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
@@ -96,6 +117,8 @@ export function AdminHierarchyOverview({
                     type="button"
                     variant="outline"
                     onClick={() => onOpen(child)}
+                    onPointerEnter={() => prefetchChildren(child)}
+                    onFocus={() => prefetchChildren(child)}
                     className="h-auto w-full justify-between rounded-xl p-4 text-left"
                   >
                     {content}

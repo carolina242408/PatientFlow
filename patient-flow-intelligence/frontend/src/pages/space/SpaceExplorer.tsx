@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   fetchHierarchyChildren,
   fetchHierarchyLevel,
+  hierarchyChildrenQueryKey,
 } from '@/features/lhu-hierarchy/api/hierarchy'
 import { fetchBedMap, fetchBeds, fetchEncounter, fetchPatient } from '@/api/operational'
 import type { OrgType } from '@/features/lhu-hierarchy/types/tree'
@@ -199,8 +200,6 @@ const SpaceExplorer = ({
   const initialPath = hierarchy ? pathToLevel(tree, initialIndex, startLevel) : []
   const [path, setPath] = useState<SpaceNode[]>(initialPath)
   const [loadedTree, setLoadedTree] = useState<SpaceNode[]>([])
-  const [loadingChildren, setLoadingChildren] = useState(false)
-  const [childrenError, setChildrenError] = useState(false)
 
   useEffect(() => {
     if (initialPath.length) {
@@ -247,33 +246,28 @@ const SpaceExplorer = ({
     ),
   })
 
-  useEffect(() => {
-    if (!current || current.level === 'bed' || current.children) return
-    let active = true
-    setLoadingChildren(true)
-    setChildrenError(false)
-    fetchHierarchyChildren({
-      id: current.id,
-      name: current.name,
-      type: current.level,
-      parentId: null,
-      status: 'operational',
-    })
-      .then((children) => {
-        if (!active) return
-        const mapped = children.map((child) => toSpaceNode(child, bedsByRoom))
-        setLoadedTree((previous) => replaceChildren(previous, current.id, mapped))
-      })
-      .catch(() => {
-        if (active) setChildrenError(true)
-      })
-      .finally(() => {
-        if (active) setLoadingChildren(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [current?.id, current?.level, bedsByRoom])
+  const currentOrgNode = current
+    ? {
+        id: current.id,
+        name: current.name,
+        type: current.level,
+        parentId: null,
+        status: 'operational',
+      }
+    : undefined
+  const childrenQuery = useQuery({
+    queryKey: currentOrgNode
+      ? hierarchyChildrenQueryKey(currentOrgNode)
+      : ['space-hierarchy-children', 'none'],
+    queryFn: () => {
+      if (!currentOrgNode) throw new Error('Cannot load children without a selected hierarchy node')
+      return fetchHierarchyChildren(currentOrgNode)
+    },
+    enabled: Boolean(currentOrgNode && current?.level !== 'bed' && !current?.children),
+    staleTime: 30_000,
+  })
+  const loadingChildren = childrenQuery.isPending && childrenQuery.isFetching
+  const childrenError = childrenQuery.isError
 
   if (isPending) return <div>Loading...</div>
   if (isError || !path.length) return <div>{t('lhuHierarchy.error')}</div>
@@ -294,6 +288,9 @@ const SpaceExplorer = ({
   })
   const syncedCurrent = {
     ...syncedPath[syncedPath.length - 1],
+    ...(childrenQuery.data && !syncedPath[syncedPath.length - 1].children
+      ? { children: childrenQuery.data.map((child) => toSpaceNode(child, bedsByRoom)) }
+      : {}),
     bedCounts: currentBedSummary
       ? bedCountsFromMap(currentBedSummary.counts)
       : syncedPath[syncedPath.length - 1].bedCounts,
@@ -398,15 +395,6 @@ function findResource(
     if (resource) return resource
   }
   return undefined
-}
-
-function replaceChildren(tree: SpaceNode[], id: string, children: SpaceNode[]): SpaceNode[] {
-  return tree.map((node) => {
-    if (node.id === id) return { ...node, children }
-    return node.children
-      ? { ...node, children: replaceChildren(node.children, id, children) }
-      : node
-  })
 }
 
 function pathToLevel(tree: SpaceNode[], depth: number, startLevel: Level): SpaceNode[] {
