@@ -6,11 +6,10 @@ import importlib.util
 import json
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -814,9 +813,7 @@ def convert_hl7_to_fhir(message: str) -> fhir.Bundle:
 
     conditions = _conditions(segments.get("DG1", []), patient, encounter)
     resources: list[fhir.FHIRModel] = [patient, encounter, *conditions]
-    timestamp_str = (
-        datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-    )
+    timestamp_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     return fhir.Bundle(
         type="collection",
         timestamp=timestamp_str,
