@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import re
@@ -197,7 +198,17 @@ ENCOUNTER_CLASS_MAP = {
 }
 
 
+def _deterministic_uuid(key: str) -> str:
+    digest = bytearray(hashlib.md5(key.encode("utf-8")).digest())
+    digest[6] = (digest[6] & 0x0F) | 0x30
+    digest[8] = (digest[8] & 0x3F) | 0x80
+    return str(uuid.UUID(bytes=bytes(digest)))
+
+
 def _patient(pid: Any) -> fhir.Patient:
+    sns_val: str | None = None
+    ns_val: str | None = None
+    first_val: str | None = None
     patient_id = str(uuid.uuid4())
     identifiers = []
     for raw_identifier in _repetitions(pid.patient_id):
@@ -205,6 +216,15 @@ def _patient(pid: Any) -> fhir.Patient:
         val = _component(parts, 0) or None
         sys_val = _component(parts, 3)
         type_code = _component(parts, 4)
+        if val:
+            if not first_val:
+                first_val = val
+            upper_type = (type_code or "").upper()
+            upper_sys = (sys_val or "").upper()
+            if upper_type in ("SNS", "SB") or upper_sys == "HAS":
+                sns_val = val
+            elif upper_type in ("NS", "MR") or upper_sys == "HOS":
+                ns_val = val
         if type_code:
             if type_code in IDENTIFIER_TYPE_MAP:
                 mapped_code, display = IDENTIFIER_TYPE_MAP[type_code]
@@ -238,6 +258,13 @@ def _patient(pid: Any) -> fhir.Patient:
                 type=type_concept,
             )
         )
+
+    primary_patient_key = sns_val or ns_val or first_val
+    patient_id = (
+        _deterministic_uuid(f"Patient:{primary_patient_key}")
+        if primary_patient_key
+        else str(uuid.uuid4())
+    )
 
     names = []
     for raw_name in _repetitions(pid.patient_name):
@@ -516,7 +543,9 @@ def _conditions(
         }.get(_component(parts, 2), "http://hl7.org/fhir/sid/icd-10-cm")
         conditions.append(
             fhir.Condition(
-                id=f"condition-{diagnosis.set_id or index}",
+                id=_deterministic_uuid(
+                    f"Condition:{patient.id}:{visit_value or encounter.id}:{code or index}"
+                ),
                 identifier=[
                     fhir.Identifier(
                         type=fhir.CodeableConcept(

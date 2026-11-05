@@ -5,6 +5,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
@@ -98,7 +102,8 @@ public class HapiFhirClient {
 
     /**
      * Normalizes a collection/transaction Bundle into a valid FHIR R4 transaction Bundle
-     * so HAPI FHIR R4 persists every individual resource (Patient, Encounter, Condition, Location, etc.).
+     * so HAPI FHIR R4 persists every individual resource (Patient, Encounter, Condition, Location, etc.)
+     * without duplicating Patient records when multiple events arrive for the same SNS/NS identifier.
      */
     public ObjectNode toR4TransactionBundle(JsonNode bundle) {
         ObjectNode tx = json.createObjectNode();
@@ -106,44 +111,67 @@ public class HapiFhirClient {
         tx.put("type", "transaction");
 
         ArrayNode txEntries = tx.putArray("entry");
-        if (bundle != null && bundle.path("entry").isArray()) {
-            for (JsonNode entry : bundle.path("entry").values()) {
-                JsonNode resNode = entry.path("resource");
-                if (!resNode.isObject()) {
-                    continue;
-                }
-                ObjectNode resource = normalizeResourceForR4((ObjectNode) resNode.deepCopy());
-                String resourceType = resource.path("resourceType").asString("");
-                String id = resource.path("id").asString("");
-                if (resourceType.isEmpty()) {
-                    continue;
-                }
+        if (bundle == null || !bundle.path("entry").isArray()) {
+            return tx;
+        }
 
-                ObjectNode txEntry = txEntries.addObject();
+        // First pass: map any Patient resource with an SNS/NS identifier to a deterministic UUID
+        // so admissions, transfers, and discharges for the same patient always upsert the same Patient/{id}.
+        Map<String, String> patientIdRemap = new HashMap<>();
+        for (JsonNode entry : bundle.path("entry").values()) {
+            JsonNode resNode = entry.path("resource");
+            if (resNode.isObject() && "Patient".equals(resNode.path("resourceType").asString(""))) {
+                String oldId = resNode.path("id").asString("");
+                String canonicalId = resolveDeterministicPatientId(resNode);
+                if (canonicalId != null && !oldId.isEmpty() && !oldId.equals(canonicalId)) {
+                    patientIdRemap.put("Patient/" + oldId, "Patient/" + canonicalId);
+                }
+            }
+        }
+
+        for (JsonNode entry : bundle.path("entry").values()) {
+            JsonNode resNode = entry.path("resource");
+            if (!resNode.isObject()) {
+                continue;
+            }
+            ObjectNode resource = normalizeResourceForR4((ObjectNode) resNode.deepCopy(), patientIdRemap);
+            String resourceType = resource.path("resourceType").asString("");
+            String id = resource.path("id").asString("");
+            if (resourceType.isEmpty()) {
+                continue;
+            }
+
+            ObjectNode txEntry = txEntries.addObject();
+            if (!id.isEmpty()) {
+                txEntry.put("fullUrl", "http://example.org/fhir/" + resourceType + "/" + id);
+            } else {
                 String fullUrl = entry.path("fullUrl").asString("");
                 if (!fullUrl.isEmpty()) {
                     txEntry.put("fullUrl", fullUrl);
-                } else if (!id.isEmpty()) {
-                    txEntry.put("fullUrl", resourceType + "/" + id);
                 }
-                txEntry.set("resource", resource);
+            }
+            txEntry.set("resource", resource);
 
-                ObjectNode req = txEntry.putObject("request");
-                if (!id.isEmpty()) {
-                    req.put("method", "PUT");
-                    req.put("url", resourceType + "/" + id);
-                } else {
-                    req.put("method", "POST");
-                    req.put("url", resourceType);
-                }
+            ObjectNode req = txEntry.putObject("request");
+            if (!id.isEmpty()) {
+                req.put("method", "PUT");
+                req.put("url", resourceType + "/" + id);
+            } else {
+                req.put("method", "POST");
+                req.put("url", resourceType);
             }
         }
         return tx;
     }
 
-    private ObjectNode normalizeResourceForR4(ObjectNode resource) {
+    private ObjectNode normalizeResourceForR4(ObjectNode resource, Map<String, String> patientIdRemap) {
         String resourceType = resource.path("resourceType").asString("");
-        if ("Encounter".equals(resourceType)) {
+        if ("Patient".equals(resourceType)) {
+            String canonicalId = resolveDeterministicPatientId(resource);
+            if (canonicalId != null) {
+                resource.put("id", canonicalId);
+            }
+        } else if ("Encounter".equals(resourceType)) {
             // In FHIR R5 `class` is an array of CodeableConcept; in FHIR R4 `class` is a single Coding object.
             JsonNode classNode = resource.path("class");
             if (classNode.isArray() && !classNode.isEmpty()) {
@@ -159,7 +187,64 @@ public class HapiFhirClient {
             }
             resource.remove("actualPeriod");
         }
+
+        // Remap subject/beneficiary references if the Patient ID was canonicalized
+        if (!patientIdRemap.isEmpty()) {
+            remapPatientReference(resource, "subject", patientIdRemap);
+            remapPatientReference(resource, "patient", patientIdRemap);
+            remapPatientReference(resource, "beneficiary", patientIdRemap);
+        }
         return resource;
+    }
+
+    private static void remapPatientReference(ObjectNode resource, String field, Map<String, String> remap) {
+        JsonNode refObj = resource.path(field);
+        if (refObj.isObject()) {
+            String ref = refObj.path("reference").asString("");
+            String mapped = remap.get(ref);
+            if (mapped != null) {
+                ((ObjectNode) refObj).put("reference", mapped);
+            }
+        }
+    }
+
+    /**
+     * Computes a deterministic UUID v3 (`Patient:<identifier>`) from the patient's SNS (`SB`)
+     * or hospital process/NS (`MR`) identifier so the same patient always maps to the same FHIR ID.
+     */
+    public static String resolveDeterministicPatientId(JsonNode patientResource) {
+        JsonNode identifiers = patientResource.path("identifier");
+        if (!identifiers.isArray() || identifiers.isEmpty()) {
+            return null;
+        }
+        String snsVal = null;
+        String nsVal = null;
+        String firstVal = null;
+
+        for (JsonNode idNode : identifiers.values()) {
+            String value = idNode.path("value").asString("").trim();
+            if (value.isEmpty()) {
+                continue;
+            }
+            if (firstVal == null) {
+                firstVal = value;
+            }
+            String system = idNode.path("system").asString("").toUpperCase();
+            String typeText = idNode.path("type").path("text").asString("").toUpperCase();
+            String typeCode = idNode.path("type").path("coding").path(0).path("code").asString("").toUpperCase();
+
+            if ("SNS".equals(typeText) || "SB".equals(typeCode) || system.contains("HAS") || system.contains("SNS")) {
+                snsVal = value;
+            } else if ("NS".equals(typeText) || "MR".equals(typeCode) || system.contains("HOS")) {
+                nsVal = value;
+            }
+        }
+
+        String primaryKey = snsVal != null ? snsVal : (nsVal != null ? nsVal : firstVal);
+        if (primaryKey == null || primaryKey.isEmpty()) {
+            return null;
+        }
+        return UUID.nameUUIDFromBytes(("Patient:" + primaryKey).getBytes(StandardCharsets.UTF_8)).toString();
     }
 
     private static String truncate(String text, int maxLen) {

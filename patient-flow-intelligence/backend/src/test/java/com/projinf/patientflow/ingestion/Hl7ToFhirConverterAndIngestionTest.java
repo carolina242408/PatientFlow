@@ -130,6 +130,17 @@ class Hl7ToFhirConverterAndIngestionTest {
         assertThat(r4Encounter.path("class").path("code").asString()).isEqualTo("IMP");
         assertThat(r4Encounter.path("period").path("start").asString()).isEqualTo("2026-09-29T09:51:00Z");
         assertThat(txBundle.path("entry").path(1).path("request").path("method").asString()).isEqualTo("PUT");
+
+        // Verify A01 and A03 for the same patient (same SNS/NS) produce the exact same Patient ID
+        String a03Message = SAMPLE_HL7_A01.replace("ADT^A01^ADT_A01", "ADT^A03^ADT_A03").replace("EVN|A01|", "EVN|A03|");
+        ObjectNode txBundleA03 = client.toR4TransactionBundle(converter.convert(a03Message));
+        String patientIdA01 = txBundle.path("entry").path(0).path("resource").path("id").asString();
+        String patientIdA03 = txBundleA03.path("entry").path(0).path("resource").path("id").asString();
+        assertThat(patientIdA01).isNotBlank().isEqualTo(patientIdA03);
+        assertThat(txBundleA03.path("entry").path(0).path("request").path("url").asString())
+                .isEqualTo("Patient/" + patientIdA01);
+        assertThat(txBundleA03.path("entry").path(1).path("resource").path("subject").path("reference").asString())
+                .isEqualTo("Patient/" + patientIdA01);
     }
 }
 
