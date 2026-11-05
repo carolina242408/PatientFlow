@@ -14,6 +14,9 @@ import {
 } from '@/components/Table'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
+import UpcomingDischargesTable, {
+  type UpcomingDischarge,
+} from './dashboard_components/UpcomingDischargesTable'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
 
@@ -55,32 +58,13 @@ const LENGTH_OF_STAY_FORECAST = [
   { condition: 'cardiacObservation', minimumDays: 1, maximumDays: 2 },
 ] as const
 
-type DischargeStatus = 'ready' | 'pendingTransport' | 'medicationReview' | 'clinicalReview'
-type Destination = 'home' | 'rehabilitation' | 'primaryCare'
-
-const UPCOMING_DISCHARGES: {
-  patient: string
-  room: string
-  bed: string
-  service: string
-  day: 'today' | 'tomorrow' | string
-  time: string
-  destination: Destination
-  status: DischargeStatus
-}[] = [
+const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
   { patient: 'Emily Rose Parker', room: '301', bed: '1', service: 'Cardiology', day: 'today', time: '11:30', destination: 'home', status: 'ready' },
   { patient: 'Daniel Brooks', room: '301', bed: '2', service: 'Cardiology', day: 'today', time: '15:00', destination: 'rehabilitation', status: 'pendingTransport' },
   { patient: 'Cody James Fisher', room: '302', bed: '2', service: 'Cardiology', day: 'tomorrow', time: '10:00', destination: 'home', status: 'medicationReview' },
   { patient: 'Marta Correia', room: '301', bed: '5', service: 'Cardiology', day: 'tomorrow', time: '14:30', destination: 'primaryCare', status: 'ready' },
   { patient: 'Nuno Costa', room: '305', bed: '2', service: 'Cardiology', day: '26 Jun', time: '09:30', destination: 'home', status: 'clinicalReview' },
 ]
-
-const STATUS_STYLES: Record<DischargeStatus, string> = {
-  ready: 'bg-emerald-50 text-emerald-700',
-  pendingTransport: 'bg-amber-50 text-amber-700',
-  medicationReview: 'bg-blue-50 text-blue-600',
-  clinicalReview: 'bg-purple-50 text-purple-700',
-}
 
 const barColor = (occupancy: number) =>
   occupancy >= 85 ? 'bg-violet-500' : occupancy >= 75 ? 'bg-blue-500' : 'bg-blue-400'
@@ -159,9 +143,6 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       tone: 'bg-amber-50 text-amber-700',
     },
   ]
-
-  const formatWhen = (day: string, time: string) =>
-    day === 'today' || day === 'tomorrow' ? `${t(`dashboard.days.${day}`)}, ${time}` : `${day}, ${time}`
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
@@ -618,39 +599,10 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
             {expandedItem === 'upcomingDischarges' && (
               <div className="overflow-x-auto">
-                <Table className="min-w-[900px] border-collapse text-base text-left">
-                  <TableHeader>
-                    <TableRow className="bg-gray-50 text-sm font-medium uppercase tracking-wide text-gray-500 hover:bg-transparent">
-                      {(['patient', 'location', 'service', 'expected', 'destination', 'readiness'] as const).map(
-                        (column) => (
-                          <TableHead key={column} scope="col" className="px-6 py-5">
-                            {t(`dashboard.discharges.columns.${column}`)}
-                          </TableHead>
-                        ),
-                      )}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {UPCOMING_DISCHARGES.map((discharge) => (
-                      <TableRow key={discharge.patient} className="border-t border-gray-100 border-b-0 text-gray-600 hover:bg-transparent">
-                        <TableHead scope="row" className="px-6 py-5 font-medium text-slate-900">
-                          {discharge.patient}
-                        </TableHead>
-                        <TableCell className="px-6 py-5">
-                          {t('dashboard.discharges.location', { room: discharge.room, bed: discharge.bed })}
-                        </TableCell>
-                        <TableCell className="px-6 py-5">{discharge.service}</TableCell>
-                        <TableCell className="px-6 py-5">{formatWhen(discharge.day, discharge.time)}</TableCell>
-                        <TableCell className="px-6 py-5">{t(`dashboard.destinations.${discharge.destination}`)}</TableCell>
-                        <TableCell className="px-6 py-5">
-                          <Badge className={`whitespace-nowrap rounded-full border-0 px-3 py-1 text-sm font-medium ${STATUS_STYLES[discharge.status]}`}>
-                            {t(`dashboard.status.${discharge.status}`)}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <UpcomingDischargesTable
+                  discharges={UPCOMING_DISCHARGES}
+                  expanded
+                />
               </div>
             )}
           </div>
@@ -680,37 +632,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           className="cursor-zoom-in overflow-x-auto"
           onClick={() => setExpandedItem('upcomingDischarges')}
         >
-          <Table className="min-w-[720px] border-collapse text-left">
-            <TableHeader>
-              <TableRow className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-400 hover:bg-transparent">
-                {(['patient', 'location', 'service', 'expected', 'destination', 'readiness'] as const).map(
-                  (col, i) => (
-                    <TableHead key={col} className={`py-3 ${i === 0 ? 'px-6' : 'px-4'}`}>
-                      {t(`dashboard.discharges.columns.${col}`)}
-                    </TableHead>
-                  ),
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {UPCOMING_DISCHARGES.map((d) => (
-                <TableRow key={d.patient} className="border-t border-gray-100 border-b-0 text-sm text-gray-600 hover:bg-transparent">
-                  <TableCell className="px-6 py-3.5 font-medium text-slate-900">{d.patient}</TableCell>
-                  <TableCell className="px-4 py-3.5">
-                    {t('dashboard.discharges.location', { room: d.room, bed: d.bed })}
-                  </TableCell>
-                  <TableCell className="px-4 py-3.5">{d.service}</TableCell>
-                  <TableCell className="px-4 py-3.5">{formatWhen(d.day, d.time)}</TableCell>
-                  <TableCell className="px-4 py-3.5">{t(`dashboard.destinations.${d.destination}`)}</TableCell>
-                  <TableCell className="px-4 py-3.5">
-                    <Badge className={`whitespace-nowrap rounded-full border-0 px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[d.status]}`}>
-                      {t(`dashboard.status.${d.status}`)}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <UpcomingDischargesTable discharges={UPCOMING_DISCHARGES} />
         </div>
       </section>
     </div>
