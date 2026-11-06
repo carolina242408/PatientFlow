@@ -171,6 +171,8 @@
   "dashboard": {
     "expandChart": "Select to enlarge",
     "expandTable": "Select to enlarge",
+    "occupancyLoading": "Loading occupancy...",
+    "occupancyError": "Could not load occupancy.",
     "closeExpandedItem": "Close enlarged view",
     "lastUpdated": "Last updated today at {{time}}",
     "occupancyRate": "{{scope}} occupancy rate",
