@@ -99,9 +99,7 @@ O realm deve ter um mapper de grupos com `full.path=true` no claim `groups`.
 O ficheiro `keycloak/realm/patientflow-realm.json` configura esse mapper e
 inclui o client scope nos scopes por omissão de `web_app`. Se o realm já tiver
 sido importado, aplicar as alterações pela administração do Keycloak; a
-importação de arranque não sobrescreve um realm existente. O realm separado
-em `keycloak/demo` não inclui esse mapper: configurá-lo para `backend_demo`
-antes de testar os gestores, conforme [DEMO.md](../DEMO.md#atribuir-os-âmbitos).
+importação de arranque não sobrescreve um realm existente.
 
 | Método e caminho | Resultado |
 | --- | --- |
@@ -216,5 +214,4 @@ reinícios. Uma execução distribuída exigiria transporte partilhado, fora do
 
 Os testes automatizados do backend foram removidos nesta fase;
 ver [README.md](README.md#testes). A verificação manual das permissões deve usar
-grupos organizacionais no JWT dos gestores. O script de validação Docker ainda
-usa grants e espera 24 camas; limitações em [DEMO.md](../DEMO.md#validação).
+grupos organizacionais no JWT dos gestores.

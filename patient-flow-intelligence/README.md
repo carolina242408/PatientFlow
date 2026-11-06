@@ -7,24 +7,9 @@ algorithms/   FastAPI, Python (porta 8000, corre no compose)
 keycloak/     realm "patientflow" e tema de login custom
 postgres-init/ SQL de criação das bases de dados
 docker-compose.yml  infraestrutura de desenvolvimento
-compose.mvp.yml     demonstração separada do backend, sem frontend
 ```
 
 ## Como correr
-
-Para iniciar o ambiente separado do backend e algoritmos, na pasta
-`patient-flow-intelligence`, com Docker Compose v2:
-
-```sh
-docker compose --env-file .env.example -f compose.mvp.yml -p patientflow-mvp up -d --build --wait --wait-timeout 300
-```
-
-A API fica em http://localhost:18080/api e o Keycloak em http://localhost:19080.
-Este ambiente tem volume próprio e não compila nem executa o frontend. Numa
-base nova, o perfil `demo` cria 22 camas, 60 doentes, 52 episódios e oito pedidos
-em espera. A localização mínima dos exemplos FHIR está desativada. A consulta
-como administrador, a configuração manual dos grupos dos gestores e as
-limitações dos scripts de validação estão em [DEMO.md](DEMO.md).
 
 Para desenvolver o backend no host: Docker, JDK 21+ e `JAVA_HOME` configurado.
 
@@ -79,9 +64,9 @@ eventos WebSocket. Modelos treinados são trabalho futuro.
 
 A hierarquia atual é ULS → unidade → edifício → piso → serviço → ala →
 enfermaria → quarto → cama. A migração V2 foi alterada; não está garantida a
-atualização de bases que tenham aplicado a hierarquia anterior. A suite Java
-e a validação Docker mantêm dependências do seed e dos grants antigos, com
-bloqueios descritos no [README do backend](backend/README.md#testes).
+atualização de bases que tenham aplicado a hierarquia anterior. Os testes Java
+foram removidos nesta fase; os exemplos FHIR para verificação manual estão no
+[README do backend](backend/README.md#exemplos-autónomos).
 
 Contratos: [API/FHIR](backend/README.md), [gestão operacional](backend/OPERATIONS.md),
 [permissões/eventos](backend/SECURITY.md), [indicadores/algoritmos](backend/ANALYTICS.md).

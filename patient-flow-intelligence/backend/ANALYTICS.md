@@ -204,6 +204,5 @@ docker compose up -d --build algorithms
 ```
 
 Quando o backend corre no host, usa por omissão `http://localhost:8000`.
-Tanto `docker-compose.yml` como `compose.mvp.yml` configuram o backend com
-`ALGORITHMS_URL=http://algorithms:8000`. O Compose MVP não publica a porta
-do serviço Python no host.
+O `docker-compose.yml` configura o backend com
+`ALGORITHMS_URL=http://algorithms:8000`.

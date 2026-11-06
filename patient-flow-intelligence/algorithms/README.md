@@ -1,8 +1,8 @@
 # algorithms
 
 Serviço Python (FastAPI) para os algoritmos do PatientFlow. No Compose de
-desenvolvimento, está disponível em `http://localhost:8000`. No
-`compose.mvp.yml`, só está acessível na rede Docker em `http://algorithms:8000`.
+desenvolvimento, está disponível em `http://localhost:8000` e na rede Docker em
+`http://algorithms:8000`.
 
 Expõe regras operacionais determinísticas `rules-v1`, sem treino de modelos:
 

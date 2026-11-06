@@ -57,7 +57,9 @@ O perfil `demo` ativa `DemoScenarios`, que insere uma ULS, dois hospitais,
 três serviços, 22 camas, 60 doentes sintéticos, 52 episódios e oito pedidos
 em espera. Os cenários são transacionais e repetíveis, sem repor alterações
 nem atribuir acessos ou criar grupos Keycloak. As datas são relativas à
-primeira inserção. Ver [DEMO.md](../DEMO.md) para arranque e limitações.
+primeira inserção. Para consultar esses dados como gestor, configurar os grupos
+organizacionais no Keycloak conforme
+[SECURITY.md](SECURITY.md#atribuição-inicial-de-acessos).
 
 O perfil `demo` não cria a localização dos exemplos FHIR (`Ward 30004`, `Room 7005`,
 `Bed MAC`/`Bed MAD`). Para esses exemplos, criar primeiro a hierarquia através
@@ -273,8 +275,5 @@ continuam disponíveis para verificação manual da API.
 
 Os testes Python do serviço de algoritmos mantêm-se no respetivo módulo;
 ver [algorithms/README.md](../algorithms/README.md).
-O script `python scripts/verify_mvp.py`, executado em `patient-flow-intelligence`,
-também mantém suposições antigas de grants e 24 camas; limitações em
-[DEMO.md](../DEMO.md#validação).
 
 O [plano](PLAN.md) descreve apenas trabalho futuro sobre modelos inteligentes.
