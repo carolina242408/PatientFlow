@@ -22,17 +22,22 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // API stateless com Bearer token
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                .requestMatchers("/ws/events").permitAll() // The handshake requires a one-use authenticated ticket.
-                .requestMatchers("/api/account", "/api/access/me").authenticated()
-                .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/**").hasAnyAuthority("ROLE_ADMIN", "LHU_MANAGER", "UNIT_MANAGER", "SERVICE_MANAGER")
-                .anyRequest().denyAll())
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                .csrf(csrf -> csrf.disable()) // API stateless com Bearer token
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/ws/events").permitAll() // The handshake requires a one-use authenticated
+                                                                   // ticket.
+                        .requestMatchers("/api/account", "/api/access/me").authenticated()
+                        .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info")
+                        .hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/ingestion/**").permitAll()
+                        .requestMatchers("/api/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "LHU_MANAGER", "UNIT_MANAGER", "SERVICE_MANAGER")
+                        .anyRequest().denyAll())
+                .oauth2ResourceServer(
+                        oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }
 

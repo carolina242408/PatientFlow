@@ -450,15 +450,13 @@ async def live_hl7_stream(
 
     async def event_generator() -> AsyncGenerator[str, None]:
         sent = 0
-        last_streamed_version = 0
         while True:
-            if not state.messages or (loop and state.generation_version == last_streamed_version):
+            if not state.messages:
                 if not loop:
                     break
                 await asyncio.sleep(0.5)
                 continue
 
-            current_version = state.generation_version
             current_messages = list(state.messages)
             for msg in current_messages:
                 if trigger and msg.trigger != trigger:
@@ -482,7 +480,6 @@ async def live_hl7_stream(
                     return
                 await asyncio.sleep(delay_ms / 1000.0)
 
-            last_streamed_version = current_version
             if not loop:
                 break
 
