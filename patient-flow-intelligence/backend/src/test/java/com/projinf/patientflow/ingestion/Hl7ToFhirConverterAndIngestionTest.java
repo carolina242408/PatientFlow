@@ -45,14 +45,19 @@ class Hl7ToFhirConverterAndIngestionTest {
         ObjectNode bundle = converter.convert(SAMPLE_HL7_A01);
 
         assertThat(bundle.path("resourceType").asString()).isEqualTo("Bundle");
-        assertThat(bundle.path("entry").size()).isEqualTo(3);
+        assertThat(bundle.path("entry").size()).isEqualTo(4);
 
         JsonNode patient = bundle.path("entry").path(0).path("resource");
         JsonNode encounter = bundle.path("entry").path(1).path("resource");
-        JsonNode condition = bundle.path("entry").path(2).path("resource");
+        JsonNode location = bundle.path("entry").path(2).path("resource");
+        JsonNode condition = bundle.path("entry").path(3).path("resource");
 
         assertThat(patient.path("resourceType").asString()).isEqualTo("Patient");
         assertThat(encounter.path("resourceType").asString()).isEqualTo("Encounter");
+        assertThat(location.path("resourceType").asString()).isEqualTo("Location");
+        assertThat(location.path("name").asString()).isEqualTo("Ward 30004, Room 7005, Bed MAC");
+        assertThat(encounter.path("location").path(0).path("location").path("reference").asString())
+                .isEqualTo("Location/" + location.path("id").asString());
         assertThat(condition.path("resourceType").asString()).isEqualTo("Condition");
 
         // Participant translated from PV1-7 & PV1-17
@@ -124,7 +129,7 @@ class Hl7ToFhirConverterAndIngestionTest {
         ObjectNode txBundle = client.toR4TransactionBundle(bundle);
 
         assertThat(txBundle.path("type").asString()).isEqualTo("transaction");
-        assertThat(txBundle.path("entry").size()).isEqualTo(3);
+        assertThat(txBundle.path("entry").size()).isEqualTo(4);
         JsonNode r4Encounter = txBundle.path("entry").path(1).path("resource");
         assertThat(r4Encounter.path("class").isObject()).isTrue();
         assertThat(r4Encounter.path("class").path("code").asString()).isEqualTo("IMP");

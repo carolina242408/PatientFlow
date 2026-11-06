@@ -356,17 +356,37 @@ def _location(pv1: Any) -> fhir.Location | None:
     if not pv1.assigned_patient_location:
         return None
     parts = _components(pv1.assigned_patient_location)
-    name = "-".join(part for part in parts[:3] if part) or _decode(
-        pv1.assigned_patient_location
-    )
+    if len(parts) >= 3 and all(parts[:3]):
+        name = f"Ward {parts[0]}, Room {parts[1]}, Bed {parts[2]}"
+        loc_key = f"{parts[0]}-{parts[1]}-{parts[2]}"
+    else:
+        name = "-".join(part for part in parts if part) or _decode(
+            pv1.assigned_patient_location
+        )
+        loc_key = name
+    identifiers = [fhir.Identifier(system="urn:id:HOS", value=name)]
+    if _component(parts, 3):
+        identifiers.append(
+            fhir.Identifier(system="urn:id:HOS:bed-uid", value=_component(parts, 3))
+        )
+    desc_parts = [p for p in (_component(parts, 7), _component(parts, 8)) if p]
+    description = " - ".join(desc_parts) if desc_parts else None
     return fhir.Location(
-        id=_safe_id(name, "location"),
+        id=_deterministic_uuid(f"Location:{loc_key}"),
+        identifier=identifiers,
         name=name,
+        description=description,
         status="active",
         mode="instance",
-        type=[_codeable(parts[0] if parts else None)],
-        physicalType=_codeable(
-            "bd", "http://terminology.hl7.org/CodeSystem/location-physical-type"
+        type=[_codeable(_component(parts, 5) or _component(parts, 0))],
+        physicalType=fhir.CodeableConcept(
+            coding=[
+                fhir.Coding(
+                    system="http://terminology.hl7.org/CodeSystem/location-physical-type",
+                    code="bd",
+                    display="Bed",
+                )
+            ]
         ),
     )
 
@@ -389,6 +409,7 @@ def _encounter(
         encounter_location = [
             fhir.EncounterLocation(
                 location=fhir.Reference(
+                    reference=f"Location/{location.id}" if location and location.id else None,
                     display=location_display,
                 )
             )
@@ -809,10 +830,16 @@ def convert_hl7_to_fhir(message: str) -> fhir.Bundle:
     evn = segments.get("EVN", [hl7.EVNSegment()])[0]
     pv1 = segments.get("PV1", [hl7.PV1Segment()])[0]
     patient = _patient(pid)
-    encounter = _encounter(msh, evn, pv1, patient)
+    location = _location(pv1)
+    encounter = _encounter(msh, evn, pv1, patient, location)
 
     conditions = _conditions(segments.get("DG1", []), patient, encounter)
-    resources: list[fhir.FHIRModel] = [patient, encounter, *conditions]
+    resources: list[fhir.FHIRModel] = [
+        patient,
+        encounter,
+        *([location] if location is not None else []),
+        *conditions,
+    ]
     timestamp_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     return fhir.Bundle(
         type="collection",
