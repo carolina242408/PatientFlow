@@ -214,9 +214,7 @@ reinícios. Uma execução distribuída exigiria transporte partilhado, fora do
 
 ## Validação
 
-A suite existente usa PostgreSQL, servidor HTTP real e clientes WebSocket
-reais, mas ainda prepara acessos através de grants e não inclui grupos nos
-JWT dos gestores. Também depende do `DataSeeder` atualmente comentado.
-Os testes de concessão/revogação não validam o mecanismo atual até serem
-adaptados; ver [README.md](README.md#testes). O script de validação Docker
-mantém as mesmas suposições antigas, detalhadas em [DEMO.md](../DEMO.md#validação).
+Os testes automatizados do backend foram removidos nesta fase;
+ver [README.md](README.md#testes). A verificação manual das permissões deve usar
+grupos organizacionais no JWT dos gestores. O script de validação Docker ainda
+usa grants e espera 24 camas; limitações em [DEMO.md](../DEMO.md#validação).

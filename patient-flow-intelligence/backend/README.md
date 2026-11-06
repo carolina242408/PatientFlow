@@ -2,8 +2,8 @@
 
 Spring Boot 4.1.1, Java 21, Maven, PostgreSQL e Flyway. A API valida tokens do
 Keycloak, recebe Bundles FHIR de admissão/alta e mantém a ocupação e o histórico
-das camas. O módulo contém código, exemplos FHIR, migrações e testes; os
-fixtures das regras são partilhados com `../algorithms/tests/fixtures`.
+das camas. O módulo contém código, exemplos FHIR e migrações. Os testes
+automatizados do backend foram removidos nesta fase do projeto.
 
 ## Executar
 
@@ -59,9 +59,7 @@ em espera. Os cenários são transacionais e repetíveis, sem repor alterações
 nem atribuir acessos ou criar grupos Keycloak. As datas são relativas à
 primeira inserção. Ver [DEMO.md](../DEMO.md) para arranque e limitações.
 
-O antigo `DataSeeder.java` está integralmente comentado. Assim,
-`PATIENTFLOW_DEMO_DATA=true`, isoladamente, não insere dados e o perfil `demo`
-também não cria a localização dos exemplos FHIR (`Ward 30004`, `Room 7005`,
+O perfil `demo` não cria a localização dos exemplos FHIR (`Ward 30004`, `Room 7005`,
 `Bed MAC`/`Bed MAD`). Para esses exemplos, criar primeiro a hierarquia através
 de `/api/hierarchy/{type}`; a ingestão não cria unidades ou camas implicitamente.
 Os contratos estão em [OPERATIONS.md](OPERATIONS.md).
@@ -94,7 +92,6 @@ de desenvolvimento injeta estas credenciais; o Compose MVP não as injeta.
 | `FHIR_SNS_SYSTEM` | `https://www.sns.gov.pt/numero-utente` |
 | `FHIR_HOSPITAL_NUMBER_SYSTEM` | `urn:hospital:process-number` |
 | `FHIR_VISIT_NUMBER_SYSTEM` | `urn:hospital:visit-number` |
-| `PATIENTFLOW_DEMO_DATA` | `false`; propriedade sem seed ativo enquanto `DataSeeder` estiver comentado |
 | `WS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` |
 
 O backend não carrega automaticamente o `.env` do Docker Compose. Para alterar
@@ -240,7 +237,7 @@ localização sem os dados descritos acima, nem datas de nascimento parciais.
 
 ### Exemplos autónomos
 
-Os quatro ficheiros em `examples/fhir` são também os fixtures dos testes:
+Os quatro ficheiros em `examples/fhir` permitem verificar a ingestão manualmente:
 
 | Ficheiros | Formato |
 | --- | --- |
@@ -270,39 +267,14 @@ curl.exe -i http://localhost:8080/api/fhir/bundles -H "Authorization: Bearer $en
 
 ## Testes
 
-```bash
-./mvnw test
-```
+Os testes automatizados do backend, os recursos em `src/test` e as dependências
+Maven exclusivas dos testes foram removidos nesta fase. Os exemplos FHIR acima
+continuam disponíveis para verificação manual da API.
 
-O comando é o ponto de entrada Maven, mas a suite atual tem bloqueios conhecidos:
-
-- `PatientflowApplicationTests` importa e injeta `DataSeeder`, cuja classe está
-  totalmente comentada. A compilação dos testes precisa de ser corrigida.
-- Os gestores de teste usam grants na base de dados e JWT sem grupos; não
-  representam a autorização atual.
-- A construção de topologias de teste e `src/test/resources/db/v2-data.sql`
-  mantêm a hierarquia antiga (`wings.floor_id`, serviço sob unidade).
-- Os cenários de teste ainda esperam 24 camas, incluindo as duas do seed desativado.
-- A criação de hierarquia chama agora a administração Keycloak; a suite não
-  substitui esse serviço, embora substitua o decoder JWT.
-
-A suite foi concebida para PostgreSQL 16 temporário com Testcontainers, HTTP,
-concorrência e WebSocket reais; os testes de integração requerem Docker.
-Os casos existentes abrangem parser FHIR,
-operações, indicadores e eventos, mas não constituem validação aprovada do
-estado atual até estes bloqueios serem resolvidos.
-
-Depois de corrigir a compilação dos testes, o parser pode ser selecionado sem Docker:
-
-```bash
-./mvnw -Dtest=FHIRParserFactoryTest test
-```
-
-O filtro `-Dtest` não evita a compilação dos restantes fontes de teste. Para
-as regras Python independentes, ver [algorithms/README.md](../algorithms/README.md).
+Os testes Python do serviço de algoritmos mantêm-se no respetivo módulo;
+ver [algorithms/README.md](../algorithms/README.md).
 O script `python scripts/verify_mvp.py`, executado em `patient-flow-intelligence`,
 também mantém suposições antigas de grants e 24 camas; limitações em
-[DEMO.md](../DEMO.md#validação). O Dockerfile do backend usa
-`-Dmaven.test.skip=true`, pelo que construir a imagem não executa nem compila a suite.
+[DEMO.md](../DEMO.md#validação).
 
 O [plano](PLAN.md) descreve apenas trabalho futuro sobre modelos inteligentes.

@@ -2,7 +2,7 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 COPY pom.xml .
 COPY src ./src
-RUN mvn -B -Dmaven.test.skip=true package
+RUN mvn -B package
 COPY docker/Healthcheck.java ./Healthcheck.java
 RUN javac --release 21 Healthcheck.java
 

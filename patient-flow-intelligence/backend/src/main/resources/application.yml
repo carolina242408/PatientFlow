@@ -33,7 +33,6 @@ fhir:
     visit-number: ${FHIR_VISIT_NUMBER_SYSTEM:urn:hospital:visit-number}
 
 patientflow:
-  demo-data: ${PATIENTFLOW_DEMO_DATA:false}
   analytics:
     occupancy-warning-percent: ${OCCUPANCY_WARNING_PERCENT:85}
     occupancy-critical-percent: ${OCCUPANCY_CRITICAL_PERCENT:95}

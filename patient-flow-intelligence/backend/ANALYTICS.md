@@ -193,8 +193,8 @@ As respostas identificam `engine.source`, `algorithmVersion`, `degraded` e
 Desativar explicitamente o serviço usa a referência local sem marcar uma avaria.
 
 Os contratos de exemplo em `algorithms/tests/fixtures/rules-v1.json` são usados
-pelos testes Java e Python. A suite Java tem os bloqueios descritos no
-[README](README.md#testes). Uma evolução para modelos treinados exigirá um novo
+pelos testes Python. Os testes Java do backend foram removidos nesta fase.
+Uma evolução para modelos treinados exigirá um novo
 contrato, sem substituir silenciosamente o significado de `rules-v1`.
 
 Para atualizar o serviço a partir da pasta `patient-flow-intelligence`:
