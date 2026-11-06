@@ -1,6 +1,8 @@
 # algorithms
 
-Serviço Python (FastAPI) para os algoritmos do PatientFlow. Corre no `docker compose` em `http://localhost:8000`.
+Serviço Python (FastAPI) para os algoritmos do PatientFlow. No Compose de
+desenvolvimento, está disponível em `http://localhost:8000` e na rede Docker em
+`http://algorithms:8000`.
 
 Expõe regras operacionais determinísticas `rules-v1`, sem treino de modelos:
 
@@ -13,7 +15,7 @@ Este serviço não acede à base de dados, não autoriza utilizadores e não rec
 dados identificativos do doente. É consumido pelo backend, que filtra os dados
 pelo âmbito Keycloak, valida os resultados e mantém uma alternativa local.
 
-Local sem Docker:
+Local sem Docker, a partir da pasta `algorithms` (Python 3.10+; a imagem usa 3.12):
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -21,24 +23,23 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-Atualizar a imagem no ambiente de desenvolvimento:
+No PowerShell:
+
+```powershell
+python -m venv .venv
+./.venv/Scripts/python.exe -m pip install -r requirements.txt
+./.venv/Scripts/python.exe -m uvicorn main:app --reload
+```
+
+Atualizar a imagem a partir da pasta `patient-flow-intelligence`:
 
 ```bash
 docker compose up -d --build algorithms
 ```
 
-Testes das regras, sem instalar FastAPI:
+Os testes automatizados e os respetivos fixtures foram removidos nesta fase.
+Com o serviço em execução, consultar `GET /health` para verificar o estado e
+`/docs` para experimentar os endpoints através da documentação interativa.
 
-```bash
-python -m unittest discover -s tests -p test_decision_rules.py -v
-```
-
-Com a API em execução, testar também HTTP e validação dos pedidos:
-
-```bash
-ALGORITHMS_TEST_URL=http://localhost:8000 python -m unittest discover -s tests -v
-```
-
-Os fixtures em `tests/fixtures/rules-v1.json` são partilhados com os testes
-Java através dos recursos de teste Maven. Modelos inteligentes treinados ficam
-reservados ao passo 10 futuro de [PLAN.md](../backend/PLAN.md).
+Modelos inteligentes treinados são trabalho futuro descrito no
+[PLAN.md](../backend/PLAN.md).

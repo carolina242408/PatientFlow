@@ -1,4 +1,4 @@
-# Permissões organizacionais e eventos — etapa 6
+# Permissões organizacionais e eventos
 
 ## Identidade e âmbito
 
@@ -28,8 +28,8 @@ API de hierarquia, o backend cria o grupo Keycloak correspondente.
 | Operação | Administrador | Gestor com associação compatível |
 | --- | --- | --- |
 | Conta e acesso próprio | Sim | Sim; acesso próprio também disponível sem associação |
-| Gestão de associações de acesso | Global | Não |
-| Consultar hierarquia | Global | Elementos do âmbito e respetivos antecessores |
+| API legada de grants | Global; não altera a autorização efetiva | Não |
+| Consultar hierarquia | Global | Níveis permitidos pelo papel, conforme indicado abaixo |
 | Criar/alterar/remover hierarquia e serviços | Global | Não |
 | Consultar doentes | Global | Doentes com episódio ou pedido de admissão no âmbito |
 | Registar/corrigir dados demográficos por API | Global | Não |
@@ -37,9 +37,15 @@ API de hierarquia, o backend cria o grupo Keycloak correspondente.
 | Estado operacional das camas e gestão de altas | Global | Apenas âmbito atribuído |
 | Criar/gerir/admitir/cancelar pedidos de admissão | Global | Serviço, doente e cama autorizados |
 | Ingestão FHIR | Global | Cama de destino e episódio existente autorizados |
-| Eventos WebSocket | Global | Apenas alterações relevantes ao âmbito atual |
+| Eventos WebSocket | Global | Alterações relevantes aos papéis/grupos capturados no bilhete |
 | Indicadores, alertas e cenários de ocupação | Global | Apenas agregados do âmbito atribuído |
 | Sugestões de camas | Global | Pedido, serviço e camas autorizados |
+
+Na consulta da hierarquia, um `LHU_MANAGER` vê a sua ULS e os descendentes;
+um `UNIT_MANAGER` vê a unidade e os descendentes, mas não a ULS; um
+`SERVICE_MANAGER` vê o serviço e os descendentes, mas não os níveis ULS,
+unidade, edifício ou piso. Não existe acesso automático a todos os antecessores.
+Combinar papéis e grupos pode acrescentar esses níveis.
 
 Dados demográficos são partilhados entre internamentos do mesmo doente; as
 correções são reservadas ao administrador para evitar alterações globais por
@@ -49,51 +55,69 @@ Um doente registado sem episódio/pedido associado é visível apenas ao adminis
 Este pode criar o primeiro pedido de admissão para o serviço de destino.
 
 As restrições são aplicadas às linhas e aos totais nas consultas SQL, e aos
-recursos nas operações de escrita. `ulsId`, `unitId`, `serviceId`, `wardId` e
-outros filtros apenas restringem os resultados; nunca ampliam as permissões.
+recursos nas operações de escrita. Os filtros suportados por cada endpoint
+apenas restringem os resultados; nunca ampliam as permissões. Os campos
+partilhados no DTO não são todos aplicados por todas as consultas; consultar
+[OPERATIONS.md](OPERATIONS.md#convenções) e [ANALYTICS.md](ANALYTICS.md#api-e-autorização).
 O histórico de um doente continua filtrado episódio a episódio/alocação a alocação.
 O serviço `algorithms` recebe apenas candidatos ou contagens já limitados ao
 âmbito autorizado; não recebe JWT, nomes, SNS, datas de nascimento nem dados
 demográficos. Os identificadores e resultados devolvidos são validados pelo backend.
 
-Sem autenticação, a API responde `401`. Sem papel/associação operacional,
+Sem autenticação, as rotas protegidas respondem `401`. Sem papel/associação operacional,
 responde `403`. Um recurso individual desconhecido ou fora do âmbito devolve
 `404`, impedindo a distinção por enumeração de identificadores. Uma coleção
-filtrada para outro âmbito fica vazia. A gestão de associações devolve `403`
+filtrada para outro âmbito fica vazia. A API legada de grants devolve `403`
 para utilizadores sem `ROLE_ADMIN`.
 
 ## Atribuição inicial de acessos
 
-1. Criar a ULS, unidade e serviço através da API de hierarquia. O backend cria
-   os grupos aninhados no Keycloak.
-2. Atribuir o utilizador ao grupo correspondente no Keycloak e atribuir-lhe o
+1. Configurar `KEYCLOAK_ADMIN_BASE_URL`, `KEYCLOAK_ADMIN_USERNAME` e
+   `KEYCLOAK_ADMIN_PASSWORD` no backend. As credenciais permitem obter um token
+   administrativo no realm `master` para criar grupos no realm `patientflow`.
+   O Compose de desenvolvimento injeta as credenciais de `.env`; o backend
+   iniciado no host não lê esse ficheiro automaticamente.
+2. Criar a hierarquia através da API: ULS → unidade → edifício → piso → serviço.
+   O backend cria os grupos aninhados para ULS, unidade e serviço. Dados
+   inseridos diretamente por SQL, incluindo os cenários de demonstração, não
+   passam por essa criação de grupos. Para esses dados, criar os grupos no
+   Keycloak com os UUID reais, por exemplo:
+
+   ```text
+   /ULS_Demonstracao__UUID_ULS/UNIT_Centro__UUID_UNIDADE/SERVICE_Medicina__UUID_SERVICO
+   ```
+
+   Substituir os marcadores por UUID completos. A resolução usa o prefixo de
+   tipo e o UUID após `__`; os nomes intermédios são descritivos.
+3. Atribuir o utilizador ao grupo correspondente no Keycloak e atribuir-lhe o
    papel `LHU_MANAGER`, `UNIT_MANAGER` ou `SERVICE_MANAGER`.
-3. Renovar o token do utilizador. O claim `groups` passa a conter o caminho
+4. Configurar o mapper de grupos indicado abaixo e renovar o token do utilizador.
+   O claim `groups` passa a conter o caminho
    do grupo e o acesso é aplicado sem grant na base de dados.
-
-```http
-<!-- Legacy grant API is not used for authorization. -->
-Authorization: Bearer ACCESS_TOKEN_ADMIN
-Content-Type: application/json
-
-{
-  "subject":"SUB_KEYCLOAK_DO_GESTOR",
-  "type":"UNIT",
-  "scopeId":"UUID_DA_UNIDADE"
-}
-```
 
 O realm deve ter um mapper de grupos com `full.path=true` no claim `groups`.
 O ficheiro `keycloak/realm/patientflow-realm.json` configura esse mapper e
 inclui o client scope nos scopes por omissão de `web_app`. Se o realm já tiver
-sido importado, é necessário reaplicar/importar essa configuração.
+sido importado, aplicar as alterações pela administração do Keycloak; a
+importação de arranque não sobrescreve um realm existente.
 
 | Método e caminho | Resultado |
 | --- | --- |
 | `GET /api/access/me` | `subject`, `roles`, `administrator` e âmbitos derivados do JWT |
 
-Alterações aos grupos ou papéis no Keycloak refletem-se num novo token; a
-validade do JWT limita a duração da ligação existente.
+Os elementos de `scopes` nesta resposta representam grupos efetivos, com
+`grantedBy=KEYCLOAK_GROUP`, `grantedAt` no instante Unix zero e IDs gerados
+por consulta. Esses IDs não correspondem a registos de grants persistidos.
+
+`GET/POST /api/access/grants` e `DELETE /api/access/grants/{id}` continuam
+disponíveis para administradores por compatibilidade com a tabela
+`user_scope_grants`. Criar ou eliminar esses registos não concede nem revoga
+acessos operacionais e não altera os grupos no Keycloak. A atribuição efetiva
+e a remoção de associações são feitas no Keycloak.
+
+Alterações aos grupos ou papéis no Keycloak refletem-se num novo token. O
+backend não consulta o Keycloak por pedido para revalidar associações; um JWT
+emitido anteriormente pode continuar a autorizar até à sua expiração.
 
 ## WebSocket autenticado
 
@@ -124,13 +148,19 @@ backend. No desenvolvimento atual, o browser pode ligar diretamente à porta
 8080, mantendo a origem 5173 autorizada.
 
 Não é necessário enviar subscrições: o servidor calcula o conjunto de eventos
-permitidos a partir dos papéis e associações atuais. Mensagens de texto do
-cliente não podem escolher outros tópicos e encerram a ligação com código 1008.
+permitidos a partir dos papéis e grupos capturados na emissão do bilhete.
+Mensagens de texto do cliente não podem escolher outros tópicos e encerram
+a ligação com código 1008.
 Ligação sem bilhete válido é rejeitada; o mesmo bilhete não pode ser reutilizado.
 
-O servidor verifica a autorização em cada envio e revê as ligações a cada
-segundo, encerrando-as na expiração do JWT ou perda de autorização. Após renovar
-o token, obter novo bilhete e abrir nova ligação.
+O servidor verifica a expiração do JWT e a existência de âmbito operacional
+em cada envio e a cada segundo. A identidade guardada na ligação é imutável:
+a verificação usa os papéis/grupos do bilhete, sem voltar a consultar grupos
+ou papéis no Keycloak. Remover um grupo ou papel não encerra imediatamente
+uma ligação já aberta; apagar um grant legado também não a revoga. A ligação
+termina na expiração do JWT ou quando os âmbitos capturados deixam de
+corresponder a recursos operacionais. Após renovar o token, obter novo bilhete
+e abrir nova ligação.
 
 ## Eventos e recuperação do estado
 
@@ -159,7 +189,7 @@ O cliente volta a consultar a API autorizada para obter os dados atuais.
 | `ADMISSION_REQUEST_CREATED`, `ADMISSION_REQUEST_UPDATED` | Criação/alteração de pedido |
 | `ADMISSION_REQUEST_ADMITTED`, `ADMISSION_REQUEST_CANCELLED` | Encerramento de pedido |
 | `HIERARCHY_CREATED`, `HIERARCHY_UPDATED`, `HIERARCHY_DELETED` | Estrutura e serviços |
-| `ACCESS_CHANGED` | Associação de acesso; administrador e utilizador afetado |
+| `ACCESS_CHANGED` | Alteração de grant legado; administrador e utilizador afetado; não altera permissões efetivas |
 
 Os eventos são enviados por listener `AFTER_COMMIT`. Operações revertidas e
 reenvios sem alterações não emitem eventos. Uma falha de entrega não altera
@@ -182,8 +212,6 @@ reinícios. Uma execução distribuída exigiria transporte partilhado, fora do
 
 ## Validação
 
-Os testes integram PostgreSQL, servidor HTTP real e clientes WebSocket reais.
-Cobrem papéis sem associação, tipos incompatíveis, tentativas de gerir acessos
-como gestor, isolamento entre ULS/unidades/serviços, totais e identificadores,
-FHIR e filas fora do âmbito, revogação, origens, bilhete de uso único, expiração
-do JWT, reconexão, eventos após commit e supressão em rollback/reenvios.
+Os testes automatizados do backend foram removidos nesta fase;
+ver [README.md](README.md#testes). A verificação manual das permissões deve usar
+grupos organizacionais no JWT dos gestores.
