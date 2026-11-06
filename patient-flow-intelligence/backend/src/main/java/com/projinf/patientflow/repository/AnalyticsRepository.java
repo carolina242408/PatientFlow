@@ -114,6 +114,16 @@ public class AnalyticsRepository {
             JOIN healthcare_units u ON u.id=bu.unit_id
             WHERE %s%s GROUP BY s.id,s.name ORDER BY s.name,s.id
             """.formatted(permitted,requested);
+        String wingSql="""
+            SELECT wi.id,wi.name,
+                count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied,
+                count(*) FILTER(WHERE b.status<>'BLOCKED') AS capacity
+            FROM beds b JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
+            JOIN wings wi ON wi.id=w.wing_id JOIN clinical_services s ON s.id=wi.service_id
+            JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id
+            JOIN healthcare_units u ON u.id=bu.unit_id
+            WHERE %s%s GROUP BY wi.id,wi.name ORDER BY wi.name,wi.id
+            """.formatted(permitted,requested);
         String unitSql="""
             SELECT u.id,u.name,
                 count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied,
@@ -129,7 +139,10 @@ public class AnalyticsRepository {
             return new OccupancyRow(r.getObject("id",UUID.class),r.getString("name"),occupied,capacity,
                 capacity==0 ? null : round(occupied*100d/capacity));
         };
-        return new Occupancy(asOf,scope,0,jdbc.query(serviceSql,p,mapper),jdbc.query(unitSql,p,mapper));
+        var identity=access.identity();
+        var units=identity.admin() || !identity.roles().contains("SERVICE_MANAGER")
+            ? jdbc.query(unitSql,p,mapper) : List.<OccupancyRow>of();
+        return new Occupancy(asOf,scope,0,jdbc.query(serviceSql,p,mapper),units,jdbc.query(wingSql,p,mapper));
     }
 
     public PageResult<ServiceInput> forecastInputs(Scope scope,Instant from,Instant now,int page,int size,AnalyticsSettings settings) {

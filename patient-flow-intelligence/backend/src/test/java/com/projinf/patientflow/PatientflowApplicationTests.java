@@ -925,6 +925,11 @@ class PatientflowApplicationTests {
         assertThat(as(user,get("/api/analytics/indicators"),null,200).path("beds").path("total").asInt()).isEqualTo(2);
         assertThat(as(user,get("/api/analytics/indicators"),null,200).path("stays").path("active").asInt()).isZero();
         assertThat(as(user,get("/api/analytics/indicators?serviceId="+other.service()),null,200).path("beds").path("total").asInt()).isZero();
+        var occupancy=as(user,get("/api/analytics/occupancy"),null,200);
+        assertThat(occupancy.path("wings").size()).isEqualTo(1);
+        assertThat(occupancy.path("units").size()).isZero();
+        assertThat(occupancy.path("wings").path(0).path("capacity").asInt()).isEqualTo(2);
+        assertThat(occupancy.path("wings").path(0).path("occupied").asInt()).isZero();
         var forecast=as(user,get("/api/analytics/occupancy-forecast"),null,200);
         assertThat(forecast.path("services").path("totalElements").asInt()).isEqualTo(1);
         assertThat(forecast.path("services").path("content").path(0).path("input").path("serviceId").asString()).isEqualTo(service.toString());

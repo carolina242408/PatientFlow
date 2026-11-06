@@ -130,3 +130,16 @@ export async function createHierarchyNode(
   const response = await api.post(`/hierarchy/${bType}`, payload)
   return response.data
 }
+
+export async function updateHierarchyNode(
+  type: OrgType,
+  id: string,
+  input: { name: string },
+) {
+  const response = await api.put(`/hierarchy/${backendType(type)}/${id}`, input)
+  return response.data
+}
+
+export async function deleteHierarchyNode(type: OrgType, id: string) {
+  await api.delete(`/hierarchy/${backendType(type)}/${id}`)
+}

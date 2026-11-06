@@ -96,11 +96,12 @@ export interface Occupancy {
   criticalOccupancyPercent: number
   services: OccupancyRow[]
   units: OccupancyRow[]
+  wings: OccupancyRow[]
 }
 
 // ─── Funções de acesso à API ──────────────────────────────────────────────────
 
-/** Ocupação atual agregada por serviço e unidade no âmbito autorizado */
+/** Occupancy rows aggregated by service, unit, and wing within the authorized scope. */
 export async function fetchOccupancy(scope: Scope = {}): Promise<Occupancy> {
   const { data } = await api.get<Occupancy>('/analytics/occupancy', { params: scope })
   return data

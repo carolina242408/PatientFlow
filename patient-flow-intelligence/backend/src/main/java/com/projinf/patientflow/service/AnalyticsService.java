@@ -66,7 +66,7 @@ public class AnalyticsService {
     public Occupancy occupancy(Scope scope) {
         var result = repository.occupancy(scope,clock.instant());
         return new Occupancy(result.asOf(),result.scope(),settings.occupancyCriticalPercent(),
-            result.services(),result.units());
+            result.services(),result.units(),result.wings());
     }
 
     public BedSuggestions suggestions(UUID requestId,UUID preferredWard,int limit) {

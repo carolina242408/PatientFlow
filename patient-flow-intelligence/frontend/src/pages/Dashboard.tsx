@@ -103,7 +103,10 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const weekTotal = DISCHARGE_FORECAST.reduce((sum, item) => sum + item.count, 0)
   const maxForecast = Math.max(...DISCHARGE_FORECAST.map((item) => item.count))
   const serviceOccupancy = occupancy?.services ?? []
+  const wingOccupancy = occupancy?.wings ?? []
   const unitOccupancy = occupancy?.units ?? []
+  const occupancyChartRows = profileScope === 'Service' ? wingOccupancy : serviceOccupancy
+  const occupancyChartTranslation = profileScope === 'Service' ? 'dashboard.perWing' : 'dashboard.perService'
   const occupancySummary = serviceOccupancy.reduce(
     (summary, item) => ({
       occupiedBeds: summary.occupiedBeds + item.occupied,
@@ -208,15 +211,15 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         className={`grid min-w-0 grid-cols-1 gap-4 ${profileScope !== 'Service' ? '2xl:grid-cols-2' : ''}`}
       >
         <DashboardPanel
-          title={t('dashboard.perService.title')}
-          description={t('dashboard.perService.body')}
+          title={t(`${occupancyChartTranslation}.title`)}
+          description={t(`${occupancyChartTranslation}.body`)}
           expandLabel={t('dashboard.expandChart')}
           onExpand={() => setExpandedItem('service')}
           onClick={() => setExpandedItem('service')}
           contentClassName="p-6"
         >
           <OccupancyBarChart
-            rows={serviceOccupancy}
+            rows={occupancyChartRows}
             isPending={occupancyPending}
             isError={occupancyError}
           />
@@ -308,7 +311,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                 <h2 id="dashboard-item-dialog-title" className="text-xl font-semibold text-slate-900">
                   {t(
                     expandedItem === 'service'
-                      ? 'dashboard.perService.title'
+                      ? `${occupancyChartTranslation}.title`
                       : expandedItem === 'unit'
                         ? 'dashboard.perUnit.title'
                         : expandedItem === 'discharges'
@@ -321,7 +324,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                 <p className="mt-1 text-sm text-gray-500">
                   {t(
                     expandedItem === 'service'
-                      ? 'dashboard.perService.body'
+                      ? `${occupancyChartTranslation}.body`
                       : expandedItem === 'unit'
                         ? 'dashboard.perUnit.body'
                         : expandedItem === 'discharges'
@@ -345,7 +348,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             </header>
 
             {expandedItem === 'service' && (
-              <OccupancyBarChart rows={serviceOccupancy} expanded />
+              <OccupancyBarChart rows={occupancyChartRows} expanded />
             )}
 
             {expandedItem === 'unit' && (

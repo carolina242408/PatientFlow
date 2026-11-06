@@ -210,6 +210,10 @@
       "title": "Ocupação por serviço",
       "body": "Percentagem de camas ativas atualmente ocupadas"
     },
+    "perWing": {
+      "title": "Ocupação por ala",
+      "body": "Percentagem de camas ativas atualmente ocupadas em cada ala"
+    },
     "perUnit": {
       "title": "Ocupação por unidade",
       "body": "Percentagem de camas ativas atualmente ocupadas"
@@ -424,7 +428,35 @@
     "admin": {
       "endOfBranch": "Fim deste ramo da hierarquia",
       "endOfBranchDescription": "Não existem espaços ou recursos descendentes. Adiciona um item para continuar este ramo.",
-      "addHere": "Adicionar espaço ou recurso"
+      "backOneLevel": "Voltar um nível",
+      "addChildItem": "Adicionar elemento descendente",
+      "createSpace": "Adicionar espaço ou recurso",
+      "updateSpace": "Atualizar espaço ou recurso",
+      "deleteSpace": "Eliminar espaço ou recurso",
+      "locationName": "Nome da localização",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "deleteConfirmation": {
+        "title": "Confirmar eliminação da localização",
+        "description": "Tem a certeza de que pretende eliminar {{name}}? Esta ação não pode ser anulada."
+      },
+      "confirmDeleteButton": "Eliminar localização",
+      "deleteUnavailableTitle": "Não é possível eliminar a localização",
+      "deleteUnavailable": "A eliminação só está disponível quando esta localização não tem localizações descendentes.",
+      "updateSuccess": "Localização atualizada com sucesso.",
+      "updateError": "Não foi possível atualizar esta localização.",
+      "updatePopup": {
+        "success": {
+          "title": "Atualização efetuada com sucesso",
+          "description": "O nome da localização foi atualizado com sucesso."
+        },
+        "error": {
+          "title": "Falha na atualização",
+          "description": "Não foi possível atualizar o nome da localização. Tente novamente."
+        }
+      },
+      "deleteSuccess": "Localização eliminada com sucesso.",
+      "deleteError": "Não foi possível eliminar esta localização."
     },
     "stats": { "levels": "Níveis organizacionais", "spaces": "Espaços registados", "resourceGroups": "Grupos de recursos", "operationalItems": "Itens operacionais" },
     "columns": { "name": "Espaço ou recurso", "type": "Tipo", "parent": "Superior", "status": "Estado" },

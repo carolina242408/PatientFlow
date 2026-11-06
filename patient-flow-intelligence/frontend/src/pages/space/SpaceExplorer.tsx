@@ -313,7 +313,25 @@ const SpaceExplorer = ({
           path={syncedPath}
           loadingChildren={loadingChildren}
           onOpen={open}
+          onBack={() => {
+            if (path.length > 1) goTo(path.length - 2)
+          }}
           onAddChild={onAddChild}
+          onRename={(name) => {
+            setPath((previous) =>
+              previous.map((item) =>
+                item.id === syncedCurrent.id ? { ...item, name } : item,
+              ),
+            )
+            setLoadedTree((previous) =>
+              previous.map((item) =>
+                item.id === syncedCurrent.id ? { ...item, name } : item,
+              ),
+            )
+          }}
+          onDelete={() => {
+            if (path.length > 1) goTo(path.length - 2)
+          }}
         />
       </div>
     )

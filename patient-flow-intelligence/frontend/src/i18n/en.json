@@ -96,6 +96,7 @@
       "building": "Continue to building",
       "floor": "Continue to floor",
       "service": "Continue to service",
+      "wing": "Continue to wing",
       "ward": "Continue to ward",
       "nursery": "Continue to nursery",
       "room": "Continue to room"
@@ -209,6 +210,10 @@
     "perService": {
       "title": "Occupancy per service",
       "body": "Percentage of staffed beds currently occupied"
+    },
+    "perWing": {
+      "title": "Occupancy per wing",
+      "body": "Percentage of staffed beds currently occupied in each wing"
     },
     "perUnit": {
       "title": "Occupancy per unit",
@@ -424,7 +429,35 @@
     "admin": {
       "endOfBranch": "End of this hierarchy branch",
       "endOfBranchDescription": "There are no child spaces or resources here. Add an item to continue this branch.",
-      "addHere": "Add space or resource"
+      "backOneLevel": "Back one level",
+      "addChildItem": "Add child item",
+      "createSpace": "Add space or resource",
+      "updateSpace": "Update space or resource",
+      "deleteSpace": "Delete space or resource",
+      "locationName": "Location name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteConfirmation": {
+        "title": "Confirm location deletion",
+        "description": "Are you sure you want to delete {{name}}? This action cannot be undone."
+      },
+      "confirmDeleteButton": "Delete location",
+      "deleteUnavailableTitle": "Unable to delete location",
+      "deleteUnavailable": "Delete is available only when this location has no child locations.",
+      "updateSuccess": "Location updated successfully.",
+      "updateError": "Unable to update this location.",
+      "updatePopup": {
+        "success": {
+          "title": "Update Successful",
+          "description": "The location name was updated successfully."
+        },
+        "error": {
+          "title": "Update Failed",
+          "description": "Unable to update the location name. Please try again."
+        }
+      },
+      "deleteSuccess": "Location deleted successfully.",
+      "deleteError": "Unable to delete this location."
     },
     "stats": { "levels": "Organizational levels", "spaces": "Registered spaces", "resourceGroups": "Resource groups", "operationalItems": "Operational items" },
     "columns": { "name": "Space or resource", "type": "Type", "parent": "Parent", "status": "Status" },
