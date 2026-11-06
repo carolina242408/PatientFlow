@@ -273,7 +273,4 @@ Os testes automatizados do backend, os recursos em `src/test` e as dependências
 Maven exclusivas dos testes foram removidos nesta fase. Os exemplos FHIR acima
 continuam disponíveis para verificação manual da API.
 
-Os testes Python do serviço de algoritmos mantêm-se no respetivo módulo;
-ver [algorithms/README.md](../algorithms/README.md).
-
 O [plano](PLAN.md) descreve apenas trabalho futuro sobre modelos inteligentes.

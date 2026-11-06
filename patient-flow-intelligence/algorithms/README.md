@@ -37,25 +37,9 @@ Atualizar a imagem a partir da pasta `patient-flow-intelligence`:
 docker compose up -d --build algorithms
 ```
 
-Testes das regras, sem instalar FastAPI:
+Os testes automatizados e os respetivos fixtures foram removidos nesta fase.
+Com o serviço em execução, consultar `GET /health` para verificar o estado e
+`/docs` para experimentar os endpoints através da documentação interativa.
 
-```bash
-python -m unittest discover -s tests -p test_decision_rules.py -v
-```
-
-Com a API em execução, testar também HTTP e validação dos pedidos:
-
-```bash
-ALGORITHMS_TEST_URL=http://localhost:8000 python -m unittest discover -s tests -v
-```
-
-No PowerShell, definir primeiro `$env:ALGORITHMS_TEST_URL='http://localhost:8000'`
-e executar `python -m unittest discover -s tests -v`. Usar o Python do ambiente
-virtual quando não estiver ativado. Existem cinco testes de regras e dois testes
-HTTP; estes últimos são ignorados se `ALGORITHMS_TEST_URL` não estiver definida.
-
-Os fixtures em `tests/fixtures/rules-v1.json` são partilhados com os testes
-Java através dos recursos de teste Maven. A suite Java tem atualmente os
-bloqueios descritos no [README do backend](../backend/README.md#testes).
 Modelos inteligentes treinados são trabalho futuro descrito no
 [PLAN.md](../backend/PLAN.md).

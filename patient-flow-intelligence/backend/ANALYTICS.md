@@ -192,8 +192,6 @@ As respostas identificam `engine.source`, `algorithmVersion`, `degraded` e
 `reason`. Não há tentativas repetidas que prolonguem um pedido por indisponibilidade.
 Desativar explicitamente o serviço usa a referência local sem marcar uma avaria.
 
-Os contratos de exemplo em `algorithms/tests/fixtures/rules-v1.json` são usados
-pelos testes Python. Os testes Java do backend foram removidos nesta fase.
 Uma evolução para modelos treinados exigirá um novo
 contrato, sem substituir silenciosamente o significado de `rules-v1`.
 
