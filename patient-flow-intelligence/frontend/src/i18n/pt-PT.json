@@ -96,7 +96,8 @@
       "building": "Continuar para o edifício",
       "floor": "Continuar para o piso",
       "service": "Continuar para o serviço",
-      "ward": "Continuar para a ala",
+      "wing": "Continuar para a ala",
+      "ward": "Continuar para a enfermaria",
       "nursery": "Continuar para o enfermaria",
       "room": "Continuar para o quarto"
     },
@@ -423,7 +424,6 @@
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
     "error": "Não foi possível carregar a hierarquia.",
-    "noData": "Ainda não existem espaços nesta hierarquia.",
     "root": "Raiz da organização",
     "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
     "admin": {
