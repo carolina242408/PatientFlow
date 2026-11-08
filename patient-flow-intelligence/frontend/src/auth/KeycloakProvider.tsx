@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { Button } from '@/components/Button'
 import { extractRolesFromToken, getApplicationUrl, KeycloakContext, type KeycloakUser } from './context'
 import keycloak, { initKeycloak } from './keycloak'
 
@@ -57,13 +58,13 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
       <div className="p-8 font-sans">
         <h1 className="text-xl font-semibold">Authentication unavailable</h1>
         <p className="my-4">{error}</p>
-        <button
+        <Button
           type="button"
           className="rounded bg-primary px-4 py-2 text-white hover:bg-primary-dark"
           onClick={() => void keycloak.login({ redirectUri: getApplicationUrl() })}
         >
           Try Keycloak login again
-        </button>
+        </Button>
       </div>
     )
   }

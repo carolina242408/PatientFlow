@@ -59,7 +59,7 @@ services:
   # ------------------------------------------------------------
   algorithms:
     build: ./algorithms
-    container_name: pfi-algorithms
+    container_name: algorithms
     ports:
       - "8000:8000"
 
@@ -68,7 +68,7 @@ services:
   # ------------------------------------------------------------
   backend:
     build: ./backend
-    container_name: pfi-backend
+    container_name: backend
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_URL: jdbc:postgresql://postgresql:5432/patientflow

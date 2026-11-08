@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/Button'
 import type { SpaceNode } from './types'
 
 interface SpaceNavigationProps {
@@ -25,8 +26,9 @@ const SpaceNavigation = ({ crumbs, onSelect }: SpaceNavigationProps) => {
                   /
                 </span>
               )}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 disabled={isLast}
                 aria-current={isLast ? 'page' : undefined}
                 onClick={() => onSelect(i)}
@@ -43,7 +45,7 @@ const SpaceNavigation = ({ crumbs, onSelect }: SpaceNavigationProps) => {
                 <span className={`font-medium ${isLast ? 'text-blue-700' : 'text-slate-700'}`}>
                   {node.name}
                 </span>
-              </button>
+              </Button>
             </li>
           )
         })}

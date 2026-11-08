@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useForm, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/Button"
+import { OperationPopup } from "@/components/OperationPopup"
 import {
   Card,
   CardContent,
@@ -21,15 +22,19 @@ import { isResourceType } from "../../utils/org-types"
 import { InformationSection } from "./InformationSection"
 import { NotesField } from "./NotesField"
 import { ParentLocationSection } from "./ParentLocationSection"
-import { ResourceCharacteristicsSection } from "./ResourceCharacteristicsSection"
 import { useCreateHierarchyNode } from "../../hooks/useLHUHierarchy"
 
 interface AddResourceFormProps {
   type: OrgType
+  initialParents?: Partial<Record<OrgType, string>>
   onChangeType: () => void
 }
 
-export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
+export function AddResourceForm({
+  type,
+  initialParents,
+  onChangeType,
+}: AddResourceFormProps) {
   const { t } = useTranslation()
   const isResource = isResourceType(type)
   const [popup, setPopup] = useState<{
@@ -38,15 +43,9 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
   } | null>(null)
   const form = useForm<AddNodeValues>({
     resolver: zodResolver(buildAddNodeSchema(type)) as Resolver<AddNodeValues>,
-    defaultValues: getDefaultValues(type),
+    defaultValues: getDefaultValues(type, initialParents),
   })
   const createNode = useCreateHierarchyNode()
-
-  useEffect(() => {
-    if (!popup) return
-    const timeoutId = window.setTimeout(() => setPopup(null), 4000)
-    return () => window.clearTimeout(timeoutId)
-  }, [popup])
 
   const showPopup = (popupType: "success" | "error") => {
     setPopup((current) => ({ type: popupType, key: (current?.key ?? 0) + 1 }))
@@ -65,7 +64,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
         },
       })
       showPopup("success")
-      form.reset(getDefaultValues(type))
+      form.reset(getDefaultValues(type, initialParents))
     } catch (error) {
       console.error("Unable to create hierarchy node", error)
       showPopup("error")
@@ -108,10 +107,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
             </InformationSection>
 
             {isResource && (
-              <>
-                <ResourceCharacteristicsSection />
-                <NotesField />
-              </>
+              <NotesField />
             )}
           </CardContent>
 
@@ -119,7 +115,7 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset(getDefaultValues(type))}
+              onClick={() => form.reset(getDefaultValues(type, initialParents))}
             >
               {t("lhuHierarchy.form.actions.clear")}
             </Button>
@@ -130,19 +126,12 @@ export function AddResourceForm({ type, onChangeType }: AddResourceFormProps) {
         </Card>
       </form>
       {popup && (
-        <div
+        <OperationPopup
           key={popup.key}
-          role={popup.type === "success" ? "status" : "alert"}
-          aria-live={popup.type === "success" ? "polite" : "assertive"}
-          className={`operation-popup operation-popup-${popup.type}`}
-        >
-          <p className="text-xl font-semibold">
-            {t(`lhuHierarchy.form.popup.${popup.type}.title`)}
-          </p>
-          <p className="mt-1 text-sm">
-            {t(`lhuHierarchy.form.popup.${popup.type}.description`)}
-          </p>
-        </div>
+          type={popup.type}
+          title={t(`lhuHierarchy.form.popup.${popup.type}.title`)}
+          description={t(`lhuHierarchy.form.popup.${popup.type}.description`)}
+        />
       )}
     </Form>
   )

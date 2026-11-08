@@ -46,7 +46,7 @@ const frontendType = (type: string): OrgType => {
 
 const backendType = (type: OrgType) => {
   if (type === "lhu") return "uls"
-  if (type === "operating-room" || type === "treatment-chair") {
+  if (type === "treatment-chair") {
     throw new Error(`O backend ainda não suporta o tipo de recurso ${type}`)
   }
   return type
@@ -112,6 +112,9 @@ export async function fetchHierarchyChildren(node: OrgNode): Promise<OrgNode[]> 
   return nextType ? fetchHierarchyLevel(nextType, node.id) : []
 }
 
+export const hierarchyChildrenQueryKey = (node: OrgNode) =>
+  ["space-hierarchy-children", node.type, node.id] as const
+
 export async function createHierarchyNode(
   type: OrgType,
   input: { name?: string; code?: string; parentId?: string; serviceId?: string },
@@ -126,4 +129,17 @@ export async function createHierarchyNode(
 
   const response = await api.post(`/hierarchy/${bType}`, payload)
   return response.data
+}
+
+export async function updateHierarchyNode(
+  type: OrgType,
+  id: string,
+  input: { name: string },
+) {
+  const response = await api.put(`/hierarchy/${backendType(type)}/${id}`, input)
+  return response.data
+}
+
+export async function deleteHierarchyNode(type: OrgType, id: string) {
+  await api.delete(`/hierarchy/${backendType(type)}/${id}`)
 }
