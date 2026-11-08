@@ -146,7 +146,14 @@ public class FHIRParserFactory {
         String room = locationCode(resources, "ro");
         String bed = locationCode(resources, "bd");
         ParsedLocationDTO structured = null;
-        if (ward != null || room != null || bed != null) {
+        if (ward == null && room == null && bed != null) {
+            var matcher = DISPLAY.matcher(bed);
+            if (matcher.matches()) {
+                structured = new ParsedLocationDTO(length(matcher.group(1).trim()),
+                    length(matcher.group(2).trim()), length(matcher.group(3).trim()));
+            }
+        }
+        if (structured == null && (ward != null || room != null || bed != null)) {
             structured = new ParsedLocationDTO(required(ward, "Falta Location wa"),
                 required(room, "Falta Location ro"), required(bed, "Falta Location bd"));
         }

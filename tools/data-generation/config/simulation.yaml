@@ -5,17 +5,17 @@
 
 simulation:
   start: "2026-10-01T00:00:00"   # hora local (Europe/Lisbon), como os sistemas PT enviam
-  days: 30
+  days: 7
   seed: 42
   # Dias simulados ANTES de 'start' para o hospital já estar com lotação realista.
-  warmup_days: 14
+  warmup_days: 3
   # full   -> emite todas as mensagens, incluindo as do aquecimento
   # census -> no instante 'start' emite um A01 por cada doente internado (carga inicial),
   #           e só depois as mensagens normais. Episódios terminados antes de 'start' são omitidos.
   warmup_output: census
 
 synthea:
-  population: auto        # 'auto' = estimado a partir das admissões esperadas; ou um inteiro
+  population: 20          # 'auto' = estimado a partir das admissões esperadas; ou um inteiro
   min_age: 18
   max_age: 100
   years_of_history: 2     # história clínica exportada por doente (afeta o tamanho do FHIR)
@@ -185,7 +185,7 @@ specialties:
     age: { mean: 65, sd: 15 }
     mortality: 0.20
     readmission_30d: 0.05
-    admissions_per_day: 0.9          # admissões diretas da urgência (as restantes chegam por transferência)
+    admissions_per_day: 0.2          # admissões diretas da urgência (as restantes chegam por transferência)
     step_down_to: MED                # após alta da UCI o doente segue para este serviço
     overflow_to: []
     fallback_diagnoses:

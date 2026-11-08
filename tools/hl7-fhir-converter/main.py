@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -197,7 +197,17 @@ ENCOUNTER_CLASS_MAP = {
 }
 
 
+def _deterministic_uuid(key: str) -> str:
+    digest = bytearray(hashlib.md5(key.encode("utf-8")).digest())
+    digest[6] = (digest[6] & 0x0F) | 0x30
+    digest[8] = (digest[8] & 0x3F) | 0x80
+    return str(uuid.UUID(bytes=bytes(digest)))
+
+
 def _patient(pid: Any) -> fhir.Patient:
+    sns_val: str | None = None
+    ns_val: str | None = None
+    first_val: str | None = None
     patient_id = str(uuid.uuid4())
     identifiers = []
     for raw_identifier in _repetitions(pid.patient_id):
@@ -205,6 +215,15 @@ def _patient(pid: Any) -> fhir.Patient:
         val = _component(parts, 0) or None
         sys_val = _component(parts, 3)
         type_code = _component(parts, 4)
+        if val:
+            if not first_val:
+                first_val = val
+            upper_type = (type_code or "").upper()
+            upper_sys = (sys_val or "").upper()
+            if upper_type in ("SNS", "SB") or upper_sys == "HAS":
+                sns_val = val
+            elif upper_type in ("NS", "MR") or upper_sys == "HOS":
+                ns_val = val
         if type_code:
             if type_code in IDENTIFIER_TYPE_MAP:
                 mapped_code, display = IDENTIFIER_TYPE_MAP[type_code]
@@ -238,6 +257,13 @@ def _patient(pid: Any) -> fhir.Patient:
                 type=type_concept,
             )
         )
+
+    primary_patient_key = sns_val or ns_val or first_val
+    patient_id = (
+        _deterministic_uuid(f"Patient:{primary_patient_key}")
+        if primary_patient_key
+        else str(uuid.uuid4())
+    )
 
     names = []
     for raw_name in _repetitions(pid.patient_name):
@@ -330,17 +356,37 @@ def _location(pv1: Any) -> fhir.Location | None:
     if not pv1.assigned_patient_location:
         return None
     parts = _components(pv1.assigned_patient_location)
-    name = "-".join(part for part in parts[:3] if part) or _decode(
-        pv1.assigned_patient_location
-    )
+    if len(parts) >= 3 and all(parts[:3]):
+        name = f"Ward {parts[0]}, Room {parts[1]}, Bed {parts[2]}"
+        loc_key = f"{parts[0]}-{parts[1]}-{parts[2]}"
+    else:
+        name = "-".join(part for part in parts if part) or _decode(
+            pv1.assigned_patient_location
+        )
+        loc_key = name
+    identifiers = [fhir.Identifier(system="urn:id:HOS", value=name)]
+    if _component(parts, 3):
+        identifiers.append(
+            fhir.Identifier(system="urn:id:HOS:bed-uid", value=_component(parts, 3))
+        )
+    desc_parts = [p for p in (_component(parts, 7), _component(parts, 8)) if p]
+    description = " - ".join(desc_parts) if desc_parts else None
     return fhir.Location(
-        id=_safe_id(name, "location"),
+        id=_deterministic_uuid(f"Location:{loc_key}"),
+        identifier=identifiers,
         name=name,
+        description=description,
         status="active",
         mode="instance",
-        type=[_codeable(parts[0] if parts else None)],
-        physicalType=_codeable(
-            "bd", "http://terminology.hl7.org/CodeSystem/location-physical-type"
+        type=[_codeable(_component(parts, 5) or _component(parts, 0))],
+        physicalType=fhir.CodeableConcept(
+            coding=[
+                fhir.Coding(
+                    system="http://terminology.hl7.org/CodeSystem/location-physical-type",
+                    code="bd",
+                    display="Bed",
+                )
+            ]
         ),
     )
 
@@ -363,6 +409,7 @@ def _encounter(
         encounter_location = [
             fhir.EncounterLocation(
                 location=fhir.Reference(
+                    reference=f"Location/{location.id}" if location and location.id else None,
                     display=location_display,
                 )
             )
@@ -516,7 +563,9 @@ def _conditions(
         }.get(_component(parts, 2), "http://hl7.org/fhir/sid/icd-10-cm")
         conditions.append(
             fhir.Condition(
-                id=f"condition-{diagnosis.set_id or index}",
+                id=_deterministic_uuid(
+                    f"Condition:{patient.id}:{visit_value or encounter.id}:{code or index}"
+                ),
                 identifier=[
                     fhir.Identifier(
                         type=fhir.CodeableConcept(
@@ -781,12 +830,17 @@ def convert_hl7_to_fhir(message: str) -> fhir.Bundle:
     evn = segments.get("EVN", [hl7.EVNSegment()])[0]
     pv1 = segments.get("PV1", [hl7.PV1Segment()])[0]
     patient = _patient(pid)
-    encounter = _encounter(msh, evn, pv1, patient)
+    location = _location(pv1)
+    encounter = _encounter(msh, evn, pv1, patient, location)
 
-    resources: list[fhir.FHIRModel] = [patient, encounter]
-    timestamp_str = (
-        datetime.now(timezone.UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-    )
+    conditions = _conditions(segments.get("DG1", []), patient, encounter)
+    resources: list[fhir.FHIRModel] = [
+        patient,
+        encounter,
+        *([location] if location is not None else []),
+        *conditions,
+    ]
+    timestamp_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     return fhir.Bundle(
         type="collection",
         timestamp=timestamp_str,
@@ -825,7 +879,31 @@ def main() -> None:
         type=Path,
         help="Write the FHIR Bundle to this JSON file instead of stdout",
     )
+    parser.add_argument(
+        "--worker",
+        action="store_true",
+        help="Run as a persistent JSON-lines stdin/stdout worker",
+    )
     args = parser.parse_args()
+    if args.worker:
+        import sys
+
+        for raw_line in sys.stdin:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+            try:
+                req = json.loads(raw_line)
+                hl7_msg = req.get("hl7", "")
+                bundle_dict = convert_hl7_to_fhir(hl7_msg).model_dump(
+                    by_alias=True, exclude_none=True, mode="json"
+                )
+                sys.stdout.write(json.dumps({"ok": True, "bundle": bundle_dict}) + "\n")
+                sys.stdout.flush()
+            except Exception as exc:
+                sys.stdout.write(json.dumps({"ok": False, "error": str(exc)}) + "\n")
+                sys.stdout.flush()
+        return
     message = (
         _resolve_message_path(args.message).read_text(encoding="utf-8")
         if args.message

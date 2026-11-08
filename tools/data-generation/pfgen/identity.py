@@ -330,6 +330,8 @@ class IdentityRegistry:
         given = self.rng.choice(pt_data.MALE_GIVEN if sex == "M" else pt_data.FEMALE_GIVEN)
 
         def staff_id(low: int, high: int) -> str:
+            if len(self.used_staff_ids) >= (high - low) // 2:
+                self.used_staff_ids.clear()
             return self._alloc_unique(self.used_staff_ids, lambda: str(self.rng.randint(low, high)))
 
         return Staff(

@@ -1,14 +1,14 @@
 # =============================================================================
-# Layout do hospital simulado (editável)
+# Layout do hospital simulado (editável) - Configurado para 10 camas
 #
 # Cada enfermaria (ward) tem um código de serviço que é usado em:
-#   PV1-3.1  ponto de cuidados   (ex.: 30004^7005^003^...)
+#   PV1-3.1  ponto de cuidados   (ex.: 30004^7001^001^...)
 #   PV1-10   serviço hospitalar  (ex.: 30004)
 # tal como nas mensagens de exemplo do hl7-fhir-converter.
 #
 # rooms pode ser:
-#   - um gerador:  {count: 8, beds_per_room: 4, first_number: 7001}
-#   - uma lista explícita: [{number: 7001, label: "SALA 1", beds: 4}, ...]
+#   - um gerador:  {count: 2, beds_per_room: 2, first_number: 7001}
+#   - uma lista explícita: [{number: 7001, label: "SALA 1", beds: 2}, ...]
 # stretchers = macas de recurso (corredor) usadas só em sobrelotação.
 # mixed_sex  = quartos podem misturar sexos (UCI / boxes individuais).
 # =============================================================================
@@ -37,49 +37,14 @@ wards:
     name: MEDICINA INTERNA A
     specialty: MED
     floor: 7
-    rooms: { count: 8, beds_per_room: 4, first_number: 7001 }
-    stretchers: 4
-
-  - code: "30005"
-    name: MEDICINA INTERNA B
-    specialty: MED
-    floor: 6
-    rooms: { count: 8, beds_per_room: 4, first_number: 6001 }
-    stretchers: 4
+    rooms: { count: 2, beds_per_room: 2, first_number: 7001 }
+    stretchers: 1
 
   - code: "30006"
     name: CIRURGIA GERAL
     specialty: CIR
     floor: 4
-    rooms: { count: 7, beds_per_room: 4, first_number: 4019 }
-    stretchers: 2
-
-  - code: "30012"
-    name: ORTOPEDIA
-    specialty: ORT
-    floor: 4
-    rooms: { count: 6, beds_per_room: 4, first_number: 4010 }
-    stretchers: 2
-
-  - code: "30008"
-    name: CARDIOLOGIA
-    specialty: CAR
-    floor: 5
-    rooms: { count: 5, beds_per_room: 4, first_number: 5001 }
-    stretchers: 2
-
-  - code: "30009"
-    name: PNEUMOLOGIA
-    specialty: PNE
-    floor: 5
-    rooms: { count: 5, beds_per_room: 4, first_number: 5010 }
-    stretchers: 2
-
-  - code: "30010"
-    name: NEUROLOGIA - UNIDADE AVC
-    specialty: NEU
-    floor: 3
-    rooms: { count: 4, beds_per_room: 4, first_number: 3001 }
+    rooms: { count: 2, beds_per_room: 2, first_number: 4019 }
     stretchers: 1
 
   - code: "30020"
@@ -91,12 +56,3 @@ wards:
     rooms:
       - { number: 2001, label: "BOX 1", beds: 1 }
       - { number: 2002, label: "BOX 2", beds: 1 }
-      - { number: 2003, label: "BOX 3", beds: 1 }
-      - { number: 2004, label: "BOX 4", beds: 1 }
-      - { number: 2005, label: "BOX 5", beds: 1 }
-      - { number: 2006, label: "BOX 6", beds: 1 }
-      - { number: 2007, label: "BOX 7", beds: 1 }
-      - { number: 2008, label: "BOX 8", beds: 1 }
-      - { number: 2009, label: "BOX 9", beds: 1 }
-      - { number: 2010, label: "BOX 10", beds: 1 }
-      - { number: 2011, label: "OPEN SPACE", beds: 2 }

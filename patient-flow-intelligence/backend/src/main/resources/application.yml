@@ -47,6 +47,13 @@ patientflow:
     url: ${ALGORITHMS_URL:http://localhost:8000}
     connect-timeout: 500ms
     request-timeout: 1s
+  ingestion:
+    enabled: ${INGESTION_ENABLED:false}
+    hapi-fhir-url: ${HAPI_FHIR_URL:http://localhost:8081/fhir}
+    connect-timeout: ${INGESTION_CONNECT_TIMEOUT:5s}
+    request-timeout: ${INGESTION_REQUEST_TIMEOUT:15s}
+    reconnect-delay: ${INGESTION_RECONNECT_DELAY:5s}
+    sources: ${INGESTION_SOURCES:http://localhost:8001/api/hl7/live?delay_ms=500&loop=true}
   events:
     allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
     ticket-ttl: 30s

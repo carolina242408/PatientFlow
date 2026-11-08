@@ -88,7 +88,7 @@ class TestPatientFlowGenerator(unittest.TestCase):
         sim_start = datetime.fromisoformat(sim_cfg["simulation"]["start"])
 
         reg = IdentityRegistry(rng)
-        pool = synthetic_pool(50, rng, sim_start, 18, 90)
+        pool = synthetic_pool(20, rng, sim_start, 18, 90)
 
         sim = Simulation(hospital, sim_cfg, pool, reg, rng)
         res = sim.run()

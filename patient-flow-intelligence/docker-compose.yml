@@ -64,6 +64,27 @@ services:
       - "8000:8000"
 
   # ------------------------------------------------------------
+  # Gerador de Dados Sintéticos (Python/FastAPI - HL7 v2.5 + FHIR R4)
+  # ------------------------------------------------------------
+  data-generator:
+    build:
+      context: ../tools/data-generation
+      dockerfile: ./Dockerfile
+    container_name: pfi-data-generator
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../tools/data-generation/config:/app/config:ro
+      - ../tools/data-generation/ui:/app/ui:ro
+      - ../tools/data-generation/output:/app/output
+      - ../tools/data-generation/.cache:/app/.cache
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------
   # Backend Spring Boot
   # ------------------------------------------------------------
   backend:
@@ -80,9 +101,15 @@ services:
       KEYCLOAK_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       ALGORITHMS_URL: http://algorithms:8000
+      DATA_GENERATOR_URL: http://data-generator:8001
+      HAPI_FHIR_URL: ${HAPI_FHIR_URL:-http://hapi-fhir:8081/fhir}
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
+      INGESTION_SOURCES: ${INGESTION_SOURCES:-http://data-generator:8001/api/hl7/live?delay_ms=500&loop=true}
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     ports:
       - "8080:8080"
+    volumes:
+      - ../tools/hl7-fhir-converter:/app/converter:ro
     healthcheck:
       test: [ "CMD", "java", "-cp", "/app", "Healthcheck" ]
       interval: 10s
@@ -95,6 +122,8 @@ services:
       keycloak:
         condition: service_started
       algorithms:
+        condition: service_started
+      hapi-fhir-server:
         condition: service_started
 
   # ------------------------------------------------------------
@@ -155,13 +184,16 @@ services:
     image: hapiproject/hapi:latest
     container_name: hapi-fhir
     ports:
-      - "8081:8080"
+      - "8081:8081"
     environment:
       spring.datasource.url: jdbc:postgresql://hapi-fhir-postgres:5432/hapi
       spring.datasource.username: hapi
       spring.datasource.password: hapi
       spring.datasource.driverClassName: org.postgresql.Driver
       spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
+      server.port: 8081
+      hapi.fhir.server_address: http://localhost:8081/fhir
+      hapi.fhir.tester.home.server_address: http://localhost:8081/fhir
       hapi.fhir.fhir_version: R4
       hapi.fhir.default_encoding: json
       hapi.fhir.allow_multiple_delete: "true"
