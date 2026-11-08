@@ -36,7 +36,7 @@ const VIEWS: Record<Level, ComponentType<ViewProps>> = {
 }
 
 interface SpaceExplorerProps {
-  /** Highest level the user may see: LHU manager 'lhu', unit manager 'unit', service manager 'service' */
+  /** Highest level the user may see */
   startLevel?: Level
   /** Level that is open on first render (defaults to startLevel) */
   initialLevel?: Level
@@ -270,7 +270,8 @@ const SpaceExplorer = ({
   const childrenError = childrenQuery.isError
 
   if (isPending) return <div>Loading...</div>
-  if (isError || !path.length) return <div>{t('lhuHierarchy.error')}</div>
+  if (isError) return <div>{t('lhuHierarchy.error')}</div>
+  if (!hierarchy.length) return <div>{t('lhuHierarchy.noData')}</div>
 
   // Re-sincroniza os nós do caminho atual com a árvore enriquecida (para refletir dados operacionais atualizados)
   const syncedPath = path.map((p) => {

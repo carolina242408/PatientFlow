@@ -424,6 +424,7 @@
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",
     "error": "Could not load the hierarchy.",
+    "noData": "There isn't spaces or resources in this hierarchy yet.",
     "root": "Organization root",
     "modes": { "structure": "Structure overview", "add": "Add premise or resource" },
     "admin": {
