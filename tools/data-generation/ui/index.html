@@ -368,6 +368,7 @@
             <option value="/api/simulation/summary">/api/simulation/summary (Simulation Stats)</option>
             <option value="/api/fhir/hospital-locations">/api/fhir/hospital-locations (10 Beds & Wards FHIR)</option>
             <option value="/api/fhir/patients">/api/fhir/patients (List Patient NS IDs)</option>
+            <option value="/api/csv">/api/csv (CSV Dataset: gender, diagnosis code, birthdate, admission date, discharge date)</option>
           </select>
         </div>
         <div class="form-row">
@@ -394,6 +395,31 @@
         <div class="btn-row">
           <button class="btn-primary" onclick="runQuery()">Fetch Data</button>
           <button class="btn-secondary" onclick="copyText('queryCmdPreview')">Copy curl.exe</button>
+        </div>
+      </div>
+
+      <!-- 5. CSV DATASET GENERATOR & EXPORT -->
+      <div class="card">
+        <h2>5. CSV Dataset Generator (`gender, diagnosis code, birthdate, admission date, discharge date`)</h2>
+        <div class="form-row">
+          <label for="csvTotalRows">Dataset Rows (Outputs):</label>
+          <input type="number" id="csvTotalRows" value="1000" min="10" max="50000" oninput="updateCsvCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="csvRows">Preview Rows:</label>
+          <input type="number" id="csvRows" value="20" min="1" max="500" oninput="updateCsvCmd()" />
+        </div>
+        <p style="font-size:0.8rem; color:#6b7280; margin:4px 0 10px 0;">
+          Generates CSV records directly to <code>tools/data-generation/output/dataset.csv</code> (does not download to browser Downloads folder):<br>
+          <code>gender, diagnosis code, birthdate, admission date, discharge date</code>
+        </p>
+
+        <div class="cmd-box" id="csvCmdPreview"></div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="generateAndSaveCsvToOutput()">Generate & Save to output/dataset.csv</button>
+          <button class="btn-secondary" onclick="previewCsv()">Preview CSV</button>
+          <button class="btn-secondary" onclick="copyText('csvCmdPreview')">Copy curl.exe</button>
         </div>
       </div>
     </div>
@@ -632,11 +658,63 @@
       }
     }
 
+        // 5. CSV Dataset functions (saves directly to server output/ directory, no browser download)
+    function updateCsvCmd() {
+      const base = getBaseUrl();
+      const count = document.getElementById("csvTotalRows")?.value || "1000";
+      document.getElementById("csvCmdPreview").textContent = `curl.exe -X POST "${base}/api/csv/generate?count=${count}"`;
+    }
+
+    async function generateAndSaveCsvToOutput() {
+      const base = getBaseUrl();
+      const count = parseInt(document.getElementById("csvTotalRows")?.value || "1000", 10);
+      const url = `${base}/api/csv/generate?count=${count}`;
+      logOutput(`Generating dataset (${count} rows) directly to output/dataset.csv ...`);
+      try {
+        const res = await fetch(url, { method: "POST" });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const data = await res.json();
+        logOutput(`[Success] Dataset generated and saved directly to ${data.relative_path} (${data.rows} rows)!\nSaved location: ${data.file}\nColumns: ${data.columns.join(", ")}\n`);
+        await previewCsv();
+      } catch (err) {
+        logOutput(`Error generating dataset CSV: ${err}`);
+      }
+    }
+
+    async function previewCsv() {
+      const url = `${getBaseUrl()}/api/csv`;
+      const maxRows = parseInt(document.getElementById("csvRows")?.value || "20", 10);
+      logOutput(`Loading preview from output/dataset.csv ...`, true);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const text = await res.text();
+        const lines = text.trim().split("\n");
+        const header = lines[0];
+        const rows = lines.slice(1, maxRows + 1);
+        let preview = `\n[Preview] output/dataset.csv (${lines.length - 1} total rows):\n----------------------------------------\n${header}\n`;
+        rows.forEach((r) => {
+          preview += `${r}\n`;
+        });
+        if (lines.length - 1 > maxRows) {
+          preview += `... and ${lines.length - 1 - maxRows} more rows in output/dataset.csv.\n`;
+        }
+        logOutput(preview, true);
+      } catch (err) {
+        logOutput(`Error previewing CSV: ${err}`, true);
+      }
+    }
+
     function updateAllCommands() {
       updateSseCmd();
       updateGenCmd();
       updateSubCmd();
       updateQueryCmd();
+      updateCsvCmd();
     }
 
     // Initialize default base URL if served from the generator container itself

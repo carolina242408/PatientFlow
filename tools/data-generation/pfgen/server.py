@@ -29,7 +29,7 @@ from pydantic import BaseModel, Field
 from .hl7 import HL7Builder, RenderedMessage, render_all
 from .hospital import Hospital
 from .identity import IdentityRegistry
-from .publisher import dispatch_to_subscribers, write_file_outputs
+from .publisher import build_dataset_csv, dispatch_to_subscribers, write_file_outputs
 from .simulation import Simulation, output_events
 from .synthea import load_pool, run_synthea, synthetic_pool
 from .validate import validate_messages
@@ -239,6 +239,7 @@ def run_generator(
         validation_report=validation_report,
     )
 
+    state.episodes = sim_result.episodes
     state.messages = messages
     state.by_id = {m.control_id: m for m in messages}
     state.summary = summary
@@ -295,6 +296,8 @@ def get_root():
             "hospital_fhir": "GET /api/fhir/hospital-locations",
             "patients_fhir": "GET /api/fhir/patients/{ns}",
             "subscriptions": "POST /api/subscriptions",
+            "dataset_csv": "GET /api/csv",
+            "generate_csv": "POST /api/csv/generate",
         },
     }
 
@@ -329,6 +332,45 @@ def generate_data(req: GenerateRequest = Body(...)):
     except Exception as e:
         logger.exception("Generation error")
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}") from e
+
+
+@app.post("/api/csv/generate", tags=["Dataset"])
+def generate_csv_file(count: int = Query(default=1000, ge=1, le=50000, description="Total rows to export")):
+    """Generate the patient flow dataset CSV and save it directly to output/dataset.csv."""
+    if not state.messages:
+        ensure_light_stream()
+    episodes = getattr(state, "episodes", [])
+    content = build_dataset_csv(episodes, target_rows=count)
+    csv_file = state.output_dir / "dataset.csv"
+    csv_file.parent.mkdir(parents=True, exist_ok=True)
+    csv_file.write_text(content, encoding="utf-8")
+    logger.info("Dataset CSV written to %s (%d rows)", csv_file, count)
+    return {
+        "status": "ok",
+        "message": f"Dataset CSV successfully generated and saved to {csv_file.name}",
+        "file": str(csv_file),
+        "relative_path": "output/dataset.csv",
+        "rows": count,
+        "columns": ["gender", "diagnosis code", "birthdate", "admission date", "discharge date"],
+    }
+
+
+@app.get("/api/csv", tags=["Dataset"])
+@app.get("/api/dataset/csv", tags=["Dataset"])
+def get_dataset_csv(count: int = Query(default=1000, ge=1, le=50000, description="Total rows to export")):
+    """Get the patient flow dataset CSV and ensure it is saved in output/dataset.csv."""
+    if not state.messages:
+        ensure_light_stream()
+    episodes = getattr(state, "episodes", [])
+    content = build_dataset_csv(episodes, target_rows=count)
+    csv_file = state.output_dir / "dataset.csv"
+    csv_file.parent.mkdir(parents=True, exist_ok=True)
+    csv_file.write_text(content, encoding="utf-8")
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="dataset.csv"'},
+    )
 
 
 @app.get("/api/simulation/summary", tags=["Simulation"])
