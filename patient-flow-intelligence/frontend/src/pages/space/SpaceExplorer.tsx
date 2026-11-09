@@ -271,7 +271,7 @@ const SpaceExplorer = ({
 
   if (isPending) return <div>Loading...</div>
   if (isError) return <div>{t('lhuHierarchy.error')}</div>
-  if (!hierarchy.length) return <div>{t('lhuHierarchy.noData')}</div>
+  if (!hierarchy.length || !path.length) return <div>{t('lhuHierarchy.noData')}</div>
 
   // Re-sincroniza os nós do caminho atual com a árvore enriquecida (para refletir dados operacionais atualizados)
   const syncedPath = path.map((p) => {

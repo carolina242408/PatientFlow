@@ -424,6 +424,7 @@
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
     "error": "Não foi possível carregar a hierarquia.",
+    "noData": "Aind não existem espaços ou recursos.",
     "root": "Raiz da organização",
     "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
     "admin": {
