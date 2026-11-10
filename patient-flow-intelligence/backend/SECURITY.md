@@ -4,24 +4,29 @@
 
 O JWT é validado pelo resource server contra o issuer Keycloak configurado.
 Os papéis são lidos das authorities derivadas de `realm_access.roles` e os
-âmbitos são lidos do claim `groups`. Existem apenas os papéis `ROLE_ADMIN` e
-`MANAGER`. Os grupos organizacionais incluem o tipo, nome e UUID da entidade
+âmbitos são lidos do claim `groups`. Existem apenas os papéis `ADMIN_ROLE` e
+`MANAGER_ROLE`. Os grupos organizacionais incluem o tipo, nome e UUID da entidade
 (`ULS_<nome>__<uuid>`, `UNIT_<nome>__<uuid>`, `BUILDING_<nome>__<uuid>`,
 `FLOOR_<nome>__<uuid>`, `SERVICE_<nome>__<uuid>`, `WING_<nome>__<uuid>` e
 `WARD_<nome>__<uuid>`).
 
 | Papel Keycloak | Âmbito efetivo |
 | --- | --- |
-| `ROLE_ADMIN` | Global; não exige grupo |
-| `MANAGER` | Apenas o nível mais específico dos grupos atribuídos |
+| `ADMIN_ROLE` | Global; não exige grupo |
+| `MANAGER_ROLE` | Apenas o nível mais específico dos grupos atribuídos |
 
 Para um gestor com grupos de vários níveis, aplica-se apenas o nível mais
 específico, nesta ordem: `WARD`, `WING`, `SERVICE`, `FLOOR`, `BUILDING`,
 `UNIT`, `ULS`. Todos os grupos atribuídos desse nível continuam válidos;
 grupos de níveis mais amplos não aumentam o acesso. A API de hierarquia cria
 grupos Keycloak aninhados até à enfermaria; quartos e camas não têm grupos.
-Um gestor só recebe acesso operacional se tiver o papel `MANAGER` e pelo
+Um gestor só recebe acesso operacional se tiver o papel `MANAGER_ROLE` e pelo
 menos um grupo válido.
+
+Ao atualizar um realm Keycloak já existente, o import do ficheiro do realm não
+renomeia automaticamente os papéis existentes. Substitua `ROLE_ADMIN` por
+`ADMIN_ROLE` e `MANAGER` por `MANAGER_ROLE` no realm e nas atribuições dos
+utilizadores antes de voltar a iniciar sessão.
 
 ## Matriz de operações
 
@@ -60,13 +65,13 @@ Sem autenticação, a API responde `401`. Sem papel/associação operacional,
 responde `403`. Um recurso individual desconhecido ou fora do âmbito devolve
 `404`, impedindo a distinção por enumeração de identificadores. Uma coleção
 filtrada para outro âmbito fica vazia. A gestão de associações devolve `403`
-para utilizadores sem `ROLE_ADMIN`.
+para utilizadores sem `ADMIN_ROLE`.
 
 ## Atribuição inicial de acessos
 
 1. Criar os elementos da hierarquia pela API; o backend cria grupos Keycloak
    aninhados até à enfermaria.
-2. Atribuir ao utilizador o grupo desejado no Keycloak e o papel `MANAGER`.
+2. Atribuir ao utilizador o grupo desejado no Keycloak e o papel `MANAGER_ROLE`.
 3. Renovar o token. O claim `groups` contém os caminhos necessários ao cálculo
    do nível mais específico de acesso.
 

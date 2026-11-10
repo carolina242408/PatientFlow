@@ -6,10 +6,10 @@
   "roles": {
     "realm": [
       {
-        "name": "ROLE_ADMIN"
+        "name": "ADMIN_ROLE"
       },
       {
-        "name": "MANAGER"
+        "name": "MANAGER_ROLE"
       }
     ]
   },
@@ -51,7 +51,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "ROLE_ADMIN"
+        "ADMIN_ROLE"
       ],
       "credentials": [
         {
@@ -71,7 +71,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "MANAGER"
+        "MANAGER_ROLE"
       ],
       "credentials": [
         {
@@ -91,7 +91,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "MANAGER"
+        "MANAGER_ROLE"
       ],
       "credentials": [
         {
@@ -111,7 +111,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "MANAGER"
+        "MANAGER_ROLE"
       ],
       "credentials": [
         {
@@ -131,7 +131,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "MANAGER"
+        "MANAGER_ROLE"
       ],
       "credentials": [
         {

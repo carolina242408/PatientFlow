@@ -11,7 +11,7 @@ const AppLayout = () => {
   const { t } = useTranslation()
   const { user } = useKeycloak()
   const page = PAGES.find((p) => pathname === p || pathname.startsWith(`${p}/`))?.slice(1) ?? 'default'
-  const isManagerHierarchy = page === 'hierarchy' && user?.roles.includes('MANAGER')
+  const isManagerHierarchy = page === 'hierarchy' && user?.roles.includes('MANAGER_ROLE')
   const hierarchyScope = user?.scopeType ?? 'unassigned'
   const pageName = isManagerHierarchy
     ? t(`pages.hierarchy.scopes.${hierarchyScope}.title`)

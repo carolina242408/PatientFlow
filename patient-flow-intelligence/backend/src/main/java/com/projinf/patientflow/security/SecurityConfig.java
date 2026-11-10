@@ -29,8 +29,8 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                 .requestMatchers("/ws/events").permitAll() // The handshake requires a one-use authenticated ticket.
                 .requestMatchers("/api/account", "/api/access/me").authenticated()
-                .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/**").hasAnyAuthority("ROLE_ADMIN", "MANAGER")
+                .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info").hasAuthority("ADMIN_ROLE")
+                .requestMatchers("/api/**").hasAnyAuthority("ADMIN_ROLE", "MANAGER_ROLE")
                 .anyRequest().denyAll())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();

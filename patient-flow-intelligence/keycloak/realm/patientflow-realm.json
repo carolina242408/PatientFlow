@@ -51,7 +51,7 @@
     "realm": [
       {
         "id": "6ed16610-31a4-4303-9b43-620f0d248461",
-        "name": "ROLE_ADMIN",
+        "name": "ADMIN_ROLE",
         "description": "PatientFlow administrator role",
         "composite": false,
         "clientRole": false,
@@ -60,7 +60,7 @@
       },
       {
         "id": "2d9c4b3a-a8d4-41cc-86d6-7c8c2e07fbb9",
-        "name": "MANAGER",
+        "name": "MANAGER_ROLE",
         "description": "Manager access scoped by Keycloak organizational groups",
         "composite": false,
         "clientRole": false,
@@ -143,7 +143,7 @@
       "subGroups": [],
       "attributes": {},
       "realmRoles": [
-        "ROLE_ADMIN"
+        "ADMIN_ROLE"
       ],
       "clientRoles": {}
     },

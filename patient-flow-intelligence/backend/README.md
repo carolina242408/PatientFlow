@@ -91,7 +91,7 @@ enfermarias existentes a um serviço `GENERAL` da respetiva unidade, preservando
 os internamentos. A migração exige no máximo um internamento ativo por doente;
 dados antigos que violem essa regra devem ser reconciliados antes da atualização.
 `V4__organizational_access.sql` preserva a tabela de grants por compatibilidade,
-mas a autorização atual usa o papel `MANAGER` e os grupos do claim `groups` do
+mas a autorização atual usa o papel `MANAGER_ROLE` e os grupos do claim `groups` do
 JWT. Ao criar elementos, o backend cria grupos Keycloak aninhados segundo a
 relação pai-filho até à enfermaria. Quartos e camas não têm grupos. O nome
 inclui o UUID para permitir resolução inequívoca. Se houver grupos em vários

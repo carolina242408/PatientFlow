@@ -15,7 +15,7 @@ import NotFound from "./pages/NotFound"
 const RequireAdmin = () => {
   const { user } = useKeycloak()
   if (hasAdminRole(user?.roles)) return <Outlet />
-  return user?.roles.includes('MANAGER') && user.scopeType
+  return user?.roles.includes('MANAGER_ROLE') && user.scopeType
     ? <Navigate to="/dashboard" replace />
     : <Navigate to="/settings" replace />
 }
@@ -23,7 +23,7 @@ const RequireAdmin = () => {
 const RequireManagerScope = () => {
   const { user } = useKeycloak()
   if (hasAdminRole(user?.roles)) return <Navigate to="/lhu-hierarchy" replace />
-  return user?.roles.includes('MANAGER') && user.scopeType
+  return user?.roles.includes('MANAGER_ROLE') && user.scopeType
     ? <Outlet />
     : <Navigate to="/settings" replace />
 }
@@ -31,14 +31,14 @@ const RequireManagerScope = () => {
 const RoleHome = () => {
   const { user } = useKeycloak()
   if (hasAdminRole(user?.roles)) return <Navigate to="/lhu-hierarchy" replace />
-  if (user?.roles.includes('MANAGER') && user.scopeType) return <Navigate to="/dashboard" replace />
+  if (user?.roles.includes('MANAGER_ROLE') && user.scopeType) return <Navigate to="/dashboard" replace />
   return <Navigate to="/settings" replace />
 }
 
 const DashboardRoute = () => {
   const { user } = useKeycloak()
   if (hasAdminRole(user?.roles)) return <Navigate to="/lhu-hierarchy" replace />
-  if (user?.roles.includes('MANAGER') && user.scopeType) return <Dashboard />
+  if (user?.roles.includes('MANAGER_ROLE') && user.scopeType) return <Dashboard />
   return <Navigate to="/settings" replace />
 }
 

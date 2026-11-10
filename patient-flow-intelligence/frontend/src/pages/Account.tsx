@@ -5,8 +5,8 @@ import { useKeycloak } from '@/auth/context'
 import { fetchAccount } from '../api/account'
 
 const getProfile = (roles: string[] = []) => {
-  if (roles.includes('ROLE_ADMIN')) return 'admin'
-  if (roles.includes('MANAGER')) return 'manager'
+  if (roles.includes('ADMIN_ROLE')) return 'admin'
+  if (roles.includes('MANAGER_ROLE')) return 'manager'
   return 'default'
 }
 
@@ -36,8 +36,8 @@ const Account = () => {
   const name = account?.name || account?.login || '—'
   const email = account?.email || '—'
   const roles = user?.roles ?? account?.roles ?? []
-  const hasAdminRole = roles.includes('ROLE_ADMIN')
-  const hasManagerRole = roles.includes('MANAGER')
+  const hasAdminRole = roles.includes('ADMIN_ROLE')
+  const hasManagerRole = roles.includes('MANAGER_ROLE')
   const hasApplicationRole = hasAdminRole || hasManagerRole
   const scopeType = user?.scopeType
   const hasScope = scopeType !== null && scopeType !== undefined

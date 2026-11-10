@@ -84,7 +84,7 @@ const SpaceExplorer = ({
 }: SpaceExplorerProps) => {
   const { t } = useTranslation()
   const { user } = useKeycloak()
-  const hasApplicationRole = user?.roles.includes('MANAGER') === true || hasAdminRole(user?.roles)
+  const hasApplicationRole = user?.roles.includes('MANAGER_ROLE') === true || hasAdminRole(user?.roles)
   const [selectedRoomId, setSelectedRoomId] = useState<string>()
 
   // 1. Hierarquia real (ULS → unidade → edifício → piso → serviço → enfermaria → sala → cama)

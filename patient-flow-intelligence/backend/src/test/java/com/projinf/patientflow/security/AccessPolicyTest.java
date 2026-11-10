@@ -57,7 +57,7 @@ class AccessPolicyTest {
     private void authenticate(List<String> groups) {
         Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").subject("manager")
             .claim("groups", groups).build();
-        var authentication = new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("MANAGER")));
+        var authentication = new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("MANAGER_ROLE")));
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);

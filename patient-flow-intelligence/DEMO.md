@@ -36,11 +36,11 @@ Credenciais de demonstração (password igual ao utilizador):
 
 | Utilizador | Papel Keycloak | Grupo sugerido |
 | --- | --- | --- |
-| `demo-admin` | `ROLE_ADMIN` | Global; não precisa de associação |
-| `demo-lhu` | `MANAGER` | Grupo da ULS Demonstração |
-| `demo-unit` | `MANAGER` | Grupo do Hospital Demonstração Centro |
-| `demo-service` | `MANAGER` | Grupo do serviço Medicina (`DEMO-MED`) |
-| `demo-other` | `MANAGER` | Grupo do Hospital Demonstração Norte |
+| `demo-admin` | `ADMIN_ROLE` | Global; não precisa de associação |
+| `demo-lhu` | `MANAGER_ROLE` | Grupo da ULS Demonstração |
+| `demo-unit` | `MANAGER_ROLE` | Grupo do Hospital Demonstração Centro |
+| `demo-service` | `MANAGER_ROLE` | Grupo do serviço Medicina (`DEMO-MED`) |
+| `demo-other` | `MANAGER_ROLE` | Grupo do Hospital Demonstração Norte |
 
 O administrador da consola Keycloak é `admin`, password `patientflow-demo`,
 configurável por `MVP_KEYCLOAK_ADMIN_PASSWORD`. A password PostgreSQL é
@@ -83,7 +83,7 @@ gestores precisam de ser associados a grupos organizacionais no Keycloak.
 1. Criar os elementos da hierarquia pela API autenticada como administrador;
    os grupos Keycloak são criados automaticamente até à enfermaria.
 2. Na consola Keycloak, atribuir ao gestor o grupo apropriado e o papel
-   `MANAGER`.
+   `MANAGER_ROLE`.
 3. Renovar o token e consultar `/api/access/me` para verificar o âmbito
    efetivo. Se existirem associações em vários níveis, só o nível mais
    específico é aplicado.

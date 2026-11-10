@@ -27,7 +27,7 @@ export const KeycloakContext = createContext<KeycloakContextType | null>(null)
 export const hasAdminRole = (roles: string[] = []) =>
   roles.some((role) => {
     const r = role.toLowerCase()
-    return r === 'admin' || r === 'role_admin'
+    return r === 'admin' || r === 'admin_role'
   })
 
 export const getApplicationUrl = () =>

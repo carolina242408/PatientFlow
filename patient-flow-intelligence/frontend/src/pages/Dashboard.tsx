@@ -67,7 +67,7 @@ const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
 type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
 
 const getProfileScope = (roles: string[] = [], scopeType: string | null = null): Scope | undefined => {
-  if (roles.includes('ROLE_ADMIN')) return 'LHU'
+  if (roles.includes('ADMIN_ROLE')) return 'LHU'
   switch (scopeType) {
     case 'ULS': return 'LHU'
     case 'UNIT':
@@ -94,7 +94,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy'],
     queryFn: () => fetchOccupancy(),
-    enabled: user?.roles.includes('MANAGER') === true && user.scopeType !== null,
+    enabled: user?.roles.includes('MANAGER_ROLE') === true && user.scopeType !== null,
   })
 
   useEffect(() => {

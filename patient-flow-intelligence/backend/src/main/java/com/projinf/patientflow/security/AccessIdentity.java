@@ -12,6 +12,6 @@ public record AccessIdentity(String subject, Set<String> roles, Instant expiresA
         roles = Set.copyOf(roles);
         scopeIds = Set.copyOf(scopeIds);
     }
-    public boolean admin() { return roles.contains("ROLE_ADMIN"); }
-    public boolean manager() { return roles.contains("MANAGER"); }
+    public boolean admin() { return roles.contains("ADMIN_ROLE"); }
+    public boolean manager() { return roles.contains("MANAGER_ROLE"); }
 }

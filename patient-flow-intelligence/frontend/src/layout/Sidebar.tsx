@@ -30,10 +30,10 @@ const getManagementSidebarItems = (
   roles: string[] = [],
   scopeType: AccessScopeType | null = null,
 ): SidebarItem[] => {
-  if (roles.includes('ROLE_ADMIN')) {
+  if (roles.includes('ADMIN_ROLE')) {
     return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
-  if (roles.includes('MANAGER') && scopeType) {
+  if (roles.includes('MANAGER_ROLE') && scopeType) {
     return [
       { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
       {
@@ -47,7 +47,7 @@ const getManagementSidebarItems = (
 }
 
 const getWorkspaceLabel = (roles: string[] = []): string => {
-  if (roles.includes('ROLE_ADMIN')) return 'nav.workspace.admin'
+  if (roles.includes('ADMIN_ROLE')) return 'nav.workspace.admin'
   else return 'nav.workspace.manager'
 }
 
@@ -106,7 +106,7 @@ const Sidebar = () => {
       <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-5 ${collapsed ? 'px-2' : 'px-3'}`}>
         {Object.entries(sections).map(([section, items]) => {
           const filteredItems = items.filter((item) => {
-            const isAdmin = userRoles.includes('ROLE_ADMIN')
+            const isAdmin = userRoles.includes('ADMIN_ROLE')
             if (isAdmin && item.path === '/dashboard') {
               return false
             }
