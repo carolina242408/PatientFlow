@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
-import { AccessWarning } from '@/components/AccessWarning'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
 import UpcomingDischargesTable, {
@@ -90,25 +89,18 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { user } = useKeycloak()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
-  const missingApplicationRole = user !== null
-    && !user.roles.includes('ROLE_ADMIN')
-    && !user.roles.includes('MANAGER')
-  const missingManagerScope = user?.roles.includes('MANAGER') === true && user.scopeType === null
   const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
   const metrics = SCOPE_METRICS[scope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy'],
     queryFn: () => fetchOccupancy(),
-    enabled: !missingApplicationRole && !missingManagerScope,
+    enabled: user?.roles.includes('MANAGER') === true && user.scopeType !== null,
   })
 
   useEffect(() => {
     const dialog = dashboardDialogRef.current
     if (expandedItem && dialog && !dialog.open) dialog.showModal()
   }, [expandedItem])
-
-  if (missingApplicationRole) return <AccessWarning kind="missingApplicationRole" />
-  if (missingManagerScope) return <AccessWarning kind="missingManagerScope" />
 
   const today = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'long',

@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { AccessWarning } from '@/components/AccessWarning'
 import { hasAdminRole, useKeycloak } from '@/auth/context'
 import {
   fetchHierarchyChildren,
@@ -86,8 +85,6 @@ const SpaceExplorer = ({
   const { t } = useTranslation()
   const { user } = useKeycloak()
   const hasApplicationRole = user?.roles.includes('MANAGER') === true || hasAdminRole(user?.roles)
-  const missingApplicationRole = user !== null && !hasApplicationRole
-  const missingManagerScope = user?.roles.includes('MANAGER') === true && user.scopeType === null
   const [selectedRoomId, setSelectedRoomId] = useState<string>()
 
   // 1. Hierarquia real (ULS → unidade → edifício → piso → serviço → enfermaria → sala → cama)
@@ -98,7 +95,7 @@ const SpaceExplorer = ({
   } = useQuery({
     queryKey: ['space-hierarchy', startLevel],
     queryFn: () => fetchHierarchyLevel(startLevel),
-    enabled: hasApplicationRole && !missingManagerScope,
+    enabled: hasApplicationRole,
   })
 
   // Camas detalhadas só são carregadas dentro de um quarto.
@@ -276,8 +273,6 @@ const SpaceExplorer = ({
   const loadingChildren = childrenQuery.isPending && childrenQuery.isFetching
   const childrenError = childrenQuery.isError
 
-  if (missingApplicationRole) return <AccessWarning kind="missingApplicationRole" />
-  if (missingManagerScope) return <AccessWarning kind="missingManagerScope" />
   if (isPending) return <div>Loading...</div>
   if (isError) return <div>{t('lhuHierarchy.error')}</div>
   if (!hierarchy?.length || !path.length) return <div>{t('lhuHierarchy.noData')}</div>

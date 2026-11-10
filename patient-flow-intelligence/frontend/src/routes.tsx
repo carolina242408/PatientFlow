@@ -12,37 +12,49 @@ import Account from "./pages/Account"
 
 import NotFound from "./pages/NotFound"
 
-const AdminRoute = () => {
+const RequireAdmin = () => {
   const { user } = useKeycloak()
-  return hasAdminRole(user?.roles) ? <Outlet /> : <Navigate to="/dashboard" replace />
+  if (hasAdminRole(user?.roles)) return <Outlet />
+  return user?.roles.includes('MANAGER') && user.scopeType
+    ? <Navigate to="/dashboard" replace />
+    : <Navigate to="/settings" replace />
 }
 
-const HomeRoute = () => {
+const RequireManagerScope = () => {
   const { user } = useKeycloak()
-  return (
-    <Navigate
-      to={hasAdminRole(user?.roles) ? "/lhu-hierarchy" : "/dashboard"}
-      replace
-    />
-  )
+  if (hasAdminRole(user?.roles)) return <Navigate to="/lhu-hierarchy" replace />
+  return user?.roles.includes('MANAGER') && user.scopeType
+    ? <Outlet />
+    : <Navigate to="/settings" replace />
+}
+
+const RoleHome = () => {
+  const { user } = useKeycloak()
+  if (hasAdminRole(user?.roles)) return <Navigate to="/lhu-hierarchy" replace />
+  if (user?.roles.includes('MANAGER') && user.scopeType) return <Navigate to="/dashboard" replace />
+  return <Navigate to="/settings" replace />
 }
 
 const DashboardRoute = () => {
   const { user } = useKeycloak()
-  return hasAdminRole(user?.roles) ? <Navigate to="/lhu-hierarchy" replace /> : <Dashboard />
+  if (hasAdminRole(user?.roles)) return <Navigate to="/lhu-hierarchy" replace />
+  if (user?.roles.includes('MANAGER') && user.scopeType) return <Dashboard />
+  return <Navigate to="/settings" replace />
 }
 
 const AppRoutes = () => (
   <Routes>
     <Route element={<AppLayout />}>
-      <Route index element={<HomeRoute />} />
+      <Route index element={<RoleHome />} />
       <Route path="dashboard" element={<DashboardRoute />} />
-      <Route path="manager-hierarchy" element={<ManagerHierarchy />} />
+      <Route element={<RequireManagerScope />}>
+        <Route path="manager-hierarchy" element={<ManagerHierarchy />} />
+      </Route>
 
       <Route path="settings" element={<Settings />} />
       <Route path="account" element={<Account />} />
 
-      <Route element={<AdminRoute />}>
+      <Route element={<RequireAdmin />}>
         <Route path="admin/*" element={<Admin />} />
         <Route path="lhu-hierarchy" element={<LHUHierarchyPage />} />
       </Route>

@@ -339,7 +339,8 @@
       "unit": "Gestor de Unidade",
       "service": "Gestor de Serviço",
       "manager": "Gestor",
-      "default": "Utilizador"
+      "default": "Utilizador",
+      "none": "—"
     },
     "scopes": {
       "admin": "Plataforma",
@@ -349,6 +350,15 @@
       "manager": "Âmbito organizacional atribuído",
       "default": "—"
     },
+    "scopeLevels": {
+      "ULS": "Unidade Local de Saúde",
+      "UNIT": "Unidade Hospitalar",
+      "BUILDING": "Edifício",
+      "FLOOR": "Piso",
+      "SERVICE": "Serviço",
+      "WING": "Ala",
+      "WARD": "Enfermaria"
+    },
     "languages": { "en": "English", "pt": "Português" },
     "access": {
       "title": "Acesso da conta",
@@ -357,7 +367,10 @@
       "unit": "O teu perfil de Gestor de Unidade dá acesso aos KPIs da unidade e à hierarquia de espaços de saúde a partir da tua Unidade.",
       "service": "O teu perfil de Gestor de Serviço dá acesso aos KPIs do serviço e à hierarquia de espaços de saúde a partir do teu Serviço.",
       "manager": "O acesso está limitado aos grupos organizacionais mais específicos atribuídos.",
-      "default": "O teu perfil dá acesso básico à plataforma."
+      "default": "O teu perfil dá acesso básico à plataforma.",
+      "missingRoleDescription": "A sua conta não tem um perfil de administrador ou gestor. Contacte um administrador para solicitar acesso.",
+      "missingScopeDescription": "A sua conta de gestor não tem um grupo organizacional atribuído. Contacte um administrador para solicitar acesso.",
+      "missingRoleAndScope": "A sua conta não tem um perfil de acesso nem um âmbito organizacional. Contacte um administrador para solicitar acesso."
     }
   },
   "lhu": {
@@ -447,12 +460,6 @@
     }
   },
   "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" },
-  "access": {
-    "missingApplicationRoleTitle": "Sem perfil de acesso atribuído",
-    "missingApplicationRoleDescription": "A sua conta não tem um perfil de administrador ou gestor. Contacte um administrador para obter acesso.",
-    "missingManagerScopeTitle": "Sem acesso organizacional atribuído",
-    "missingManagerScopeDescription": "A sua conta de gestor não tem um grupo organizacional atribuído. Contacte um administrador para obter acesso."
-  },
   "lhuHierarchy": {
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",

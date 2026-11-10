@@ -33,7 +33,7 @@ const getManagementSidebarItems = (
   if (roles.includes('ROLE_ADMIN')) {
     return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
-  if (roles.includes('MANAGER')) {
+  if (roles.includes('MANAGER') && scopeType) {
     return [
       { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
       {

@@ -339,7 +339,8 @@
       "unit": "Unit Manager",
       "service": "Service Manager",
       "manager": "Manager",
-      "default": "User"
+      "default": "User",
+      "none": "—"
     },
     "scopes": {
       "admin": "Platform",
@@ -349,6 +350,15 @@
       "manager": "Assigned organizational scope",
       "default": "—"
     },
+    "scopeLevels": {
+      "ULS": "Local Health Unit",
+      "UNIT": "Hospital Unit",
+      "BUILDING": "Building",
+      "FLOOR": "Floor",
+      "SERVICE": "Service",
+      "WING": "Wing",
+      "WARD": "Ward"
+    },
     "languages": { "en": "English", "pt": "Português" },
     "access": {
       "title": "Account access",
@@ -357,7 +367,10 @@
       "unit": "Your Unit Manager profile provides access to unit-wide KPIs and the healthcare-space hierarchy starting at your assigned Unit.",
       "service": "Your Service Manager profile provides access to service KPIs and the healthcare-space hierarchy starting at your assigned Service.",
       "manager": "Your access is limited to the most specific organizational groups assigned to you.",
-      "default": "Your profile provides basic access to the platform."
+      "default": "Your profile provides basic access to the platform.",
+      "missingRoleDescription": "Your account has no administrator or manager role. Contact an administrator to request access.",
+      "missingScopeDescription": "Your Manager account has no organizational group assigned. Contact an administrator to request access.",
+      "missingRoleAndScope": "Your account has no application role or organizational scope. Contact an administrator to request access."
     }
   },
   "lhu": {
@@ -447,12 +460,6 @@
     }
   },
   "notFound": { "title": "Page not found", "back": "Back to dashboard" },
-  "access": {
-    "missingApplicationRoleTitle": "No application role assigned",
-    "missingApplicationRoleDescription": "Your account does not have an administrator or manager role. Contact an administrator to get access.",
-    "missingManagerScopeTitle": "No organizational access assigned",
-    "missingManagerScopeDescription": "Your Manager account does not have an organizational group assigned. Contact an administrator to get access."
-  },
   "lhuHierarchy": {
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",
