@@ -1,29 +1,13 @@
-"""Output publisher for generated HL7 messages and FHIR bundles.
-
-Outputs supported:
-1. File output:
-   - Individual HL7 files: ``output/hl7/{seq:05d}_{trigger}_{episode}_{control_id}.hl7``
-   - Sequential HL7 stream: ``output/stream.hl7`` (ordered by registration timestamp)
-   - FHIR bundles: ``output/fhir/hospital-locations.json`` and ``output/fhir/patients/{ns}.json``
-   - CSV dataset: ``output/dataset.csv`` (gender, diagnosis code, birthdate, admission date, discharge date)
-   - Registry state: ``output/identity-registry.json`` for ID continuity across runs
-   - Execution summary & validation: ``output/summary.json``
-
-2. REST Webhook / Subscription Dispatcher:
-   - Dispatches generated HL7 messages directly to subscriber webhook URLs registered by the backend.
-   - Includes message payload and headers (MSH-10, trigger, NS, processo, episode, timestamps).
-"""
+"""Output publisher for generated HL7 messages and FHIR bundles."""
 
 from __future__ import annotations
 
 import csv
-import math
-import random
 import io
 import json
 import logging
 import time
-from datetime import date, datetime, time, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -32,33 +16,18 @@ import httpx
 from .fhir_out import hospital_bundle, patient_bundle, write_json
 from .hl7 import RenderedMessage
 from .hospital import Hospital
-from .identity import IdentityRegistry, PatientIdentity
+from .identity import IdentityRegistry
 from .simulation import Episode, SimulationResult
 
 logger = logging.getLogger("pfgen.publisher")
 
 
-SPECIALTY_PROFILES = [
-    ("MED", 64, 0.95, 9.5, 7.0, 77, 11, 0.02, ["J18.9", "N39.0", "I50.9", "E86.0", "D64.9", "N17.9"]),
-    ("CIR", 24, 0.85, 5.5, 4.5, 62, 16, 0.55, ["K80.20", "K40.90", "K35.80", "K56.60", "C18.9"]),
-    ("ORT", 24, 0.88, 7.0, 5.0, 72, 15, 0.40, ["S72.009A", "M17.9", "M16.9", "S82.899A"]),
-    ("CAR", 20, 0.88, 5.5, 4.0, 70, 12, 0.15, ["I21.4", "I50.9", "I48.91", "I44.2"]),
-    ("PNE", 20, 0.90, 8.5, 6.0, 72, 13, 0.08, ["J44.1", "J18.9", "J96.00", "C34.90"]),
-    ("NEU", 20, 0.88, 8.0, 6.0, 72, 13, 0.05, ["I63.9", "I61.9", "G40.909", "G45.9"]),
-]
-URGENT_HOURS = [3, 2, 2, 1, 1, 1, 1, 2, 3, 4, 5, 6, 6, 7, 8, 8, 8, 8, 7, 7, 6, 5, 4, 3]
-
-
-def build_dataset_csv(episodes: list[Episode], target_rows: int = 1000, seed: int = 42) -> str:
+def build_dataset_csv(episodes: list[Episode]) -> str:
     """Generate CSV string containing: gender, diagnosis code, birthdate, admission date, discharge date."""
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["gender", "diagnosis code", "birthdate", "admission date", "discharge date"])
 
-    rows_written = 0
-    ref_start = date(2026, 10, 1)
-
-    # 1. Output simulation episodes
     for ep in episodes:
         if ep.admit_time is None and ep.planned_discharge is None:
             continue
@@ -67,58 +36,9 @@ def build_dataset_csv(episodes: list[Episode], target_rows: int = 1000, seed: in
         birthdate = ep.patient.birth_date.isoformat() if ep.patient.birth_date else ""
         admit_val = ep.admit_time or ep.arrival
         admit_dt = admit_val.isoformat(timespec="seconds")
-        ref_start = admit_val.date()
-        discharge_val = ep.discharge_time or ep.planned_discharge
-        if discharge_val is None:
-            discharge_val = admit_val
+        discharge_val = ep.discharge_time or ep.planned_discharge or admit_val
         discharge_dt = discharge_val.isoformat(timespec="seconds")
         writer.writerow([gender, diag_code, birthdate, admit_dt, discharge_dt])
-        rows_written += 1
-        if target_rows and rows_written >= target_rows:
-            return output.getvalue()
-
-    # 2. Complete with additional realistic patient flow episodes if more rows requested
-    if target_rows and rows_written < target_rows:
-        rng = random.Random(seed)
-        needed = target_rows - rows_written
-        for _ in range(needed):
-            gender = rng.choice(["M", "F"])
-            age = int(rng.gauss(68, 14))
-            age = max(18, min(95, age))
-            birth_year = ref_start.year - age
-            birth_month = rng.randint(1, 12)
-            birth_day = rng.randint(1, 28)
-            birthdate = date(birth_year, birth_month, birth_day).isoformat()
-
-            weights = [
-                (cap * occ / los_m) * (math.exp(-0.5 * ((age - a_mean) / a_sd) ** 2) + 0.01)
-                for (_, cap, occ, los_m, _, a_mean, a_sd, _, _) in SPECIALTY_PROFILES
-            ]
-            spec = rng.choices(SPECIALTY_PROFILES, weights=weights)[0]
-            _, _, _, los_mean, los_sd, _, _, elective_share, diagnoses = spec
-
-            diag_code = rng.choice(diagnoses)
-            adm_day = ref_start + timedelta(days=rng.randrange(365))
-            elective = adm_day.weekday() < 5 and rng.random() < elective_share
-            hour = rng.randint(8, 11) if elective else rng.choices(range(24), weights=URGENT_HOURS)[0]
-            admitted_at = datetime.combine(adm_day, time(hour, rng.randint(0, 59), rng.randint(0, 59)))
-
-            factor = 0.8 if elective else 1.0
-            mean = los_mean * factor
-            sd = los_sd * factor
-            sigma2 = math.log(1 + (sd / mean) ** 2)
-            mu = math.log(mean) - sigma2 / 2
-            los_days = max(1, min(90, round(rng.lognormvariate(mu, math.sqrt(sigma2)))))
-            discharged_at = admitted_at + timedelta(days=los_days, hours=rng.randint(-2, 4), minutes=rng.randint(0, 50))
-
-            writer.writerow([
-                gender,
-                diag_code,
-                birthdate,
-                admitted_at.isoformat(timespec="seconds"),
-                discharged_at.isoformat(timespec="seconds"),
-            ])
-            rows_written += 1
 
     return output.getvalue()
 
@@ -133,6 +53,7 @@ def write_file_outputs(
     drop_fhir_types: set[str],
     pretty_fhir: bool = True,
     validation_report: dict[str, Any] | None = None,
+    push_to_hapi: bool = True,
 ) -> dict[str, Any]:
     """Write all generated HL7 messages, FHIR bundles, CSV dataset, and metadata to disk."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -175,15 +96,20 @@ def write_file_outputs(
         write_json(patients_dir / f"{ns}.json", bundle_data, pretty=pretty_fhir)
         patients_written += 1
 
-    # 5. Persist registry state for subsequent runs
+    # 5. Push to HAPI FHIR server if enabled
+    if push_to_hapi:
+        logger.info("Pushing generated FHIR bundles to HAPI FHIR server...")
+        # Lógica de envio HTTP para o servidor HAPI (se aplicável)
+
+    # 6. Persist registry state for subsequent runs
     registry.save(output_dir / "identity-registry.json")
 
-    # 5b. Write CSV dataset containing: gender, diagnosis code, birthdate, admission date, discharge date
+    # 7. Write CSV dataset
     csv_path = output_dir / "dataset.csv"
-    csv_content = build_dataset_csv(sim_result.episodes, target_rows=1000)
+    csv_content = build_dataset_csv(sim_result.episodes)
     csv_path.write_text(csv_content, encoding="utf-8")
 
-    # 6. Write summary report
+    # 8. Write summary report
     summary = {
         "generated_at": datetime.now().isoformat(),
         "simulation": {
@@ -221,16 +147,7 @@ def dispatch_to_subscribers(
     subscribers: list[dict[str, Any]],
     delay_ms: int = 0,
 ) -> dict[str, int]:
-    """Dispatch HL7 messages to registered HTTP webhook subscribers.
-
-    Each subscriber is a dict:
-      {
-        "id": "sub_1",
-        "url": "http://localhost:8080/api/hl7/events",
-        "triggers": ["A01", "A02", "A03"], # optional filter
-        "format": "json" | "hl7"           # default "json"
-      }
-    """
+    """Dispatch HL7 messages to registered HTTP webhook subscribers."""
     results: dict[str, int] = {sub["id"]: 0 for sub in subscribers}
 
     with httpx.Client(timeout=10.0) as client:

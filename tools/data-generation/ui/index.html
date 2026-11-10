@@ -402,17 +402,17 @@
       <div class="card">
         <h2>5. CSV Dataset Generator (`gender, diagnosis code, birthdate, admission date, discharge date`)</h2>
         <div class="form-row">
-          <label for="csvTotalRows">Dataset Rows (Outputs):</label>
-          <input type="number" id="csvTotalRows" value="1000" min="10" max="50000" oninput="updateCsvCmd()" />
+          <label for="csvDays">Sim Days (Volume):</label>
+          <input type="number" id="csvDays" value="180" min="7" max="1000" oninput="updateCsvCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="csvRuns">Execuções (Runs/Loops):</label>
+          <input type="number" id="csvRuns" value="5" min="1" max="50" oninput="updateCsvCmd()" />
         </div>
         <div class="form-row">
           <label for="csvRows">Preview Rows:</label>
           <input type="number" id="csvRows" value="20" min="1" max="500" oninput="updateCsvCmd()" />
         </div>
-        <p style="font-size:0.8rem; color:#6b7280; margin:4px 0 10px 0;">
-          Generates CSV records directly to <code>tools/data-generation/output/dataset.csv</code> (does not download to browser Downloads folder):<br>
-          <code>gender, diagnosis code, birthdate, admission date, discharge date</code>
-        </p>
 
         <div class="cmd-box" id="csvCmdPreview"></div>
 
@@ -661,27 +661,34 @@
         // 5. CSV Dataset functions (saves directly to server output/ directory, no browser download)
     function updateCsvCmd() {
       const base = getBaseUrl();
-      const count = document.getElementById("csvTotalRows")?.value || "1000";
-      document.getElementById("csvCmdPreview").textContent = `curl.exe -X POST "${base}/api/csv/generate?count=${count}"`;
+      const days = document.getElementById("csvDays")?.value || "180";
+      const runs = document.getElementById("csvRuns")?.value || "5";
+      document.getElementById("csvCmdPreview").textContent = `curl.exe -X POST "${base}/api/csv/generate?days=${days}&runs=${runs}"`;
     }
 
     async function generateAndSaveCsvToOutput() {
-      const base = getBaseUrl();
-      const count = parseInt(document.getElementById("csvTotalRows")?.value || "1000", 10);
-      const url = `${base}/api/csv/generate?count=${count}`;
-      logOutput(`Generating dataset (${count} rows) directly to output/dataset.csv ...`);
-      try {
-        const res = await fetch(url, { method: "POST" });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        const data = await res.json();
-        logOutput(`[Success] Dataset generated and saved directly to ${data.relative_path} (${data.rows} rows)!\nSaved location: ${data.file}\nColumns: ${data.columns.join(", ")}\n`);
-        await previewCsv();
-      } catch (err) {
-        logOutput(`Error generating dataset CSV: ${err}`);
+    const base = getBaseUrl();
+    const days = parseInt(document.getElementById("csvDays")?.value || "180", 10);
+    const runs = parseInt(document.getElementById("csvRuns")?.value || "1", 10);
+  
+    const url = `${base}/api/csv/generate?days=${days}&runs=${runs}`;
+    logOutput(`Running simulation (${days} days x ${runs} runs) to generate dataset directly to output/dataset.csv ...`);
+  
+    try {
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
+      const data = await res.json();
+      logOutput(`[Success] Dataset generated using simulation engine and saved directly to ${data.relative_path} (${data.rows} total rows in ${data.runs || runs} runs)!
+Location: ${data.file}
+Columns: ${data.columns.join(", ")}
+`);
+    await previewCsv();
+    } catch (err) {
+      logOutput(`Error generating dataset CSV: ${err}`);
     }
+}
 
     async function previewCsv() {
       const url = `${getBaseUrl()}/api/csv`;

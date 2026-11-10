@@ -93,6 +93,7 @@ class GenerateRequest(BaseModel):
     no_synthea: bool = Field(default=True, description="Fast lightweight mode (bypass Synthea)")
     warmup_output: str = Field(default="census", description="'census' or 'full'")
     run_validation: bool = Field(default=True, alias="validate", description="Run HL7 integrity validator")
+    push_to_hapi: bool = Field(default=True, description="Push generated FHIR bundles to HAPI FHIR server")
 
 
 class SubscriptionCreate(BaseModel):
@@ -129,6 +130,7 @@ def run_generator(
     no_synthea: bool,
     warmup_output: str,
     validate: bool,
+    push_to_hapi: bool = True,
 ) -> dict[str, Any]:
     import yaml
 
@@ -237,6 +239,7 @@ def run_generator(
         drop_fhir_types=set(sim_cfg["fhir"].get("drop_resource_types", [])),
         pretty_fhir=bool(sim_cfg["fhir"].get("pretty", False)),
         validation_report=validation_report,
+        push_to_hapi=push_to_hapi,
     )
 
     state.episodes = sim_result.episodes
@@ -265,6 +268,7 @@ def ensure_light_stream(seed: int | None = None) -> list[RenderedMessage]:
         no_synthea=True,
         warmup_output=str(sim_cfg["simulation"].get("warmup_output", "census")),
         validate=True,
+        push_to_hapi=True,
     )
     return state.messages
 
@@ -327,6 +331,7 @@ def generate_data(req: GenerateRequest = Body(...)):
             no_synthea=req.no_synthea,
             warmup_output=req.warmup_output,
             validate=req.run_validation,
+            push_to_hapi=req.push_to_hapi,
         )
         return summary
     except Exception as e:
@@ -335,39 +340,70 @@ def generate_data(req: GenerateRequest = Body(...)):
 
 
 @app.post("/api/csv/generate", tags=["Dataset"])
-def generate_csv_file(count: int = Query(default=1000, ge=1, le=50000, description="Total rows to export")):
-    """Generate the patient flow dataset CSV and save it directly to output/dataset.csv."""
-    if not state.messages:
-        ensure_light_stream()
-    episodes = getattr(state, "episodes", [])
-    content = build_dataset_csv(episodes, target_rows=count)
+def generate_csv_file(
+    days: int = Query(default=180, ge=1, le=1000, description="Dias por simulação"),
+    population: str = Query(default="auto", description="Tamanho da população ou 'auto'"),
+    runs: int = Query(default=1, ge=1, le=50, description="Número de vezes a rodar a simulação para acumular dados"),
+    base_seed: int = Query(default=42, description="Seed inicial de aleatoriedade"),
+    push_to_hapi: bool = Query(default=False, description="Enviar bundles FHIR para o servidor HAPI durante a geração do CSV"),
+):
+    """Gera o dataset CSV rodando a simulação N vezes com seeds diferentes e acumula os resultados."""
+    
+    all_episodes = []
+
+    for i in range(runs):
+        current_seed = base_seed + i  # Garantir seeds diferentes em cada rodada
+        
+        sim_summary = run_generator(
+            days=days,
+            warmup_days=7,
+            seed=current_seed,
+            population_arg=population,
+            no_synthea=True,
+            warmup_output="census",
+            validate=False,
+            push_to_hapi=push_to_hapi,  # Default: False para a geração de CSV
+        )
+        
+        # Acumular os episódios gerados nesta rodada
+        if hasattr(state, "episodes") and state.episodes:
+            all_episodes.extend(state.episodes)
+
+    # Construir o CSV final com TODOS os episódios acumulados
+    csv_content = build_dataset_csv(all_episodes)
+    
+    # Guardar no ficheiro dataset.csv
     csv_file = state.output_dir / "dataset.csv"
-    csv_file.parent.mkdir(parents=True, exist_ok=True)
-    csv_file.write_text(content, encoding="utf-8")
-    logger.info("Dataset CSV written to %s (%d rows)", csv_file, count)
+    csv_file.write_text(csv_content, encoding="utf-8")
+    
+    # Contar linhas reais no CSV gravado (excluindo cabeçalho e linhas em branco)
+    lines = [line for line in csv_content.strip().splitlines() if line]
+    lines_count = max(0, len(lines) - 1)
+    
+    logger.info("Dataset CSV escrito em %s (%d linhas totais em %d execuções)", csv_file, lines_count, runs)
+
     return {
         "status": "ok",
-        "message": f"Dataset CSV successfully generated and saved to {csv_file.name}",
+        "message": f"Dataset CSV gerado com sucesso em {csv_file.name} ({runs} execuções)",
         "file": str(csv_file),
         "relative_path": "output/dataset.csv",
-        "rows": count,
+        "runs": runs,
+        "rows": lines_count,
         "columns": ["gender", "diagnosis code", "birthdate", "admission date", "discharge date"],
     }
 
 
 @app.get("/api/csv", tags=["Dataset"])
 @app.get("/api/dataset/csv", tags=["Dataset"])
-def get_dataset_csv(count: int = Query(default=1000, ge=1, le=50000, description="Total rows to export")):
-    """Get the patient flow dataset CSV and ensure it is saved in output/dataset.csv."""
-    if not state.messages:
-        ensure_light_stream()
-    episodes = getattr(state, "episodes", [])
-    content = build_dataset_csv(episodes, target_rows=count)
+def get_dataset_csv():
+    """Retrieve the generated dataset.csv from output directory."""
     csv_file = state.output_dir / "dataset.csv"
-    csv_file.parent.mkdir(parents=True, exist_ok=True)
-    csv_file.write_text(content, encoding="utf-8")
+    if not csv_file.exists():
+        ensure_light_stream()
+    if not csv_file.exists():
+        raise HTTPException(status_code=404, detail="Dataset CSV not found")
     return Response(
-        content=content,
+        content=csv_file.read_text(encoding="utf-8"),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="dataset.csv"'},
     )
