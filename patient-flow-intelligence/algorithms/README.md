@@ -41,5 +41,8 @@ Os testes automatizados e os respetivos fixtures foram removidos nesta fase.
 Com o serviço em execução, consultar `GET /health` para verificar o estado e
 `/docs` para experimentar os endpoints através da documentação interativa.
 
-Modelos inteligentes treinados são trabalho futuro descrito no
-[PLAN.md](../backend/PLAN.md).
+O treino offline de modelos de previsão de duração do internamento está em
+[model/README.md](model/README.md): CatBoost, XGBoost, Random Forest e
+FT-Transformer, com Optuna e validação cruzada. Estes comandos não são executados
+ao iniciar a API; a integração das previsões nos endpoints continua a ser trabalho
+futuro descrito no [PLAN.md](../backend/PLAN.md).
