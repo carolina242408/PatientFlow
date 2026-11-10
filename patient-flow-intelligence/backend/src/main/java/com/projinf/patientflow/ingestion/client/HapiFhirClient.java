@@ -115,16 +115,36 @@ public class HapiFhirClient {
             return tx;
         }
 
-        // First pass: map any Patient resource with an SNS/NS identifier to a deterministic UUID
-        // so admissions, transfers, and discharges for the same patient always upsert the same Patient/{id}.
+        // First pass: map any Patient resource with an SNS/NS identifier and any Encounter resource
+        // with a visit number (VN) to deterministic UUIDs so admissions, transfers, and discharges
+        // always upsert the same Patient/{id} and Encounter/{id} in HAPI FHIR.
         Map<String, String> patientIdRemap = new HashMap<>();
+        Map<String, String> encounterIdRemap = new HashMap<>();
         for (JsonNode entry : bundle.path("entry").values()) {
             JsonNode resNode = entry.path("resource");
-            if (resNode.isObject() && "Patient".equals(resNode.path("resourceType").asString(""))) {
+            if (!resNode.isObject()) {
+                continue;
+            }
+            String resType = resNode.path("resourceType").asString("");
+            if ("Patient".equals(resType)) {
                 String oldId = resNode.path("id").asString("");
                 String canonicalId = resolveDeterministicPatientId(resNode);
                 if (canonicalId != null && !oldId.isEmpty() && !oldId.equals(canonicalId)) {
                     patientIdRemap.put("Patient/" + oldId, "Patient/" + canonicalId);
+                    String fullUrl = entry.path("fullUrl").asString("");
+                    if (!fullUrl.isEmpty()) {
+                        patientIdRemap.put(fullUrl, "Patient/" + canonicalId);
+                    }
+                }
+            } else if ("Encounter".equals(resType) && !resNode.has("partOf")) {
+                String oldId = resNode.path("id").asString("");
+                String canonicalId = resolveDeterministicEncounterId(resNode);
+                if (canonicalId != null && !oldId.isEmpty() && !oldId.equals(canonicalId)) {
+                    encounterIdRemap.put("Encounter/" + oldId, "Encounter/" + canonicalId);
+                    String fullUrl = entry.path("fullUrl").asString("");
+                    if (!fullUrl.isEmpty()) {
+                        encounterIdRemap.put(fullUrl, "Encounter/" + canonicalId);
+                    }
                 }
             }
         }
@@ -134,7 +154,7 @@ public class HapiFhirClient {
             if (!resNode.isObject()) {
                 continue;
             }
-            ObjectNode resource = normalizeResourceForR4((ObjectNode) resNode.deepCopy(), patientIdRemap);
+            ObjectNode resource = normalizeResourceForR4((ObjectNode) resNode.deepCopy(), patientIdRemap, encounterIdRemap);
             String resourceType = resource.path("resourceType").asString("");
             String id = resource.path("id").asString("");
             if (resourceType.isEmpty()) {
@@ -164,7 +184,11 @@ public class HapiFhirClient {
         return tx;
     }
 
-    private ObjectNode normalizeResourceForR4(ObjectNode resource, Map<String, String> patientIdRemap) {
+    private ObjectNode normalizeResourceForR4(
+            ObjectNode resource,
+            Map<String, String> patientIdRemap,
+            Map<String, String> encounterIdRemap
+    ) {
         String resourceType = resource.path("resourceType").asString("");
         if ("Patient".equals(resourceType)) {
             String canonicalId = resolveDeterministicPatientId(resource);
@@ -172,6 +196,12 @@ public class HapiFhirClient {
                 resource.put("id", canonicalId);
             }
         } else if ("Encounter".equals(resourceType)) {
+            if (!resource.has("partOf")) {
+                String canonicalEncId = resolveDeterministicEncounterId(resource);
+                if (canonicalEncId != null) {
+                    resource.put("id", canonicalEncId);
+                }
+            }
             // In FHIR R5 `class` is an array of CodeableConcept; in FHIR R4 `class` is a single Coding object.
             JsonNode classNode = resource.path("class");
             if (classNode.isArray() && !classNode.isEmpty()) {
@@ -190,14 +220,19 @@ public class HapiFhirClient {
 
         // Remap subject/beneficiary references if the Patient ID was canonicalized
         if (!patientIdRemap.isEmpty()) {
-            remapPatientReference(resource, "subject", patientIdRemap);
-            remapPatientReference(resource, "patient", patientIdRemap);
-            remapPatientReference(resource, "beneficiary", patientIdRemap);
+            remapReference(resource, "subject", patientIdRemap);
+            remapReference(resource, "patient", patientIdRemap);
+            remapReference(resource, "beneficiary", patientIdRemap);
+        }
+        // Remap encounter/partOf references if the Encounter ID was canonicalized
+        if (!encounterIdRemap.isEmpty()) {
+            remapReference(resource, "encounter", encounterIdRemap);
+            remapReference(resource, "partOf", encounterIdRemap);
         }
         return resource;
     }
 
-    private static void remapPatientReference(ObjectNode resource, String field, Map<String, String> remap) {
+    private static void remapReference(ObjectNode resource, String field, Map<String, String> remap) {
         JsonNode refObj = resource.path(field);
         if (refObj.isObject()) {
             String ref = refObj.path("reference").asString("");
@@ -206,6 +241,29 @@ public class HapiFhirClient {
                 ((ObjectNode) refObj).put("reference", mapped);
             }
         }
+    }
+
+    /**
+     * Computes a deterministic UUID v3 (`Encounter:<visitNumber>`) from the encounter's visit number (`VN`)
+     * so admissions, transfers, and discharges for the same episode upsert the same FHIR Encounter resource.
+     */
+    public static String resolveDeterministicEncounterId(JsonNode encounterResource) {
+        JsonNode identifiers = encounterResource.path("identifier");
+        if (!identifiers.isArray() || identifiers.isEmpty()) {
+            return null;
+        }
+        for (JsonNode idNode : identifiers.values()) {
+            String value = idNode.path("value").asString("").trim();
+            if (value.isEmpty()) {
+                continue;
+            }
+            String system = idNode.path("system").asString("").toUpperCase();
+            String typeCode = idNode.path("type").path("coding").path(0).path("code").asString("").toUpperCase();
+            if ("VN".equals(typeCode) || system.contains("VISIT") || system.contains("EPISODIO")) {
+                return UUID.nameUUIDFromBytes(("Encounter:" + value).getBytes(StandardCharsets.UTF_8)).toString();
+            }
+        }
+        return null;
     }
 
     /**

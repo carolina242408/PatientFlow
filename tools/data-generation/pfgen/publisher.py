@@ -64,6 +64,9 @@ def write_file_outputs(
     hl7_dir.mkdir(parents=True, exist_ok=True)
     patients_dir.mkdir(parents=True, exist_ok=True)
 
+    for old_file in hl7_dir.glob("*.hl7"):
+        old_file.unlink(missing_ok=True)
+
     # 1. Write individual HL7 messages
     stream_path = output_dir / "stream.hl7"
     stream_content: list[str] = []
