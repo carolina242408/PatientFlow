@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
-import { useKeycloak } from '../auth/context'
+import { useKeycloak, type AccessScopeType } from '../auth/context'
 import { Button } from '@/components/Button'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
@@ -26,12 +26,19 @@ interface SidebarItem {
   icon: LucideIcon
 }
 
-const getManagementSidebarItems = (roles: string[] = []): SidebarItem[] => {
+const getManagementSidebarItems = (
+  roles: string[] = [],
+  scopeType: AccessScopeType | null = null,
+): SidebarItem[] => {
   if (roles.includes('ROLE_ADMIN')) {
     return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
   if (roles.includes('MANAGER')) {
-    return [{ labelKey: 'nav.lhu', path: '/lhu', icon: House }]
+    return [{
+      labelKey: scopeType ? `nav.scopeLevels.${scopeType}` : 'nav.noScope',
+      path: '/manager-hierarchy',
+      icon: House,
+    }]
   }
   return []
 }
@@ -48,7 +55,7 @@ const Sidebar = () => {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
-  const managementItems = getManagementSidebarItems(user?.roles)
+  const managementItems = getManagementSidebarItems(user?.roles, user?.scopeType)
   const workspaceLabelKey = getWorkspaceLabel(user?.roles)
   const userRoles = user?.roles ?? []
 

@@ -24,7 +24,17 @@
       "admin": "Área de Administração",
       "manager": "Área de Gestão"
     },
-    "lhuHierarchy": "Hierarquia LHU"
+    "lhuHierarchy": "Hierarquia LHU",
+    "noScope": "Sem âmbito atribuído",
+    "scopeLevels": {
+      "ULS": "ULS",
+      "UNIT": "Unidade",
+      "BUILDING": "Edifício",
+      "FLOOR": "Piso",
+      "SERVICE": "Serviço",
+      "WING": "Ala",
+      "WARD": "Enfermaria"
+    }
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },
@@ -32,6 +42,20 @@
     "unit": { "title": "Unidades", "description": "Gerir a capacidade, alocação de recursos e o fluxo de doentes da unidade." },
     "admin": { "title": "Consola de administração", "description": "Gerir a administração da aplicação" },
     "lhu": { "title": "Unidade Local de Saúde", "description": "Gerir o fluxo da Unidade Local de Saúde" },
+    "hierarchy": {
+      "title": "Hierarquia da organização",
+      "description": "Explorar o âmbito organizacional atribuído",
+      "scopes": {
+        "ULS": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
+        "UNIT": { "title": "Hierarquia da unidade", "description": "Explorar a unidade atribuída e os seus espaços." },
+        "BUILDING": { "title": "Hierarquia do edifício", "description": "Explorar o edifício atribuído e os seus espaços." },
+        "FLOOR": { "title": "Hierarquia do piso", "description": "Explorar o piso atribuído e os seus espaços." },
+        "SERVICE": { "title": "Hierarquia do serviço", "description": "Explorar o serviço atribuído e os seus espaços." },
+        "WING": { "title": "Hierarquia da ala", "description": "Explorar a ala atribuída e os seus espaços." },
+        "WARD": { "title": "Hierarquia da enfermaria", "description": "Explorar a enfermaria atribuída e os seus espaços." },
+        "unassigned": { "title": "Hierarquia da organização", "description": "Não está atribuído um âmbito organizacional à sua conta." }
+      }
+    },
     "settings": { "title": "Definições", "description": "Gerir as definições e preferências da aplicação" },
     "account": { "title": "A Minha Conta", "description": "Gerir o perfil e dados da conta" },
     "lhu-hierarchy": { "title": "Hierarquia LHU", "description": "Estrutura organizacional da Unidade Local de Saúde" },

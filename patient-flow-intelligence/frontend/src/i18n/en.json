@@ -24,7 +24,17 @@
       "admin": "Admin Workspace",
       "manager": "Manager Workspace"
     },
-    "lhuHierarchy": "LHU Hierarchy"
+    "lhuHierarchy": "LHU Hierarchy",
+    "noScope": "No scope assigned",
+    "scopeLevels": {
+      "ULS": "LHU",
+      "UNIT": "Unit",
+      "BUILDING": "Building",
+      "FLOOR": "Floor",
+      "SERVICE": "Service",
+      "WING": "Wing",
+      "WARD": "Ward"
+    }
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },
@@ -32,6 +42,20 @@
     "unit": { "title": "Units", "description": "Manage unit capacity, resource allocation, and patient flow." },
     "admin": { "title": "Admin Console", "description": "Manage application administration" },
     "lhu": { "title": "Local Health Unit", "description": "Manage Local Health Unit patient flow" },
+    "hierarchy": {
+      "title": "Organizational Hierarchy",
+      "description": "Explore your assigned organizational scope",
+      "scopes": {
+        "ULS": { "title": "LHU Hierarchy", "description": "Explore the assigned Local Health Unit and its spaces." },
+        "UNIT": { "title": "Unit Hierarchy", "description": "Explore the assigned unit and its spaces." },
+        "BUILDING": { "title": "Building Hierarchy", "description": "Explore the assigned building and its spaces." },
+        "FLOOR": { "title": "Floor Hierarchy", "description": "Explore the assigned floor and its spaces." },
+        "SERVICE": { "title": "Service Hierarchy", "description": "Explore the assigned service and its spaces." },
+        "WING": { "title": "Wing Hierarchy", "description": "Explore the assigned wing and its spaces." },
+        "WARD": { "title": "Ward Hierarchy", "description": "Explore the assigned ward and its spaces." },
+        "unassigned": { "title": "Organizational Hierarchy", "description": "No organizational scope is assigned to your account." }
+      }
+    },
     "settings": { "title": "Settings", "description": "Manage your application preferences and settings" },
     "account": { "title": "Account Settings", "description": "Manage your profile and account details" },
     "lhu-hierarchy": { "title": "LHU Hierarchy", "description": "Organizational structure of the Local Health Unit" },

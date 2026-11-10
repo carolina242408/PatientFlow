@@ -4,9 +4,7 @@ import AppLayout from "./layout/AppLayout"
 
 import Admin from "./pages/Admin"
 import Dashboard from "./pages/Dashboard"
-import Lhu from "./pages/Lhu"
-import Unit from "./pages/Unit"
-import Service from "./pages/Service"
+import ManagerHierarchy from "./pages/ManagerHierarchy"
 import { LHUHierarchyPage } from "./features/lhu-hierarchy/pages/LHUHierarchy"
 
 import Settings from "./pages/Settings"
@@ -39,9 +37,7 @@ const AppRoutes = () => (
     <Route element={<AppLayout />}>
       <Route index element={<HomeRoute />} />
       <Route path="dashboard" element={<DashboardRoute />} />
-      <Route path="lhu" element={<Lhu />} />
-      <Route path="unit" element={<Unit />} />
-      <Route path="service" element={<Service />} />
+      <Route path="manager-hierarchy" element={<ManagerHierarchy />} />
 
       <Route path="settings" element={<Settings />} />
       <Route path="account" element={<Account />} />
