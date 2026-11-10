@@ -1,5 +1,6 @@
 # Cache and generated output
 .cache/
-output/
+output/*
 __pycache__/
 *.pyc
+!output/dataset.csv
