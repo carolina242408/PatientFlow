@@ -460,6 +460,14 @@
     }
   },
   "notFound": { "title": "Page not found", "back": "Back to dashboard" },
+  "managerHierarchy": {
+    "currentContext": "Current management context",
+    "switchContext": "Switch managed space",
+    "selectContext": "Select management context",
+    "contextUpdates": "Dashboard and hierarchy data will update.",
+    "active": "Active",
+    "loading": "Loading assigned spaces..."
+  },
   "lhuHierarchy": {
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",

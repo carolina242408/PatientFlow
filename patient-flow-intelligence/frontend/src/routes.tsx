@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from "react-router"
+import { Navigate, Outlet, Route, Routes, useOutletContext } from "react-router"
 import { hasAdminRole, useKeycloak } from "./auth/context"
 import AppLayout from "./layout/AppLayout"
 
@@ -22,9 +22,10 @@ const RequireAdmin = () => {
 
 const RequireManagerScope = () => {
   const { user } = useKeycloak()
+  const outletContext = useOutletContext()
   if (hasAdminRole(user?.roles)) return <Navigate to="/lhu-hierarchy" replace />
   return user?.roles.includes('MANAGER_ROLE') && user.scopeType
-    ? <Outlet />
+    ? <Outlet context={outletContext} />
     : <Navigate to="/settings" replace />
 }
 

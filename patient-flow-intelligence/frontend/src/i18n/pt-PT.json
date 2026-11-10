@@ -460,6 +460,14 @@
     }
   },
   "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" },
+  "managerHierarchy": {
+    "currentContext": "Contexto de gestão atual",
+    "switchContext": "Alterar espaço gerido",
+    "selectContext": "Seleciona o contexto de gestão",
+    "contextUpdates": "Os dados do dashboard e da hierarquia serão atualizados.",
+    "active": "Ativo",
+    "loading": "A carregar os espaços atribuídos..."
+  },
   "lhuHierarchy": {
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",

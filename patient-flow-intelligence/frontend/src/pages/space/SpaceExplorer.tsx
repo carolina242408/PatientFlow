@@ -5,6 +5,7 @@ import { hasAdminRole, useKeycloak } from '@/auth/context'
 import {
   fetchHierarchyChildren,
   fetchHierarchyLevel,
+  fetchHierarchyNode,
   hierarchyChildrenQueryKey,
 } from '@/features/lhu-hierarchy/api/hierarchy'
 import { fetchBedMap, fetchBeds, fetchEncounter, fetchPatient } from '@/api/operational'
@@ -39,6 +40,8 @@ const VIEWS: Record<Level, ComponentType<ViewProps>> = {
 interface SpaceExplorerProps {
   /** Highest level the user may see */
   startLevel?: Level
+  /** Restricts the starting list to one assigned root */
+  rootId?: string
   /** Level that is open on first render (defaults to startLevel) */
   initialLevel?: Level
   adminMode?: boolean
@@ -78,6 +81,7 @@ function calculateAge(birthDate: string | null): number | undefined {
 
 const SpaceExplorer = ({
   startLevel = 'lhu',
+  rootId,
   initialLevel,
   adminMode = false,
   onAddChild,
@@ -93,8 +97,12 @@ const SpaceExplorer = ({
     isPending,
     isError,
   } = useQuery({
-    queryKey: ['space-hierarchy', startLevel],
-    queryFn: () => fetchHierarchyLevel(startLevel),
+    queryKey: ['space-hierarchy', startLevel, rootId],
+    queryFn: async () => {
+      if (rootId) return [await fetchHierarchyNode(startLevel, rootId)]
+      const nodes = await fetchHierarchyLevel(startLevel)
+      return nodes
+    },
     enabled: hasApplicationRole,
   })
 
