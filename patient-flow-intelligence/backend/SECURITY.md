@@ -20,8 +20,9 @@ Um gestor precisa simultaneamente de papel e associação do tipo correspondente
 
 É possível atribuir vários âmbitos; o acesso efetivo é a união dos grupos
 compatíveis com os papéis presentes no JWT. Um grupo `UNIT` sem papel
-`UNIT_MANAGER` não concede esse acesso. Ao criar ULS, unidade ou serviço pela
-API de hierarquia, o backend cria o grupo Keycloak correspondente.
+`UNIT_MANAGER` não concede esse acesso. A API de hierarquia cria grupos
+Keycloak aninhados até à enfermaria; quartos e camas não têm grupos. Apenas
+grupos `ULS`, `UNIT` e `SERVICE` são interpretados como âmbitos de associação.
 
 ## Matriz de operações
 

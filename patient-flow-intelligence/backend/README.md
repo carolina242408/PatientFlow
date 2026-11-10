@@ -93,9 +93,9 @@ dados antigos que violem essa regra devem ser reconciliados antes da atualizaç�
 `V4__organizational_access.sql` preserva a tabela de grants por compatibilidade,
 mas a autorização atual resolve os âmbitos diretamente do claim `groups` do
 JWT. Ao criar uma ULS, unidade ou serviço, o backend cria o grupo Keycloak
-correspondente e os grupos ficam aninhados. O nome inclui o UUID para permitir
-resolução inequívoca, por exemplo
-`/ULS_Norte__UUID/UNIT_Hospital_A__UUID/SERVICE_Cardiologia__UUID`.
+correspondente e os grupos ficam aninhados segundo a relação pai-filho até à
+enfermaria. Quartos e camas não têm grupos. O nome inclui o UUID para permitir
+resolução inequívoca.
 `V5__analytics_indexes.sql` acrescenta índices para consultas analíticas.
 
 ## Arquitetura e persistência
