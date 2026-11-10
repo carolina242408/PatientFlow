@@ -1,4 +1,4 @@
-# Contratos de gestão operacional — etapas 4 e 5
+# Contratos de gestão operacional
 
 Todos os caminhos abaixo exigem Bearer token e são relativos a `/api`.
 O administrador tem acesso global. Gestores precisam de papel e associação ao
@@ -13,11 +13,24 @@ As coleções devolvem `content`, `page`, `size`, `totalElements`, `totalPages`.
 é estável, incluindo UUID para desempate. Nenhuma consulta de coleção devolve
 entidades JPA ou árvores sem limite.
 
-As consultas operacionais aceitam `ulsId`, `unitId`, `serviceId` e `wardId`,
-combinados por interseção. A lista de espera aceita os três primeiros; pedidos
-ainda não admitidos não têm enfermaria. Um filtro UUID válido sem correspondência
-produz uma coleção vazia, tal como um filtro que não intersecte o âmbito autorizado.
-Um recurso individual inexistente ou fora desse âmbito devolve `404`.
+Os filtros organizacionais aplicados dependem da coleção:
+
+| Coleção | Filtros |
+| --- | --- |
+| Camas, mapa, episódios e alocações | `ulsId`, `unitId`, `buildingId`, `floorId`, `serviceId`, `wingId`, `wardId`, `roomId` |
+| Doentes | `ulsId`, `unitId`, `serviceId`, `wardId` |
+| Pedidos de admissão | `ulsId`, `unitId`, `buildingId`, `floorId`, `serviceId` |
+
+Os filtros suportados combinam-se por interseção. Um UUID válido sem
+correspondência produz uma coleção vazia, tal como um filtro que não intersecte
+o âmbito autorizado. Um recurso individual inexistente ou fora desse âmbito
+devolve `404`.
+
+Limitações atuais do DTO de filtros partilhado: em doentes, os filtros físicos
+adicionais não são suportados de forma consistente e não devem ser usados;
+na fila, `wardId` devolve `400`, enquanto `wingId` e `roomId` referenciam aliases
+SQL ausentes e podem causar erro de servidor. Pedidos ainda não admitidos não
+têm cama/enfermaria atribuída. Os filtros analíticos estão em [ANALYTICS.md](ANALYTICS.md).
 
 Datas são ISO-8601 com fuso e normalizadas a microssegundos. Campos de texto
 têm um máximo de 255 caracteres. Erros de entrada devolvem `400`; conflitos
@@ -41,16 +54,23 @@ de estado/integridade/versão devolvem `409`, com `application/problem+json`.
 | UNIT | ULS | `name` |
 | BUILDING | UNIT | `name` |
 | FLOOR | BUILDING | `name` |
-| WING | FLOOR | `name` |
-| SERVICE | UNIT | `name`, `code` |
-| WARD | WING | `name`, `code`, `serviceId` |
+| SERVICE | FLOOR | `name`, `code` |
+| WING | SERVICE | `name` |
+| WARD | WING | `name`, `code` |
 | ROOM | WARD | `code` |
 | BED | ROOM | `code` |
 
-O pai é enviado como `parentId`. Uma enfermaria só pode referenciar um serviço
-da mesma unidade hospitalar. O serviço clínico pode abranger várias enfermarias;
-não é um nível adicional da hierarquia física. O código do serviço é único na
-unidade; o código da enfermaria mantém a unicidade global existente.
+O pai é enviado como `parentId`. A hierarquia atual é
+`ULS → UNIT → BUILDING → FLOOR → SERVICE → WING → WARD → ROOM → BED`.
+O serviço da enfermaria é derivado da ala; `serviceId` não é necessário no
+pedido de criação. Embora ainda exista no DTO, não é persistido como uma
+associação independente da enfermaria; nas respostas de hierarquia é `null`.
+O código do serviço é único por piso; o código da enfermaria é globalmente único.
+
+Criar ULS, unidade ou serviço também cria os respetivos grupos Keycloak e
+exige `KEYCLOAK_ADMIN_USERNAME` e `KEYCLOAK_ADMIN_PASSWORD` no processo do
+backend. A hierarquia organizacional dos grupos é ULS → UNIT → SERVICE,
+independentemente dos níveis físicos intermédios. Ver [SECURITY.md](SECURITY.md).
 
 Pai, código e associação ao serviço são imutáveis nesta versão. Para reorganizar
 a estrutura, criar novos elementos, preservando o histórico dos anteriores.
@@ -63,8 +83,7 @@ Exemplo de criação de enfermaria:
 {
   "name": "Medicina Interna — Norte",
   "code": "Ward 30005",
-  "parentId": "UUID_DA_ALA",
-  "serviceId": "UUID_DO_SERVICO"
+  "parentId": "UUID_DA_ALA"
 }
 ```
 
@@ -127,7 +146,7 @@ Estados: `AVAILABLE`, `OCCUPIED`, `BLOCKED`, `CLEANING`.
 | GET | `/allocations` | Histórico paginado, com filtros organizacionais, `bedId`, `encounterId`, `patientId`, `active` |
 
 ```json
-{"version":0,"expectedDischargeAt":"2026-10-27T12:00:00Z"}
+{"version":0,"expectedDischargeAt":"2027-01-15T12:00:00Z"}
 ```
 
 Num episódio ativo, omitir/usar `null` em `expectedDischargeAt` limpa a previsão.
@@ -148,7 +167,7 @@ a versão tem de coincidir com a atual.
 
 | Método | Caminho | Comportamento |
 | --- | --- | --- |
-| GET | `/admission-requests?status=WAITING&origin=EMERGENCY` | Fila paginada, filtrável por ULS/unidade/serviço |
+| GET | `/admission-requests?status=WAITING&origin=EMERGENCY` | Fila paginada, com os filtros organizacionais indicados acima |
 | GET | `/admission-requests/{id}` | Consulta individual |
 | POST | `/admission-requests` | Cria pedido, devolve `201` |
 | PUT | `/admission-requests/{id}` | Atualiza prioridade e data pretendida; exige `version` |
@@ -164,7 +183,7 @@ Criação:
   "serviceId":"UUID_DO_SERVICO",
   "origin":"EMERGENCY",
   "priority":1,
-  "desiredAdmissionAt":"2026-10-27T10:00:00Z"
+  "desiredAdmissionAt":null
 }
 ```
 

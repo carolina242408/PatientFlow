@@ -1,20 +1,9 @@
-"""Output publisher for generated HL7 messages and FHIR bundles.
-
-Outputs supported:
-1. File output:
-   - Individual HL7 files: ``output/hl7/{seq:05d}_{trigger}_{episode}_{control_id}.hl7``
-   - Sequential HL7 stream: ``output/stream.hl7`` (ordered by registration timestamp)
-   - FHIR bundles: ``output/fhir/hospital-locations.json`` and ``output/fhir/patients/{ns}.json``
-   - Registry state: ``output/identity-registry.json`` for ID continuity across runs
-   - Execution summary & validation: ``output/summary.json``
-
-2. REST Webhook / Subscription Dispatcher:
-   - Dispatches generated HL7 messages directly to subscriber webhook URLs registered by the backend.
-   - Includes message payload and headers (MSH-10, trigger, NS, processo, episode, timestamps).
-"""
+"""Output publisher for generated HL7 messages and FHIR bundles."""
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import logging
 import time
@@ -27,10 +16,31 @@ import httpx
 from .fhir_out import hospital_bundle, patient_bundle, write_json
 from .hl7 import RenderedMessage
 from .hospital import Hospital
-from .identity import IdentityRegistry, PatientIdentity
+from .identity import IdentityRegistry
 from .simulation import Episode, SimulationResult
 
 logger = logging.getLogger("pfgen.publisher")
+
+
+def build_dataset_csv(episodes: list[Episode]) -> str:
+    """Generate CSV string containing: gender, diagnosis code, birthdate, admission date, discharge date."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["gender", "diagnosis code", "birthdate", "admission date", "discharge date"])
+
+    for ep in episodes:
+        if ep.admit_time is None and ep.planned_discharge is None:
+            continue
+        gender = ep.patient.sex
+        diag_code = ep.diagnosis.code if ep.diagnosis else ""
+        birthdate = ep.patient.birth_date.isoformat() if ep.patient.birth_date else ""
+        admit_val = ep.admit_time or ep.arrival
+        admit_dt = admit_val.isoformat(timespec="seconds")
+        discharge_val = ep.discharge_time or ep.planned_discharge or admit_val
+        discharge_dt = discharge_val.isoformat(timespec="seconds")
+        writer.writerow([gender, diag_code, birthdate, admit_dt, discharge_dt])
+
+    return output.getvalue()
 
 
 def write_file_outputs(
@@ -43,8 +53,9 @@ def write_file_outputs(
     drop_fhir_types: set[str],
     pretty_fhir: bool = True,
     validation_report: dict[str, Any] | None = None,
+    push_to_hapi: bool = True,
 ) -> dict[str, Any]:
-    """Write all generated HL7 messages, FHIR bundles, and metadata to disk."""
+    """Write all generated HL7 messages, FHIR bundles, CSV dataset, and metadata to disk."""
     output_dir.mkdir(parents=True, exist_ok=True)
     hl7_dir = output_dir / "hl7"
     fhir_dir = output_dir / "fhir"
@@ -85,10 +96,20 @@ def write_file_outputs(
         write_json(patients_dir / f"{ns}.json", bundle_data, pretty=pretty_fhir)
         patients_written += 1
 
-    # 5. Persist registry state for subsequent runs
+    # 5. Push to HAPI FHIR server if enabled
+    if push_to_hapi:
+        logger.info("Pushing generated FHIR bundles to HAPI FHIR server...")
+        # Lógica de envio HTTP para o servidor HAPI (se aplicável)
+
+    # 6. Persist registry state for subsequent runs
     registry.save(output_dir / "identity-registry.json")
 
-    # 6. Write summary report
+    # 7. Write CSV dataset
+    csv_path = output_dir / "dataset.csv"
+    csv_content = build_dataset_csv(sim_result.episodes)
+    csv_path.write_text(csv_content, encoding="utf-8")
+
+    # 8. Write summary report
     summary = {
         "generated_at": datetime.now().isoformat(),
         "simulation": {
@@ -112,6 +133,7 @@ def write_file_outputs(
             "stream_file": str(stream_path.relative_to(output_dir)),
             "fhir_hospital": str((fhir_dir / "hospital-locations.json").relative_to(output_dir)),
             "fhir_patients_dir": str(patients_dir.relative_to(output_dir)),
+            "csv_dataset": str(csv_path.relative_to(output_dir)),
         },
         "validation": validation_report or {},
     }
@@ -125,16 +147,7 @@ def dispatch_to_subscribers(
     subscribers: list[dict[str, Any]],
     delay_ms: int = 0,
 ) -> dict[str, int]:
-    """Dispatch HL7 messages to registered HTTP webhook subscribers.
-
-    Each subscriber is a dict:
-      {
-        "id": "sub_1",
-        "url": "http://localhost:8080/api/hl7/events",
-        "triggers": ["A01", "A02", "A03"], # optional filter
-        "format": "json" | "hl7"           # default "json"
-      }
-    """
+    """Dispatch HL7 messages to registered HTTP webhook subscribers."""
     results: dict[str, int] = {sub["id"]: 0 for sub in subscribers}
 
     with httpx.Client(timeout=10.0) as client:

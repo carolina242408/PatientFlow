@@ -30,13 +30,17 @@ class TestPatientFlowAPI(unittest.TestCase):
         self.assertEqual(res_health.status_code, 200)
         self.assertEqual(res_health.json()["status"], "ok")
 
+        res_ui = self.client.get("/ui")
+        self.assertEqual(res_ui.status_code, 200)
+        self.assertIn("PatientFlow Data Generator", res_ui.text)
+
     def test_02_generate_data(self) -> None:
         payload = {
             "days": 2,
             "warmup_days": 1,
             "seed": 123,
             "no_synthea": True,
-            "population": "30",
+            "population": "20",
             "validate": True,
         }
         res = self.client.post("/api/generate", json=payload)
@@ -78,7 +82,14 @@ class TestPatientFlowAPI(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn("MSH|^~\\&|", res.text)
 
-    def test_05_fhir_endpoints(self) -> None:
+    def test_05_live_sse_stream_endpoint(self) -> None:
+        res = self.client.get("/api/hl7/live?delay_ms=10&limit=3")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("text/event-stream", res.headers.get("content-type", ""))
+        self.assertIn("event: hl7_", res.text)
+        self.assertIn("MSH|^~\\\\&|", res.text)
+
+    def test_06_fhir_endpoints(self) -> None:
         res_loc = self.client.get("/api/fhir/hospital-locations")
         self.assertEqual(res_loc.status_code, 200)
         bundle = res_loc.json()
@@ -98,12 +109,13 @@ class TestPatientFlowAPI(unittest.TestCase):
         pt_bundle = res_pt.json()
         self.assertEqual(pt_bundle["resourceType"], "Bundle")
 
-    def test_06_subscriptions_crud(self) -> None:
+    def test_07_subscriptions_crud(self) -> None:
         # Register a subscription
         sub_payload = {
             "url": "http://example.com/api/hl7-webhook",
             "triggers": ["A01", "A02"],
             "format": "json",
+            "auto_stream": False,
         }
         res_create = self.client.post("/api/subscriptions", json=sub_payload)
         self.assertEqual(res_create.status_code, 200)

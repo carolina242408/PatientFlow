@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.cache/synthea/synthea-with-dependencies.jar
+.cache/synthea/*.part
+output/
+

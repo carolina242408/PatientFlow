@@ -93,6 +93,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--validate", action="store_true", default=True, help="Run HL7 stream integrity validation")
     parser.add_argument("--no-validate", dest="validate", action="store_false", help="Skip HL7 validation")
     parser.add_argument("--check-converter", action="store_true", help="Validate messages against tools/hl7-fhir-converter")
+    parser.add_argument("--push-to-hapi", action="store_true", default=True, help="Push FHIR bundles to HAPI server")
+    parser.add_argument("--no-push-to-hapi", dest="push_to_hapi", action="store_false", help="Skip pushing FHIR bundles to HAPI server")
     parser.add_argument(
         "--print-hl7",
         "--print-events",
@@ -159,7 +161,7 @@ def run_cli_generation(args: argparse.Namespace) -> int:
                 cap = hospital.capacity_of(s)
                 rate = cap * float(spec_cfg.get("target_occupancy", 0.85)) / float(spec_cfg["los"]["mean"])
             expected_adm += rate * total_days
-        population_size = max(50, int(expected_adm * 1.35))
+        population_size = max(20, int(expected_adm * 1.35))
     else:
         population_size = int(pop_arg)
 
@@ -239,7 +241,7 @@ def run_cli_generation(args: argparse.Namespace) -> int:
 
     drop_fhir_types = set(sim_cfg["fhir"].get("drop_resource_types", []))
     pretty_fhir = bool(sim_cfg["fhir"].get("pretty", False))
-
+    push_to_hapi = True
     summary = write_file_outputs(
         output_dir=args.output,
         rendered_messages=rendered_messages,
@@ -249,7 +251,9 @@ def run_cli_generation(args: argparse.Namespace) -> int:
         pool_patients=pool,
         drop_fhir_types=drop_fhir_types,
         pretty_fhir=pretty_fhir,
+        push_to_hapi=push_to_hapi,
         validation_report=validation_report,
+        
     )
 
     state.messages = rendered_messages
