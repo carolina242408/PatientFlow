@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
+import { AccessWarning } from '@/components/AccessWarning'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
 import UpcomingDischargesTable, {
@@ -89,13 +90,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { user } = useKeycloak()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
+  const missingApplicationRole = user !== null
+    && !user.roles.includes('ROLE_ADMIN')
+    && !user.roles.includes('MANAGER')
   const missingManagerScope = user?.roles.includes('MANAGER') === true && user.scopeType === null
   const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
   const metrics = SCOPE_METRICS[scope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy'],
     queryFn: () => fetchOccupancy(),
-    enabled: !missingManagerScope,
+    enabled: !missingApplicationRole && !missingManagerScope,
   })
 
   useEffect(() => {
@@ -103,17 +107,8 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     if (expandedItem && dialog && !dialog.open) dialog.showModal()
   }, [expandedItem])
 
-  if (missingManagerScope) {
-    return (
-      <section
-        role="alert"
-        className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-slate-800"
-      >
-        <h1 className="text-xl font-semibold">{t('access.missingManagerScopeTitle')}</h1>
-        <p className="mt-2 text-sm">{t('access.missingManagerScopeDescription')}</p>
-      </section>
-    )
-  }
+  if (missingApplicationRole) return <AccessWarning kind="missingApplicationRole" />
+  if (missingManagerScope) return <AccessWarning kind="missingManagerScope" />
 
   const today = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'long',

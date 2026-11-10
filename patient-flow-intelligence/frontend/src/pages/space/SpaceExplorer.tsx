@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { useKeycloak } from '@/auth/context'
+import { AccessWarning } from '@/components/AccessWarning'
+import { hasAdminRole, useKeycloak } from '@/auth/context'
 import {
   fetchHierarchyChildren,
   fetchHierarchyLevel,
@@ -84,6 +85,8 @@ const SpaceExplorer = ({
 }: SpaceExplorerProps) => {
   const { t } = useTranslation()
   const { user } = useKeycloak()
+  const hasApplicationRole = user?.roles.includes('MANAGER') === true || hasAdminRole(user?.roles)
+  const missingApplicationRole = user !== null && !hasApplicationRole
   const missingManagerScope = user?.roles.includes('MANAGER') === true && user.scopeType === null
   const [selectedRoomId, setSelectedRoomId] = useState<string>()
 
@@ -95,14 +98,14 @@ const SpaceExplorer = ({
   } = useQuery({
     queryKey: ['space-hierarchy', startLevel],
     queryFn: () => fetchHierarchyLevel(startLevel),
-    enabled: !missingManagerScope,
+    enabled: hasApplicationRole && !missingManagerScope,
   })
 
   // Camas detalhadas só são carregadas dentro de um quarto.
   const { data: bedsData } = useQuery({
     queryKey: ['beds-operational', selectedRoomId],
     queryFn: () => fetchBeds({ roomId: selectedRoomId }, undefined, 0, 50),
-    enabled: !adminMode && Boolean(selectedRoomId),
+    enabled: hasApplicationRole && !adminMode && Boolean(selectedRoomId),
     refetchInterval: 60_000,
   })
 
@@ -141,7 +144,7 @@ const SpaceExplorer = ({
         ]),
       )
     },
-    enabled: !adminMode && Boolean(selectedRoomId && occupiedBeds.length),
+    enabled: hasApplicationRole && !adminMode && Boolean(selectedRoomId && occupiedBeds.length),
     refetchInterval: 60_000,
   })
 
@@ -245,7 +248,7 @@ const SpaceExplorer = ({
   const { data: currentBedSummary } = useQuery({
     queryKey: ['space-bed-summary-current', current?.level, current?.id],
     queryFn: () => fetchBedMap(currentSummaryScope, undefined, 0, 1),
-    enabled: !adminMode && Boolean(
+    enabled: hasApplicationRole && !adminMode && Boolean(
       current && ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'room'].includes(current.level),
     ),
   })
@@ -267,23 +270,14 @@ const SpaceExplorer = ({
       if (!currentOrgNode) throw new Error('Cannot load children without a selected hierarchy node')
       return fetchHierarchyChildren(currentOrgNode)
     },
-    enabled: Boolean(currentOrgNode && current?.level !== 'bed' && !current?.children),
+    enabled: hasApplicationRole && Boolean(currentOrgNode && current?.level !== 'bed' && !current?.children),
     staleTime: 30_000,
   })
   const loadingChildren = childrenQuery.isPending && childrenQuery.isFetching
   const childrenError = childrenQuery.isError
 
-  if (missingManagerScope) {
-    return (
-      <section
-        role="alert"
-        className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-slate-800"
-      >
-        <h1 className="text-xl font-semibold">{t('access.missingManagerScopeTitle')}</h1>
-        <p className="mt-2 text-sm">{t('access.missingManagerScopeDescription')}</p>
-      </section>
-    )
-  }
+  if (missingApplicationRole) return <AccessWarning kind="missingApplicationRole" />
+  if (missingManagerScope) return <AccessWarning kind="missingManagerScope" />
   if (isPending) return <div>Loading...</div>
   if (isError) return <div>{t('lhuHierarchy.error')}</div>
   if (!hierarchy?.length || !path.length) return <div>{t('lhuHierarchy.noData')}</div>

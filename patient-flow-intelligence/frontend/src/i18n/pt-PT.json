@@ -448,6 +448,8 @@
   },
   "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" },
   "access": {
+    "missingApplicationRoleTitle": "Sem perfil de acesso atribuído",
+    "missingApplicationRoleDescription": "A sua conta não tem um perfil de administrador ou gestor. Contacte um administrador para obter acesso.",
     "missingManagerScopeTitle": "Sem acesso organizacional atribuído",
     "missingManagerScopeDescription": "A sua conta de gestor não tem um grupo organizacional atribuído. Contacte um administrador para obter acesso."
   },

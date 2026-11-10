@@ -117,6 +117,10 @@
   color: #b91c1c;
 }
 
+.operation-popup-persistent {
+  animation: operation-popup-in 180ms ease-out;
+}
+
 .confirmation-dialog {
   position: fixed;
   inset: 0;

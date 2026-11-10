@@ -34,11 +34,14 @@ const getManagementSidebarItems = (
     return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
   if (roles.includes('MANAGER')) {
-    return [{
-      labelKey: scopeType ? `nav.scopeLevels.${scopeType}` : 'nav.noScope',
-      path: '/manager-hierarchy',
-      icon: House,
-    }]
+    return [
+      { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
+      {
+        labelKey: scopeType ? `nav.scopeLevels.${scopeType}` : 'nav.noScope',
+        path: '/manager-hierarchy',
+        icon: House,
+      }
+    ]
   }
   return []
 }
@@ -61,7 +64,6 @@ const Sidebar = () => {
 
   const sections : Record<string, SidebarItem[]> = {
     Menu: [
-      { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
       ...managementItems,
     ],
     Settings: [

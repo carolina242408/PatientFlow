@@ -448,6 +448,8 @@
   },
   "notFound": { "title": "Page not found", "back": "Back to dashboard" },
   "access": {
+    "missingApplicationRoleTitle": "No application role assigned",
+    "missingApplicationRoleDescription": "Your account does not have an administrator or manager role. Contact an administrator to get access.",
     "missingManagerScopeTitle": "No organizational access assigned",
     "missingManagerScopeDescription": "Your Manager account does not have an organizational group assigned. Contact an administrator to get access."
   },
