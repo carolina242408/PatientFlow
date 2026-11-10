@@ -314,6 +314,7 @@
       "lhu": "Gestor da ULS",
       "unit": "Gestor de Unidade",
       "service": "Gestor de Serviço",
+      "manager": "Gestor",
       "default": "Utilizador"
     },
     "scopes": {
@@ -321,6 +322,7 @@
       "lhu": "Unidade Local de Saúde",
       "unit": "Unidade Hospitalar",
       "service": "Serviço",
+      "manager": "Âmbito organizacional atribuído",
       "default": "—"
     },
     "languages": { "en": "English", "pt": "Português" },
@@ -330,6 +332,7 @@
       "lhu": "O teu perfil de Gestor da ULS dá acesso aos KPIs de toda a ULS e à hierarquia de espaços de saúde a partir da tua ULS.",
       "unit": "O teu perfil de Gestor de Unidade dá acesso aos KPIs da unidade e à hierarquia de espaços de saúde a partir da tua Unidade.",
       "service": "O teu perfil de Gestor de Serviço dá acesso aos KPIs do serviço e à hierarquia de espaços de saúde a partir do teu Serviço.",
+      "manager": "O acesso está limitado aos grupos organizacionais mais específicos atribuídos.",
       "default": "O teu perfil dá acesso básico à plataforma."
     }
   },
@@ -424,7 +427,7 @@
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
     "error": "Não foi possível carregar a hierarquia.",
-    "noData": "Aind não existem espaços ou recursos.",
+    "noData": "Ainda não existem espaços ou recursos.",
     "root": "Raiz da organização",
     "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
     "admin": {

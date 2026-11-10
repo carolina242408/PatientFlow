@@ -4,25 +4,24 @@
 
 O JWT é validado pelo resource server contra o issuer Keycloak configurado.
 Os papéis são lidos das authorities derivadas de `realm_access.roles` e os
-âmbitos são lidos do claim `groups`. Os grupos organizacionais incluem o UUID
-da entidade no nome (`ULS_<nome>__<uuid>`, `UNIT_<nome>__<uuid>` e
-`SERVICE_<nome>__<uuid>`), pelo que a associação é resolvida sem consultar
-`/api/access/grants`.
+âmbitos são lidos do claim `groups`. Existem apenas os papéis `ROLE_ADMIN` e
+`MANAGER`. Os grupos organizacionais incluem o tipo, nome e UUID da entidade
+(`ULS_<nome>__<uuid>`, `UNIT_<nome>__<uuid>`, `BUILDING_<nome>__<uuid>`,
+`FLOOR_<nome>__<uuid>`, `SERVICE_<nome>__<uuid>`, `WING_<nome>__<uuid>` e
+`WARD_<nome>__<uuid>`).
 
-Um gestor precisa simultaneamente de papel e associação do tipo correspondente:
+| Papel Keycloak | Âmbito efetivo |
+| --- | --- |
+| `ROLE_ADMIN` | Global; não exige grupo |
+| `MANAGER` | Apenas o nível mais específico dos grupos atribuídos |
 
-| Papel Keycloak | Tipo de associação | Âmbito efetivo |
-| --- | --- | --- |
-| `ROLE_ADMIN` | Não exige associação | Global |
-| `LHU_MANAGER` | `ULS` | Unidades e serviços dessa ULS |
-| `UNIT_MANAGER` | `UNIT` | Serviços dessa unidade |
-| `SERVICE_MANAGER` | `SERVICE` | Serviço e suas enfermarias/camas |
-
-É possível atribuir vários âmbitos; o acesso efetivo é a união dos grupos
-compatíveis com os papéis presentes no JWT. Um grupo `UNIT` sem papel
-`UNIT_MANAGER` não concede esse acesso. A API de hierarquia cria grupos
-Keycloak aninhados até à enfermaria; quartos e camas não têm grupos. Apenas
-grupos `ULS`, `UNIT` e `SERVICE` são interpretados como âmbitos de associação.
+Para um gestor com grupos de vários níveis, aplica-se apenas o nível mais
+específico, nesta ordem: `WARD`, `WING`, `SERVICE`, `FLOOR`, `BUILDING`,
+`UNIT`, `ULS`. Todos os grupos atribuídos desse nível continuam válidos;
+grupos de níveis mais amplos não aumentam o acesso. A API de hierarquia cria
+grupos Keycloak aninhados até à enfermaria; quartos e camas não têm grupos.
+Um gestor só recebe acesso operacional se tiver o papel `MANAGER` e pelo
+menos um grupo válido.
 
 ## Matriz de operações
 
@@ -65,12 +64,11 @@ para utilizadores sem `ROLE_ADMIN`.
 
 ## Atribuição inicial de acessos
 
-1. Criar a ULS, unidade e serviço através da API de hierarquia. O backend cria
-   os grupos aninhados no Keycloak.
-2. Atribuir o utilizador ao grupo correspondente no Keycloak e atribuir-lhe o
-   papel `LHU_MANAGER`, `UNIT_MANAGER` ou `SERVICE_MANAGER`.
-3. Renovar o token do utilizador. O claim `groups` passa a conter o caminho
-   do grupo e o acesso é aplicado sem grant na base de dados.
+1. Criar os elementos da hierarquia pela API; o backend cria grupos Keycloak
+   aninhados até à enfermaria.
+2. Atribuir ao utilizador o grupo desejado no Keycloak e o papel `MANAGER`.
+3. Renovar o token. O claim `groups` contém os caminhos necessários ao cálculo
+   do nível mais específico de acesso.
 
 ```http
 <!-- Legacy grant API is not used for authorization. -->
@@ -83,6 +81,9 @@ Content-Type: application/json
   "scopeId":"UUID_DA_UNIDADE"
 }
 ```
+
+`/api/access/grants` mantém-se por compatibilidade e não concede acesso
+operacional; a autorização usa exclusivamente o papel e os grupos do token.
 
 O realm deve ter um mapper de grupos com `full.path=true` no claim `groups`.
 O ficheiro `keycloak/realm/patientflow-realm.json` configura esse mapper e

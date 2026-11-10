@@ -60,8 +60,8 @@
       },
       {
         "id": "2d9c4b3a-a8d4-41cc-86d6-7c8c2e07fbb9",
-        "name": "SERVICE_MANAGER",
-        "description": "",
+        "name": "MANAGER",
+        "description": "Manager access scoped by Keycloak organizational groups",
         "composite": false,
         "clientRole": false,
         "containerId": "d4963266-628b-44d3-adfa-69ebef562a30",
@@ -71,15 +71,6 @@
         "id": "a112b4e4-f067-452d-8022-4e99de738852",
         "name": "uma_authorization",
         "description": "${role_uma_authorization}",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "d4963266-628b-44d3-adfa-69ebef562a30",
-        "attributes": {}
-      },
-      {
-        "id": "585316bf-6943-498e-95d7-969ad2aad53e",
-        "name": "LHU_MANAGER",
-        "description": "",
         "composite": false,
         "clientRole": false,
         "containerId": "d4963266-628b-44d3-adfa-69ebef562a30",
@@ -102,15 +93,6 @@
             ]
           }
         },
-        "clientRole": false,
-        "containerId": "d4963266-628b-44d3-adfa-69ebef562a30",
-        "attributes": {}
-      },
-      {
-        "id": "66003760-addb-47e8-bf3d-28c43013ae5a",
-        "name": "UNIT_MANAGER",
-        "description": "",
-        "composite": false,
         "clientRole": false,
         "containerId": "d4963266-628b-44d3-adfa-69ebef562a30",
         "attributes": {}

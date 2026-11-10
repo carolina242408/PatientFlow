@@ -9,13 +9,7 @@
         "name": "ROLE_ADMIN"
       },
       {
-        "name": "LHU_MANAGER"
-      },
-      {
-        "name": "UNIT_MANAGER"
-      },
-      {
-        "name": "SERVICE_MANAGER"
+        "name": "MANAGER"
       }
     ]
   },
@@ -26,7 +20,24 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": true,
       "redirectUris": [],
-      "webOrigins": []
+      "webOrigins": [],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "full.path": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "jsonType.label": "String"
+          }
+        }
+      ]
     }
   ],
   "users": [
@@ -60,7 +71,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "UNIT_MANAGER"
+        "MANAGER"
       ],
       "credentials": [
         {
@@ -80,7 +91,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "SERVICE_MANAGER"
+        "MANAGER"
       ],
       "credentials": [
         {
@@ -100,7 +111,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "UNIT_MANAGER"
+        "MANAGER"
       ],
       "credentials": [
         {
@@ -120,7 +131,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "realmRoles": [
-        "LHU_MANAGER"
+        "MANAGER"
       ],
       "credentials": [
         {

@@ -176,10 +176,10 @@ class PatientflowApplicationTests {
         when(decoder.decode("test-token")).thenReturn(Jwt.withTokenValue("test-token").header("alg", "none")
             .subject("tester").claim("preferred_username", "gestor")
             .claim("name", "Gestor Teste").claim("email", "gestor@example.test")
-            .claim("realm_access", java.util.Map.of("roles", java.util.List.of("UNIT_MANAGER"))).build());
+            .claim("realm_access", java.util.Map.of("roles", java.util.List.of("MANAGER"))).build());
         mvc.perform(get("/api/account").header("Authorization", "Bearer test-token"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.login").value("gestor"))
-            .andExpect(jsonPath("$.roles").value(hasItem("UNIT_MANAGER")));
+            .andExpect(jsonPath("$.roles").value(hasItem("MANAGER")));
     }
 
     @Test
@@ -585,7 +585,7 @@ class PatientflowApplicationTests {
 
     @Test
     void aRoleWithoutAssignmentCannotAccessOperationalData() throws Exception {
-        var user=manager("unassigned","UNIT_MANAGER");
+        var user=manager("unassigned","MANAGER");
         as(user,get("/api/beds"),null,403);
         as(user,post("/api/events/tickets"),null,403);
         assertThat(as(user,get("/api/access/me"),null,200).path("scopes").size()).isZero();
@@ -593,19 +593,20 @@ class PatientflowApplicationTests {
     }
 
     @Test
-    void scopeAdministrationRequiresAdminAndMatchingKeycloakRole() throws Exception {
+    void scopeAdministrationRequiresAdminAndManagerGroupScopes() throws Exception {
         UUID unit=onlyId("healthcare_units");
         UUID assignment=grant("service-user","UNIT",unit);
-        var user=manager("service-user","SERVICE_MANAGER");
-        as(user,get("/api/beds"),null,403); // An assignment alone never grants a Keycloak role.
+        var user=manager("service-user","MANAGER");
+        assertThat(as(user,get("/api/beds"),null,200).path("totalElements").asInt()).isEqualTo(2);
         as(user,post("/api/access/grants"),Map.of("subject","service-user","type","ULS","scopeId",onlyId("uls")),403);
         as(user,delete("/api/access/grants/"+assignment),null,403);
         as(user,get("/api/access/grants"),null,403);
         call(post("/api/access/grants"),Map.of("subject","service-user","type","UNIT","scopeId",unit),409);
         call(post("/api/access/grants"),Map.of("subject","unknown","type","SERVICE","scopeId",UUID.randomUUID()),404);
         grant("service-user","SERVICE",onlyId("clinical_services"));
-        assertThat(as(user,get("/api/access/me"),null,200).path("scopes").size()).isEqualTo(1);
-        assertThat(as(user,get("/api/beds"),null,200).path("totalElements").asInt()).isEqualTo(2);
+        var serviceUser=manager("service-user","MANAGER");
+        assertThat(as(serviceUser,get("/api/access/me"),null,200).path("scopes").size()).isEqualTo(1);
+        assertThat(as(serviceUser,get("/api/beds"),null,200).path("totalElements").asInt()).isEqualTo(2);
     }
 
     @Test
@@ -617,7 +618,7 @@ class PatientflowApplicationTests {
         UUID foreignEncounter=onlyId("encounters","visit_number='FOREIGN'");
         UUID foreignPatient=onlyId("patients","sns_number='888888888'");
         grant("unit-user","UNIT",onlyId("healthcare_units","id<>'"+other.unit()+"'"));
-        var user=manager("unit-user","UNIT_MANAGER");
+        var user=manager("unit-user","MANAGER");
         assertThat(as(user,get("/api/beds"),null,200).path("totalElements").asInt()).isEqualTo(2);
         assertThat(as(user,get("/api/bed-map"),null,200).path("counts").path("OCCUPIED").asInt()).isEqualTo(1);
         assertThat(as(user,get("/api/beds?unitId="+other.unit()),null,200).path("totalElements").asInt()).isZero();
@@ -642,7 +643,7 @@ class PatientflowApplicationTests {
         UUID service=onlyId("clinical_services");
         var other=topology(onlyId("uls"),unit,"OTHER");
         grant("service-user","SERVICE",service);
-        var user=manager("service-user","SERVICE_MANAGER");
+        var user=manager("service-user","MANAGER");
         for(String type:List.of("ULS","UNIT","SERVICE","BUILDING","FLOOR","WING","WARD","ROOM")) {
             assertThat(as(user,get("/api/hierarchy/"+type),null,200).path("totalElements").asInt()).as(type).isEqualTo(1);
         }
@@ -660,7 +661,7 @@ class PatientflowApplicationTests {
         UUID otherUls=id(node("ULS","Outside",null,null,null));
         topology(otherUls,null,"OUTSIDE");
         grant("uls-user","ULS",uls);
-        var user=manager("uls-user","LHU_MANAGER");
+        var user=manager("uls-user","MANAGER");
         assertThat(as(user,get("/api/beds"),null,200).path("totalElements").asInt()).isEqualTo(3);
         assertThat(as(user,get("/api/hierarchy/UNIT"),null,200).path("totalElements").asInt()).isEqualTo(2);
         assertThat(as(user,get("/api/hierarchy/ULS"),null,200).path("totalElements").asInt()).isEqualTo(1);
@@ -671,7 +672,7 @@ class PatientflowApplicationTests {
         UUID service=onlyId("clinical_services");
         topology(onlyId("uls"),null,"FOREIGN");
         grant("service-user","SERVICE",service);
-        var user=manager("service-user","SERVICE_MANAGER");
+        var user=manager("service-user","MANAGER");
         String foreign=at(example("admission.json"),"FOREIGN").replace("99000999","FOREIGN-VISIT").replace("999999999","888888888");
         mvc.perform(fhir(foreign).with(user).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
         assertThat(count("patients")).isZero();
@@ -690,7 +691,7 @@ class PatientflowApplicationTests {
         UUID request=id(call(post("/api/admission-requests"),Map.of("requestNumber","OUTSIDE","patientId",patient,
             "serviceId",other.service(),"priority",1,"origin","EMERGENCY"),201));
         grant("service-user","SERVICE",service);
-        var user=manager("service-user","SERVICE_MANAGER");
+        var user=manager("service-user","MANAGER");
         assertThat(as(user,get("/api/admission-requests"),null,200).path("totalElements").asInt()).isZero();
         as(user,get("/api/admission-requests/"+request),null,404);
         as(user,put("/api/admission-requests/"+request),Map.of("version",0,"priority",2),404);
@@ -706,7 +707,7 @@ class PatientflowApplicationTests {
     @Test
     void revocationImmediatelyChangesRestVisibility() throws Exception {
         UUID assignment=grant("unit-user","UNIT",onlyId("healthcare_units"));
-        var user=manager("unit-user","UNIT_MANAGER");
+        var user=manager("unit-user","MANAGER");
         as(user,get("/api/beds"),null,200);
         call(delete("/api/access/grants/"+assignment),null,204);
         as(user,get("/api/beds"),null,403);
@@ -730,7 +731,7 @@ class PatientflowApplicationTests {
         UUID service=onlyId("clinical_services");
         var other=topology(onlyId("uls"),null,"OTHER");
         grant("service-user","SERVICE",service);
-        try(var client=socket(ticket(manager("service-user","SERVICE_MANAGER")),"http://localhost:5173")) {
+        try(var client=socket(ticket(manager("service-user","MANAGER")),"http://localhost:5173")) {
             next(client);
             call(put("/api/beds/"+other.bed()+"/status"),Map.of("version",0,"status","BLOCKED","reason","Outside"),200);
             UUID local=bedId("Bed MAC");
@@ -774,7 +775,7 @@ class PatientflowApplicationTests {
     @Test
     void revokedScopeClosesExistingSocketAndInvalidatesUnusedTicket() throws Exception {
         UUID assignment=grant("unit-user","UNIT",onlyId("healthcare_units"));
-        var user=manager("unit-user","UNIT_MANAGER");
+        var user=manager("unit-user","MANAGER");
         String unused=ticket(user);
         try(var client=socket(ticket(user),"http://localhost:5173")) {
             next(client);
@@ -815,8 +816,13 @@ class PatientflowApplicationTests {
     private UUID grant(String subject,String type,UUID scope) throws Exception {
         return id(call(post("/api/access/grants"),Map.of("subject",subject,"type",type,"scopeId",scope),201));
     }
-    private static JwtRequestPostProcessor manager(String subject,String role) {
-        return jwt().jwt(j->j.subject(subject).expiresAt(Instant.now().plusSeconds(300))).authorities(new SimpleGrantedAuthority(role));
+    private JwtRequestPostProcessor manager(String subject,String role) {
+        List<String> groups=database.query("SELECT scope_type,COALESCE(uls_id,unit_id,service_id) AS scope_id "
+            +"FROM user_scope_grants WHERE keycloak_subject=?",(r,n)->"/"+r.getString("scope_type")+"_Assigned__"
+                +r.getObject("scope_id",UUID.class),subject);
+        String authority=role.equals("ROLE_USER") ? role : "MANAGER";
+        return jwt().jwt(j->j.subject(subject).expiresAt(Instant.now().plusSeconds(300)).claim("groups",groups))
+            .authorities(new SimpleGrantedAuthority(authority));
     }
     private JsonNode as(JwtRequestPostProcessor user,MockHttpServletRequestBuilder request,Object body,int status) throws Exception {
         if(body!=null) request.content(json.writeValueAsString(body));
@@ -911,7 +917,7 @@ class PatientflowApplicationTests {
         }
         for(String uri:List.of("/api/analytics/indicators","/api/analytics/alerts","/api/analytics/occupancy-forecast")) {
             mvc.perform(get(uri)).andExpect(status().isUnauthorized());
-            as(manager("unassigned","UNIT_MANAGER"),get(uri),null,403);
+            as(manager("unassigned","MANAGER"),get(uri),null,403);
         }
     }
 
@@ -921,7 +927,7 @@ class PatientflowApplicationTests {
         var other=topology(onlyId("uls"),null,"OUTSIDE");
         send(at(example("admission.json"),"OUTSIDE"),204);
         grant("analyst","SERVICE",service);
-        var user=manager("analyst","SERVICE_MANAGER");
+        var user=manager("analyst","MANAGER");
         assertThat(as(user,get("/api/analytics/indicators"),null,200).path("beds").path("total").asInt()).isEqualTo(2);
         assertThat(as(user,get("/api/analytics/indicators"),null,200).path("stays").path("active").asInt()).isZero();
         assertThat(as(user,get("/api/analytics/indicators?serviceId="+other.service()),null,200).path("beds").path("total").asInt()).isZero();
@@ -957,7 +963,7 @@ class PatientflowApplicationTests {
         call(get("/api/admission-requests/"+request+"/bed-suggestions?preferredWardId="+foreign.ward()),null,400);
         call(get("/api/admission-requests/"+request+"/bed-suggestions?limit=21"),null,400);
         grant("foreign-manager","UNIT",foreign.unit());
-        as(manager("foreign-manager","UNIT_MANAGER"),get("/api/admission-requests/"+request+"/bed-suggestions"),null,404);
+        as(manager("foreign-manager","MANAGER"),get("/api/admission-requests/"+request+"/bed-suggestions"),null,404);
         assertThat(getJson("/api/hierarchy/UNIT/"+unit).path("id").asString()).isEqualTo(unit.toString());
     }
 

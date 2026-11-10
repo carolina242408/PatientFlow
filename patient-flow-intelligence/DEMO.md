@@ -34,13 +34,13 @@ Não é necessário instalar Node, arrancar o frontend ou configurar nginx.
 
 Credenciais de demonstração (password igual ao utilizador):
 
-| Utilizador | Papel Keycloak | Associação sugerida |
+| Utilizador | Papel Keycloak | Grupo sugerido |
 | --- | --- | --- |
 | `demo-admin` | `ROLE_ADMIN` | Global; não precisa de associação |
-| `demo-lhu` | `LHU_MANAGER` | ULS Demonstração |
-| `demo-unit` | `UNIT_MANAGER` | Hospital Demonstração Centro |
-| `demo-service` | `SERVICE_MANAGER` | Medicina — pressão assistencial (`DEMO-MED`) |
-| `demo-other` | `UNIT_MANAGER` | Hospital Demonstração Norte |
+| `demo-lhu` | `MANAGER` | Grupo da ULS Demonstração |
+| `demo-unit` | `MANAGER` | Grupo do Hospital Demonstração Centro |
+| `demo-service` | `MANAGER` | Grupo do serviço Medicina (`DEMO-MED`) |
+| `demo-other` | `MANAGER` | Grupo do Hospital Demonstração Norte |
 
 O administrador da consola Keycloak é `admin`, password `patientflow-demo`,
 configurável por `MVP_KEYCLOAK_ADMIN_PASSWORD`. A password PostgreSQL é
@@ -77,26 +77,24 @@ global; um gestor sem associação recebe `403` nas consultas operacionais.
 
 ## Atribuir os âmbitos
 
-Todos os utilizadores e papéis da tabela já são importados no Keycloak.
-Nenhum gestor recebe associações organizacionais automaticamente.
+Todos os utilizadores e papéis da tabela já são importados no Keycloak. Os
+gestores precisam de ser associados a grupos organizacionais no Keycloak.
 
-1. Obter um token de `demo-admin` como no exemplo anterior.
-2. Obter o `sub` do gestor em Keycloak → Users → utilizador → ID,
-   ou em `GET /api/access/me` com o token desse gestor.
-3. Consultar `/api/hierarchy/ULS`, `/api/hierarchy/UNIT` ou `/api/hierarchy/SERVICE`
-   com o token do administrador e obter o UUID da entidade pretendida.
-4. Criar a associação com `POST /api/access/grants`, enviando `subject`, `type`
-   (`ULS`, `UNIT` ou `SERVICE`) e `scopeId`, autenticado como administrador.
-5. Consultar indicadores, camas e restantes recursos com o token do gestor:
-   as consultas só incluem o âmbito atribuído; os filtros não ampliam o acesso.
-6. Revogar com `DELETE /api/access/grants/{id}` como administrador: os pedidos
-   seguintes deixam de ter acesso e a ligação de eventos é encerrada.
+1. Criar os elementos da hierarquia pela API autenticada como administrador;
+   os grupos Keycloak são criados automaticamente até à enfermaria.
+2. Na consola Keycloak, atribuir ao gestor o grupo apropriado e o papel
+   `MANAGER`.
+3. Renovar o token e consultar `/api/access/me` para verificar o âmbito
+   efetivo. Se existirem associações em vários níveis, só o nível mais
+   específico é aplicado.
+4. Consultar indicadores, camas e restantes recursos com o token do gestor:
+   os filtros não ampliam o acesso. Dados sem associação a uma enfermaria não
+   são disponibilizados a um gestor limitado a grupos de enfermaria.
 
 Os IDs importados terminam em `0001` a `0005`, respetivamente para admin, unit,
-service, other e lhu: `10000000-0000-0000-0000-00000000000N`.
-As associações são geridas pela API; a criação de identidades e a atribuição
-dos papéis continuam a fazer-se no Keycloak. O corpo do pedido e o contrato completo
-estão em [backend/SECURITY.md](backend/SECURITY.md).
+service, other e lhu: `10000000-0000-0000-0000-00000000000N`. A criação de
+identidades, a atribuição do papel e a associação a grupos fazem-se no
+Keycloak. O contrato completo está em [backend/SECURITY.md](backend/SECURITY.md).
 
 ## Cenários sintéticos
 

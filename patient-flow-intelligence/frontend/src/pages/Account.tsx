@@ -5,9 +5,7 @@ import { fetchAccount } from '../api/account'
 
 const getProfile = (roles: string[] = []) => {
   if (roles.includes('ROLE_ADMIN')) return 'admin'
-  if (roles.includes('LHU_MANAGER')) return 'lhu'
-  if (roles.includes('UNIT_MANAGER')) return 'unit'
-  if (roles.includes('SERVICE_MANAGER')) return 'service'
+  if (roles.includes('MANAGER')) return 'manager'
   return 'default'
 }
 

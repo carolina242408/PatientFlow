@@ -33,14 +33,20 @@ public class AnalyticsRepository {
         return p;
     }
     private String where(Scope scope) {
-        return " WHERE "+access.sql("u.uls_id","u.id","s.id")
+        return where(scope, false);
+    }
+    private String where(Scope scope,boolean hasWardLocation) {
+        return " WHERE "+access.sql("u.uls_id","u.id",hasWardLocation ? "bu.id" : null,
+            hasWardLocation ? "f.id" : null,"s.id",hasWardLocation ? "wi.id" : null,
+            hasWardLocation ? "w.id" : null)
             +(scope.ulsId()==null ? "" : " AND u.uls_id=:uls")
             +(scope.unitId()==null ? "" : " AND u.id=:unit")
             +(scope.serviceId()==null ? "" : " AND s.id=:service");
     }
     public Indicators indicators(Scope scope,Instant from,Instant to,Instant now,AnalyticsSettings settings) {
         var p=parameters(scope,from,to,now,settings);
-        String filter=where(scope);
+        String filter=where(scope,true);
+        String serviceFilter=where(scope);
         BedIndicators beds=jdbc.queryForObject("""
             SELECT count(*) AS total,count(*) FILTER(WHERE b.status='AVAILABLE') AS available,
             count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied,count(*) FILTER(WHERE b.status='BLOCKED') AS blocked,
@@ -72,7 +78,14 @@ public class AnalyticsRepository {
             count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at>:now AND e.expected_discharge_at<=:next24) AS expected24,
             count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at>:now AND e.expected_discharge_at<=:next48) AS expected48,
             count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at<:now) AS overdue
-            FROM encounters e LEFT JOIN clinical_services s ON s.id=e.service_id
+            FROM encounters e
+            LEFT JOIN LATERAL (SELECT bed_id FROM location_allocations la WHERE la.encounter_id=e.id
+                ORDER BY la.assigned_at DESC,la.id DESC LIMIT 1) a ON true
+            LEFT JOIN beds b ON b.id=a.bed_id
+            LEFT JOIN rooms r ON r.id=b.room_id
+            LEFT JOIN wards w ON w.id=r.ward_id
+            LEFT JOIN wings wi ON wi.id=w.wing_id
+            LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,wi.service_id)
             LEFT JOIN floors f ON f.id=s.floor_id LEFT JOIN buildings bu ON bu.id=f.building_id
             LEFT JOIN healthcare_units u ON u.id=bu.unit_id
             """+filter,p,(r,n)->new StayIndicators(r.getLong("active"),r.getLong("admissions"),r.getLong("discharges"),
@@ -89,7 +102,7 @@ public class AnalyticsRepository {
                 FROM admission_requests q JOIN clinical_services s ON s.id=q.service_id
                 JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id
                 JOIN healthcare_units u ON u.id=bu.unit_id
-            """+filter+" AND q.status='WAITING') due_requests",p,(r,n)->new WaitingIndicators(r.getLong("pending"),
+            """+serviceFilter+" AND q.status='WAITING') due_requests",p,(r,n)->new WaitingIndicators(r.getLong("pending"),
                 r.getLong("due"),r.getLong("emergency"),r.getLong("overdue"),number(r,"average_hours"),number(r,"oldest_hours")));
         return new Indicators(now,from,to,scope,beds,stays,waiting,settings.thresholds());
     }
@@ -100,7 +113,7 @@ public class AnalyticsRepository {
         if(scope.ulsId()!=null) p.put("uls",scope.ulsId());
         if(scope.unitId()!=null) p.put("unit",scope.unitId());
         if(scope.serviceId()!=null) p.put("service",scope.serviceId());
-        String permitted=access.sql("u.uls_id","u.id","s.id");
+        String permitted=access.sql("u.uls_id","u.id","bu.id","f.id","s.id","wi.id","w.id");
         String requested=(scope.ulsId()==null ? "" : " AND u.uls_id=:uls")
             +(scope.unitId()==null ? "" : " AND u.id=:unit")
             +(scope.serviceId()==null ? "" : " AND s.id=:service");
@@ -140,7 +153,11 @@ public class AnalyticsRepository {
                 capacity==0 ? null : round(occupied*100d/capacity));
         };
         var identity=access.identity();
-        var units=identity.admin() || !identity.roles().contains("SERVICE_MANAGER")
+        var units=identity.admin() || identity.scopeType() == null
+                || switch (identity.scopeType()) {
+                    case SERVICE, WING, WARD -> false;
+                    default -> true;
+                }
             ? jdbc.query(unitSql,p,mapper) : List.<OccupancyRow>of();
         return new Occupancy(asOf,scope,0,jdbc.query(serviceSql,p,mapper),units,jdbc.query(wingSql,p,mapper));
     }
@@ -148,28 +165,53 @@ public class AnalyticsRepository {
     public PageResult<ServiceInput> forecastInputs(Scope scope,Instant from,Instant now,int page,int size,AnalyticsSettings settings) {
         HierarchyRepository.page(page,size);
         var p=parameters(scope,from,now,now,settings);
-        String filter=where(scope);
-        long count=jdbc.queryForObject("SELECT count(*) FROM clinical_services s JOIN floors f ON f.id=s.floor_id"
-            + " JOIN buildings bu ON bu.id=f.building_id JOIN healthcare_units u ON u.id=bu.unit_id"+filter,p,Long.class);
+        String filter=where(scope,true);
+        String serviceJoins=" JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id"
+            +" JOIN healthcare_units u ON u.id=bu.unit_id LEFT JOIN wings wi ON wi.service_id=s.id"
+            +" LEFT JOIN wards w ON w.wing_id=wi.id";
+        String bedScope=access.sql("u.uls_id","u.id","bu.id","f.id","s2.id","wi.id","w.id");
+        String encounterScope=bedScope;
+        String requestScope=access.sql("u.uls_id","u.id","s2.id");
+        long count=jdbc.queryForObject("SELECT count(DISTINCT s.id) FROM clinical_services s"
+            +serviceJoins+filter,p,Long.class);
         p.put("limit",size); p.put("offset",(long)page*size);
         var inputs=jdbc.query("""
             SELECT s.id,s.name,bs.capacity,bs.occupied,es.unscheduled,es.discharges,es.planned24,es.planned48,qs.pending24,qs.pending48
-            FROM (SELECT s.* FROM clinical_services s JOIN floors f ON f.id=s.floor_id
-            JOIN buildings bu ON bu.id=f.building_id JOIN healthcare_units u ON u.id=bu.unit_id
-            """+filter+" ORDER BY s.code,s.id LIMIT :limit OFFSET :offset) s "+"""
+            FROM (SELECT DISTINCT s.* FROM clinical_services s
+            """+serviceJoins+filter+" ORDER BY s.code,s.id LIMIT :limit OFFSET :offset) s "+"""
             CROSS JOIN LATERAL (SELECT count(*) FILTER(WHERE b.status<>'BLOCKED') AS capacity,
                 count(*) FILTER(WHERE b.status='OCCUPIED') AS occupied FROM beds b
                 JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
-                JOIN wings wi ON wi.id=w.wing_id WHERE wi.service_id=s.id) bs
+                JOIN wings wi ON wi.id=w.wing_id JOIN clinical_services s2 ON s2.id=wi.service_id
+                JOIN floors f ON f.id=s2.floor_id JOIN buildings bu ON bu.id=f.building_id
+                JOIN healthcare_units u ON u.id=bu.unit_id
+                WHERE wi.service_id=s.id AND
+                """+bedScope+"""
+                ) bs
             CROSS JOIN LATERAL (SELECT count(*) FILTER(WHERE e.start_period>=:from AND e.start_period<:now
                 AND NOT EXISTS(SELECT 1 FROM admission_requests q WHERE q.encounter_id=e.id)) AS unscheduled,
                 count(*) FILTER(WHERE e.status='FINISHED' AND e.end_period>=:from AND e.end_period<:now) AS discharges,
                 count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at>:now AND e.expected_discharge_at<=:next24) AS planned24,
                 count(*) FILTER(WHERE e.status='IN_PROGRESS' AND e.expected_discharge_at>:now AND e.expected_discharge_at<=:next48) AS planned48
-                FROM encounters e WHERE e.service_id=s.id) es
+                FROM encounters e
+                LEFT JOIN LATERAL (SELECT bed_id FROM location_allocations la WHERE la.encounter_id=e.id
+                    ORDER BY la.assigned_at DESC,la.id DESC LIMIT 1) a ON true
+                LEFT JOIN beds b ON b.id=a.bed_id LEFT JOIN rooms r ON r.id=b.room_id
+                LEFT JOIN wards w ON w.id=r.ward_id LEFT JOIN wings wi ON wi.id=w.wing_id
+                LEFT JOIN clinical_services s2 ON s2.id=COALESCE(e.service_id,wi.service_id)
+                LEFT JOIN floors f ON f.id=s2.floor_id LEFT JOIN buildings bu ON bu.id=f.building_id
+                LEFT JOIN healthcare_units u ON u.id=bu.unit_id
+                WHERE e.service_id=s.id AND
+                """+encounterScope+"""
+                ) es
             CROSS JOIN LATERAL (SELECT count(*) FILTER(WHERE COALESCE(q.desired_admission_at,q.requested_at)<=:next24) AS pending24,
                 count(*) FILTER(WHERE COALESCE(q.desired_admission_at,q.requested_at)<=:next48) AS pending48
-                FROM admission_requests q WHERE q.service_id=s.id AND q.status='WAITING') qs
+                FROM admission_requests q JOIN clinical_services s2 ON s2.id=q.service_id
+                JOIN floors f ON f.id=s2.floor_id JOIN buildings bu ON bu.id=f.building_id
+                JOIN healthcare_units u ON u.id=bu.unit_id
+                WHERE q.service_id=s.id AND q.status='WAITING' AND
+                """+requestScope+"""
+                ) qs
             ORDER BY s.code,s.id
             """,p,(r,n)->new ServiceInput(r.getString("name"),new ForecastInput(r.getObject("id",UUID.class),r.getLong("capacity"),
                 r.getLong("occupied"),r.getLong("unscheduled"),r.getLong("discharges"),r.getLong("pending24"),r.getLong("pending48"),
@@ -184,9 +226,13 @@ public class AnalyticsRepository {
             SELECT b.id,b.code,r.code AS room_code,w.code AS ward_code,w.id AS ward_id,
                 (SELECT count(*) FROM beds rb WHERE rb.room_id=r.id AND rb.status='OCCUPIED') AS room_occupied
             FROM beds b JOIN rooms r ON r.id=b.room_id JOIN wards w ON w.id=r.ward_id
-            JOIN wings wi ON wi.id=w.wing_id
-            WHERE wi.service_id=:serviceId AND b.status='AVAILABLE' ORDER BY w.code,r.code,b.code,b.id LIMIT 5001
-            """,p,(r,n)->new Candidate(r.getObject("id",UUID.class),r.getString("ward_code"),r.getString("room_code"),
+            JOIN wings wi ON wi.id=w.wing_id JOIN clinical_services s ON s.id=wi.service_id
+            JOIN floors f ON f.id=s.floor_id JOIN buildings bu ON bu.id=f.building_id
+            JOIN healthcare_units u ON u.id=bu.unit_id
+            WHERE wi.service_id=:serviceId AND b.status='AVAILABLE' AND
+            """ + access.sql("u.uls_id","u.id","bu.id","f.id","s.id","wi.id","w.id")
+                + " ORDER BY w.code,r.code,b.code,b.id LIMIT 5001",p,
+            (r,n)->new Candidate(r.getObject("id",UUID.class),r.getString("ward_code"),r.getString("room_code"),
                 r.getString("code"),r.getLong("room_occupied"),Objects.equals(preferredWard,r.getObject("ward_id",UUID.class))));
         if(result.size()>5000) throw new IllegalArgumentException("Máximo de 5000 camas candidatas por serviço");
         return result;

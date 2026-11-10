@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/events").permitAll() // The handshake requires a one-use authenticated ticket.
                 .requestMatchers("/api/account", "/api/access/me").authenticated()
                 .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/**").hasAnyAuthority("ROLE_ADMIN", "LHU_MANAGER", "UNIT_MANAGER", "SERVICE_MANAGER")
+                .requestMatchers("/api/**").hasAnyAuthority("ROLE_ADMIN", "MANAGER")
                 .anyRequest().denyAll())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();

@@ -13,7 +13,7 @@ import com.projinf.patientflow.exception.ResourceNotFoundException;
 @Service
 public class ScopeGrantService {
     private final ChangePublisher changes;
-    public enum Kind { ULS, UNIT, SERVICE }
+    public enum Kind { ULS, UNIT, BUILDING, FLOOR, SERVICE, WING, WARD }
     public record GrantInput(@NotBlank @Size(max=255) String subject, @NotNull Kind type, @NotNull UUID scopeId) { }
     public record Grant(UUID id, String subject, Kind type, UUID scopeId, String grantedBy, Instant grantedAt) { }
     public record AccessSummary(String subject, Set<String> roles, boolean administrator, List<Grant> scopes) { }
@@ -25,17 +25,10 @@ public class ScopeGrantService {
     public AccessSummary me() {
         var identity=access.identity();
         var effective = new ArrayList<Grant>();
-        if (identity.roles().contains("LHU_MANAGER")) {
-            identity.ulsIds().forEach(id -> effective.add(new Grant(UUID.randomUUID(), identity.subject(),
-                Kind.ULS, id, "KEYCLOAK_GROUP", Instant.EPOCH)));
-        }
-        if (identity.roles().contains("UNIT_MANAGER")) {
-            identity.unitIds().forEach(id -> effective.add(new Grant(UUID.randomUUID(), identity.subject(),
-                Kind.UNIT, id, "KEYCLOAK_GROUP", Instant.EPOCH)));
-        }
-        if (identity.roles().contains("SERVICE_MANAGER")) {
-            identity.serviceIds().forEach(id -> effective.add(new Grant(UUID.randomUUID(), identity.subject(),
-                Kind.SERVICE, id, "KEYCLOAK_GROUP", Instant.EPOCH)));
+        if (identity.scopeType() != null) {
+            Kind type = Kind.valueOf(identity.scopeType().name());
+            identity.scopeIds().forEach(id -> effective.add(new Grant(UUID.randomUUID(), identity.subject(),
+                type, id, "KEYCLOAK_GROUP", Instant.EPOCH)));
         }
         return new AccessSummary(identity.subject(), identity.roles(), identity.admin(), effective);
     }
@@ -53,7 +46,13 @@ public class ScopeGrantService {
     @Transactional
     public Grant create(GrantInput input) {
         access.admin();
-        String table=switch(input.type()) { case ULS -> "uls"; case UNIT -> "healthcare_units"; case SERVICE -> "clinical_services"; };
+        String table=switch(input.type()) {
+            case ULS -> "uls";
+            case UNIT -> "healthcare_units";
+            case SERVICE -> "clinical_services";
+            case BUILDING, FLOOR, WING, WARD ->
+                throw new IllegalArgumentException("Este tipo de âmbito é gerido através de grupos Keycloak");
+        };
         if(jdbc.queryForObject("SELECT count(*) FROM "+table+" WHERE id=:id",Map.of("id",input.scopeId()),Long.class)==0)
             throw new ResourceNotFoundException("Âmbito organizacional não encontrado");
         UUID id=UUID.randomUUID();

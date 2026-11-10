@@ -314,6 +314,7 @@
       "lhu": "LHU Manager",
       "unit": "Unit Manager",
       "service": "Service Manager",
+      "manager": "Manager",
       "default": "User"
     },
     "scopes": {
@@ -321,6 +322,7 @@
       "lhu": "Local Health Unit",
       "unit": "Hospital Unit",
       "service": "Service",
+      "manager": "Assigned organizational scope",
       "default": "—"
     },
     "languages": { "en": "English", "pt": "Português" },
@@ -330,6 +332,7 @@
       "lhu": "Your LHU Manager profile provides access to LHU-wide KPIs and the healthcare-space hierarchy starting at your assigned LHU.",
       "unit": "Your Unit Manager profile provides access to unit-wide KPIs and the healthcare-space hierarchy starting at your assigned Unit.",
       "service": "Your Service Manager profile provides access to service KPIs and the healthcare-space hierarchy starting at your assigned Service.",
+      "manager": "Your access is limited to the most specific organizational groups assigned to you.",
       "default": "Your profile provides basic access to the platform."
     }
   },

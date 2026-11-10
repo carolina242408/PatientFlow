@@ -66,11 +66,18 @@ const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
 
 type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
 
-const getProfileScope = (roles: string[] = []): Scope | undefined => {
-  if (roles.includes('ROLE_ADMIN') || roles.includes('LHU_MANAGER')) return 'LHU'
-  if (roles.includes('UNIT_MANAGER')) return 'Unit'
-  if (roles.includes('SERVICE_MANAGER')) return 'Service'
-  return undefined
+const getProfileScope = (roles: string[] = [], scopeType: string | null = null): Scope | undefined => {
+  if (roles.includes('ROLE_ADMIN')) return 'LHU'
+  switch (scopeType) {
+    case 'ULS': return 'LHU'
+    case 'UNIT':
+    case 'BUILDING':
+    case 'FLOOR': return 'Unit'
+    case 'SERVICE':
+    case 'WING':
+    case 'WARD': return 'Service'
+    default: return undefined
+  }
 }
 
 interface DashboardProps {
@@ -82,7 +89,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { user } = useKeycloak()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
-  const profileScope = getProfileScope(user?.roles) ?? scope
+  const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
   const metrics = SCOPE_METRICS[scope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy'],

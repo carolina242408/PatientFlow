@@ -30,14 +30,8 @@ const getManagementSidebarItems = (roles: string[] = []): SidebarItem[] => {
   if (roles.includes('ROLE_ADMIN')) {
     return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
-  if (roles.includes('LHU_MANAGER')) {
+  if (roles.includes('MANAGER')) {
     return [{ labelKey: 'nav.lhu', path: '/lhu', icon: House }]
-  }
-  if (roles.includes('UNIT_MANAGER')) {
-    return [{ labelKey: 'nav.unit', path: '/unit', icon: House }]
-  }
-  if (roles.includes('SERVICE_MANAGER')) {
-    return [{ labelKey: 'nav.service', path: '/service', icon: House }]
   }
   return []
 }
