@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
+import { useKeycloak } from '@/auth/context'
 import {
   fetchHierarchyChildren,
   fetchHierarchyLevel,
@@ -82,6 +83,8 @@ const SpaceExplorer = ({
   onAddChild,
 }: SpaceExplorerProps) => {
   const { t } = useTranslation()
+  const { user } = useKeycloak()
+  const missingManagerScope = user?.roles.includes('MANAGER') === true && user.scopeType === null
   const [selectedRoomId, setSelectedRoomId] = useState<string>()
 
   // 1. Hierarquia real (ULS → unidade → edifício → piso → serviço → enfermaria → sala → cama)
@@ -92,6 +95,7 @@ const SpaceExplorer = ({
   } = useQuery({
     queryKey: ['space-hierarchy', startLevel],
     queryFn: () => fetchHierarchyLevel(startLevel),
+    enabled: !missingManagerScope,
   })
 
   // Camas detalhadas só são carregadas dentro de um quarto.
@@ -269,9 +273,20 @@ const SpaceExplorer = ({
   const loadingChildren = childrenQuery.isPending && childrenQuery.isFetching
   const childrenError = childrenQuery.isError
 
+  if (missingManagerScope) {
+    return (
+      <section
+        role="alert"
+        className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-slate-800"
+      >
+        <h1 className="text-xl font-semibold">{t('access.missingManagerScopeTitle')}</h1>
+        <p className="mt-2 text-sm">{t('access.missingManagerScopeDescription')}</p>
+      </section>
+    )
+  }
   if (isPending) return <div>Loading...</div>
   if (isError) return <div>{t('lhuHierarchy.error')}</div>
-  if (!hierarchy.length || !path.length) return <div>{t('lhuHierarchy.noData')}</div>
+  if (!hierarchy?.length || !path.length) return <div>{t('lhuHierarchy.noData')}</div>
 
   // Re-sincroniza os nós do caminho atual com a árvore enriquecida (para refletir dados operacionais atualizados)
   const syncedPath = path.map((p) => {

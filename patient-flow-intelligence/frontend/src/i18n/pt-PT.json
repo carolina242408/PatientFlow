@@ -423,6 +423,10 @@
     }
   },
   "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" },
+  "access": {
+    "missingManagerScopeTitle": "Sem acesso organizacional atribuído",
+    "missingManagerScopeDescription": "A sua conta de gestor não tem um grupo organizacional atribuído. Contacte um administrador para obter acesso."
+  },
   "lhuHierarchy": {
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",

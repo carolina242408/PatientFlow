@@ -423,6 +423,10 @@
     }
   },
   "notFound": { "title": "Page not found", "back": "Back to dashboard" },
+  "access": {
+    "missingManagerScopeTitle": "No organizational access assigned",
+    "missingManagerScopeDescription": "Your Manager account does not have an organizational group assigned. Contact an administrator to get access."
+  },
   "lhuHierarchy": {
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",

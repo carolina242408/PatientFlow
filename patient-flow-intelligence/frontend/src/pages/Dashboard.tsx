@@ -89,17 +89,31 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { user } = useKeycloak()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
+  const missingManagerScope = user?.roles.includes('MANAGER') === true && user.scopeType === null
   const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
   const metrics = SCOPE_METRICS[scope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy'],
     queryFn: () => fetchOccupancy(),
+    enabled: !missingManagerScope,
   })
 
   useEffect(() => {
     const dialog = dashboardDialogRef.current
     if (expandedItem && dialog && !dialog.open) dialog.showModal()
   }, [expandedItem])
+
+  if (missingManagerScope) {
+    return (
+      <section
+        role="alert"
+        className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-slate-800"
+      >
+        <h1 className="text-xl font-semibold">{t('access.missingManagerScopeTitle')}</h1>
+        <p className="mt-2 text-sm">{t('access.missingManagerScopeDescription')}</p>
+      </section>
+    )
+  }
 
   const today = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'long',
