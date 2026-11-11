@@ -1,6 +1,8 @@
 package com.projinf.patientflow.ingestion.service;
 
 import com.projinf.patientflow.event.ChangePublisher;
+import com.projinf.patientflow.repository.HierarchyRepository.Type;
+import com.projinf.patientflow.security.KeycloakGroupService;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -63,17 +65,20 @@ public class PostgresFhirIngestionService {
     private final JdbcTemplate jdbc;
     private final JsonMapper json;
     private final ChangePublisher changes;
+    private final KeycloakGroupService keycloakGroups;
 
     public PostgresFhirIngestionService(
             FhirToPostgresTransformer transformer,
             JdbcTemplate jdbc,
             JsonMapper json,
-            ChangePublisher changes
+            ChangePublisher changes,
+            KeycloakGroupService keycloakGroups
     ) {
         this.transformer = transformer;
         this.jdbc = jdbc;
         this.json = json;
         this.changes = changes;
+        this.keycloakGroups = keycloakGroups;
     }
 
     /**
@@ -157,7 +162,7 @@ public class PostgresFhirIngestionService {
                 "Postgres stored procedure executed (locations=%d, patients=%d, encounters=%d, allocations=%d)",
                 locationsUpserted, patientsUpserted, encountersProcessed, allocationsChanged
         );
-        return new PostgresIngestionResult(
+        PostgresIngestionResult result = new PostgresIngestionResult(
                 true,
                 locationsUpserted,
                 patientsUpserted,
@@ -166,6 +171,68 @@ public class PostgresFhirIngestionService {
                 emitted,
                 detail
         );
+
+        // Sync newly created ULS / UNIT / SERVICE entries to Keycloak as groups
+        if (locationsUpserted > 0) {
+            syncHierarchyToKeycloak();
+        }
+
+        return result;
+    }
+
+    /**
+     * Idempotently ensures every ULS, UNIT, and SERVICE row in the database has a
+     * corresponding Keycloak group.  Called after any ingestion that upserted
+     * location hierarchy rows so that freshly auto-created nodes are immediately
+     * visible as groups for user assignment.
+     */
+    private void syncHierarchyToKeycloak() {
+        // ULS (top-level, no parent)
+        List<Object[]> ulsList = jdbc.query(
+                "SELECT id, name FROM uls ORDER BY name, id",
+                (rs, n) -> new Object[]{rs.getObject(1, UUID.class), rs.getString(2)}
+        );
+        for (Object[] row : ulsList) {
+            tryEnsureGroup(Type.ULS, (UUID) row[0], (String) row[1], null);
+        }
+
+        // UNIT (child of ULS)
+        List<Object[]> unitList = jdbc.query(
+                "SELECT u.id, u.name, u.uls_id FROM healthcare_units u ORDER BY u.name, u.id",
+                (rs, n) -> new Object[]{
+                        rs.getObject(1, UUID.class),
+                        rs.getString(2),
+                        rs.getObject(3, UUID.class)
+                }
+        );
+        for (Object[] row : unitList) {
+            tryEnsureGroup(Type.UNIT, (UUID) row[0], (String) row[1], (UUID) row[2]);
+        }
+
+        // SERVICE (child of UNIT, resolved through floor → building → unit)
+        List<Object[]> serviceList = jdbc.query(
+                "SELECT s.id, s.name, b.unit_id "
+                + "FROM clinical_services s "
+                + "JOIN floors f ON f.id = s.floor_id "
+                + "JOIN buildings b ON b.id = f.building_id "
+                + "ORDER BY s.name, s.id",
+                (rs, n) -> new Object[]{
+                        rs.getObject(1, UUID.class),
+                        rs.getString(2),
+                        rs.getObject(3, UUID.class)
+                }
+        );
+        for (Object[] row : serviceList) {
+            tryEnsureGroup(Type.SERVICE, (UUID) row[0], (String) row[1], (UUID) row[2]);
+        }
+    }
+
+    private void tryEnsureGroup(Type type, UUID id, String name, UUID parentId) {
+        try {
+            keycloakGroups.ensureHierarchyGroup(type, id, name, parentId);
+        } catch (Exception ex) {
+            log.warn("Failed to sync Keycloak group for {}/{} ({}): {}", type, id, name, ex.getMessage());
+        }
     }
 
     /**
