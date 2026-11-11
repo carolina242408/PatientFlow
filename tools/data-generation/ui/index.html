@@ -225,11 +225,11 @@
         <h2>1. Live HL7 Stream (`GET /api/hl7/live`)</h2>
         <div class="form-row">
           <label for="sseDelay">Delay (ms):</label>
-          <input type="number" id="sseDelay" value="300" min="10" max="10000" oninput="updateSseCmd()" />
+          <input type="number" id="sseDelay" value="1000" min="10" max="10000" oninput="updateSseCmd()" />
         </div>
         <div class="form-row">
           <label for="sseLimit">Limit (messages):</label>
-          <input type="number" id="sseLimit" value="5" min="1" max="500" placeholder="Leave empty for all"
+            type="number" id="sseLimit" value="" min="1" max="500" placeholder="Empty = continuous forever"
             oninput="updateSseCmd()" />
         </div>
         <div class="form-row">
@@ -244,15 +244,15 @@
         <div class="form-row">
           <label for="sseLoop">Loop Mode:</label>
           <select id="sseLoop" onchange="updateSseCmd()">
-            <option value="false" selected>false — Single batch</option>
-            <option value="true">true — Continuous loop</option>
+            <option value="true" selected>true — Continuous real-time flow (until stopped)</option>
+            <option value="false">false — Single batch</option>
           </select>
         </div>
         <div class="form-row">
           <label for="sseAutoGen">Auto Generate:</label>
           <select id="sseAutoGen" onchange="updateSseCmd()">
-            <option value="false" selected>false — Wait for Run Generation</option>
-            <option value="true">true — Auto-generate if empty</option>
+            <option value="true" selected>true — Generate real-time patient flow</option>
+            <option value="false">false — Wait / Manual</option>
           </select>
         </div>
 
@@ -260,7 +260,7 @@
 
         <div class="btn-row">
           <button class="btn-primary" onclick="startLiveStream()">Start Live Stream</button>
-          <button class="btn-danger" onclick="stopLiveStream()">Stop Stream</button>
+          <button class="btn-danger" onclick="stopLiveStream(true)">Stop Stream</button>
           <button class="btn-secondary" onclick="copyText('sseCmdPreview')">Copy curl.exe</button>
         </div>
       </div>
@@ -368,7 +368,8 @@
             <option value="/api/simulation/summary">/api/simulation/summary (Simulation Stats)</option>
             <option value="/api/fhir/hospital-locations">/api/fhir/hospital-locations (10 Beds & Wards FHIR)</option>
             <option value="/api/fhir/patients">/api/fhir/patients (List Patient NS IDs)</option>
-            <option value="/api/csv">/api/csv (CSV Dataset: gender, diagnosis code, birthdate, admission date, discharge date)</option>
+            <option value="/api/csv">/api/csv (CSV Dataset: gender, diagnosis code, birthdate, admission date, discharge
+              date)</option>
           </select>
         </div>
         <div class="form-row">
@@ -417,7 +418,8 @@
         <div class="cmd-box" id="csvCmdPreview"></div>
 
         <div class="btn-row">
-          <button class="btn-primary" onclick="generateAndSaveCsvToOutput()">Generate & Save to output/dataset.csv</button>
+          <button class="btn-primary" onclick="generateAndSaveCsvToOutput()">Generate & Save to
+            output/dataset.csv</button>
           <button class="btn-secondary" onclick="previewCsv()">Preview CSV</button>
           <button class="btn-secondary" onclick="copyText('csvCmdPreview')">Copy curl.exe</button>
         </div>
@@ -473,7 +475,7 @@
       if (delay) params.set("delay_ms", delay);
       if (limit) params.set("limit", limit);
       if (trigger) params.set("trigger", trigger);
-      if (loop === "true") params.set("loop", "true");
+      params.set("loop", loop === "true" ? "true" : "false");
       if (autoGen === "true") params.set("auto_generate", "true");
 
       return `${base}/api/hl7/live?${params.toString()}`;
@@ -485,7 +487,7 @@
     }
 
     function startLiveStream() {
-      stopLiveStream();
+      stopLiveStream(false);
       const url = buildSseUrl();
       logOutput(`Connecting to SSE stream: ${url}\n----------------------------------------\n`, false);
 
@@ -506,230 +508,234 @@
 
       activeEventSource.onerror = () => {
         logOutput("\n[Stream finished or closed]", true);
-        stopLiveStream();
+        stopLiveStream(false);
       };
     }
 
-    function stopLiveStream() {
-      if (activeEventSource) {
-        activeEventSource.close();
-        activeEventSource = null;
+      function stopLiveStream(notifyServer = true) {
+        if (activeEventSource) {
+          activeEventSource.close();
+          activeEventSource = null;
+        }
+        if (notifyServer) {
+          fetch(`${getBaseUrl()}/api/hl7/live/stop`, { method: "POST" }).catch(() => { });
+          logOutput("\n[Stream stopped by user]", true);
+        }
       }
-    }
 
-    // 2. Generate Payload & curl builder
-    function getGenPayload() {
-      return {
-        days: parseInt(document.getElementById("genDays").value || "7", 10),
-        warmup_days: parseInt(document.getElementById("genWarmup").value || "3", 10),
-        population: document.getElementById("genPopulation").value || "20",
-        seed: parseInt(document.getElementById("genSeed").value || "42", 10),
-        no_synthea: document.getElementById("genNoSynthea").value === "true",
-        warmup_output: document.getElementById("genWarmupOut").value,
-        validate: document.getElementById("genValidate").value === "true",
-      };
-    }
-
-    function updateGenCmd() {
-      const url = `${getBaseUrl()}/api/generate`;
-      const jsonStr = JSON.stringify(getGenPayload());
-      document.getElementById("genCmdPreview").textContent =
-        `curl.exe -X POST "${url}" -H "Content-Type: application/json" -d '${jsonStr}'`;
-    }
-
-    async function runGenerate() {
-      const url = `${getBaseUrl()}/api/generate`;
-      const payload = getGenPayload();
-      logOutput(`Running POST ${url} ...`);
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        logOutput(JSON.stringify(data, null, 2));
-        checkHealth();
-      } catch (err) {
-        logOutput(`Error: ${err}`);
+      // 2. Generate Payload & curl builder
+      function getGenPayload() {
+        return {
+          days: parseInt(document.getElementById("genDays").value || "7", 10),
+          warmup_days: parseInt(document.getElementById("genWarmup").value || "3", 10),
+          population: document.getElementById("genPopulation").value || "20",
+          seed: parseInt(document.getElementById("genSeed").value || "42", 10),
+          no_synthea: document.getElementById("genNoSynthea").value === "true",
+          warmup_output: document.getElementById("genWarmupOut").value,
+          validate: document.getElementById("genValidate").value === "true",
+        };
       }
-    }
 
-    // 3. Subscription Payload & curl builder
-    function getSubPayload() {
-      const triggers = Array.from(document.querySelectorAll(".sub-trig:checked")).map((el) => el.value);
-      return {
-        url: document.getElementById("subUrl").value,
-        triggers: triggers.length ? triggers : null,
-        format: document.getElementById("subFormat").value,
-        auto_stream: document.getElementById("subAuto").value === "true",
-        delay_ms: parseInt(document.getElementById("subDelay").value || "250", 10),
-      };
-    }
-
-    function updateSubCmd() {
-      const url = `${getBaseUrl()}/api/subscriptions`;
-      const jsonStr = JSON.stringify(getSubPayload());
-      document.getElementById("subCmdPreview").textContent =
-        `curl.exe -X POST "${url}" -H "Content-Type: application/json" -d '${jsonStr}'`;
-    }
-
-    async function registerSubscription() {
-      const url = `${getBaseUrl()}/api/subscriptions`;
-      const payload = getSubPayload();
-      logOutput(`Registering subscription at ${url} ...`);
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        logOutput(JSON.stringify(data, null, 2));
-        checkHealth();
-      } catch (err) {
-        logOutput(`Error: ${err}`);
+      function updateGenCmd() {
+        const url = `${getBaseUrl()}/api/generate`;
+        const jsonStr = JSON.stringify(getGenPayload());
+        document.getElementById("genCmdPreview").textContent =
+          `curl.exe -X POST "${url}" -H "Content-Type: application/json" -d '${jsonStr}'`;
       }
-    }
 
-    async function listSubscriptions() {
-      const url = `${getBaseUrl()}/api/subscriptions`;
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        logOutput(JSON.stringify(data, null, 2));
-      } catch (err) {
-        logOutput(`Error: ${err}`);
-      }
-    }
-
-    // 4. Query Endpoint builder
-    function buildQueryUrl() {
-      const base = getBaseUrl();
-      const ns = document.getElementById("queryPatientNs").value.trim();
-      if (ns) {
-        return `${base}/api/fhir/patients/${encodeURIComponent(ns)}`;
-      }
-      const ep = document.getElementById("queryEndpoint").value;
-      if (ep === "/api/hl7/messages") {
-        const params = new URLSearchParams();
-        const limit = document.getElementById("queryLimit").value;
-        const trig = document.getElementById("queryTrigger").value;
-        if (limit) params.set("limit", limit);
-        if (trig) params.set("trigger", trig);
-        return `${base}${ep}?${params.toString()}`;
-      }
-      return `${base}${ep}`;
-    }
-
-    function updateQueryCmd() {
-      const url = buildQueryUrl();
-      document.getElementById("queryCmdPreview").textContent = `curl.exe "${url}"`;
-    }
-
-    async function runQuery() {
-      const url = buildQueryUrl();
-      logOutput(`Fetching GET ${url} ...`);
-      try {
-        const res = await fetch(url);
-        const contentType = res.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
+      async function runGenerate() {
+        const url = `${getBaseUrl()}/api/generate`;
+        const payload = getGenPayload();
+        logOutput(`Running POST ${url} ...`);
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
           const data = await res.json();
           logOutput(JSON.stringify(data, null, 2));
-        } else {
-          const text = await res.text();
-          logOutput(text);
+          checkHealth();
+        } catch (err) {
+          logOutput(`Error: ${err}`);
         }
-      } catch (err) {
-        logOutput(`Error: ${err}`);
       }
-    }
 
-    async function checkHealth() {
-      const badge = document.getElementById("healthBadge");
-      try {
-        const res = await fetch(`${getBaseUrl()}/health`);
-        const data = await res.json();
-        badge.className = "status-badge status-ok";
-        badge.textContent = `Online (${data.messages_in_memory} msgs)`;
-      } catch (e) {
-        badge.className = "status-badge status-err";
-        badge.textContent = "Offline";
+      // 3. Subscription Payload & curl builder
+      function getSubPayload() {
+        const triggers = Array.from(document.querySelectorAll(".sub-trig:checked")).map((el) => el.value);
+        return {
+          url: document.getElementById("subUrl").value,
+          triggers: triggers.length ? triggers : null,
+          format: document.getElementById("subFormat").value,
+          auto_stream: document.getElementById("subAuto").value === "true",
+          delay_ms: parseInt(document.getElementById("subDelay").value || "250", 10),
+        };
       }
-    }
 
-        // 5. CSV Dataset functions (saves directly to server output/ directory, no browser download)
-    function updateCsvCmd() {
-      const base = getBaseUrl();
-      const days = document.getElementById("csvDays")?.value || "180";
-      const runs = document.getElementById("csvRuns")?.value || "5";
-      document.getElementById("csvCmdPreview").textContent = `curl.exe -X POST "${base}/api/csv/generate?days=${days}&runs=${runs}"`;
-    }
-
-    async function generateAndSaveCsvToOutput() {
-    const base = getBaseUrl();
-    const days = parseInt(document.getElementById("csvDays")?.value || "180", 10);
-    const runs = parseInt(document.getElementById("csvRuns")?.value || "1", 10);
-  
-    const url = `${base}/api/csv/generate?days=${days}&runs=${runs}`;
-    logOutput(`Running simulation (${days} days x ${runs} runs) to generate dataset directly to output/dataset.csv ...`);
-  
-    try {
-      const res = await fetch(url, { method: "POST" });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      function updateSubCmd() {
+        const url = `${getBaseUrl()}/api/subscriptions`;
+        const jsonStr = JSON.stringify(getSubPayload());
+        document.getElementById("subCmdPreview").textContent =
+          `curl.exe -X POST "${url}" -H "Content-Type: application/json" -d '${jsonStr}'`;
       }
-      const data = await res.json();
-      logOutput(`[Success] Dataset generated using simulation engine and saved directly to ${data.relative_path} (${data.rows} total rows in ${data.runs || runs} runs)!
+
+      async function registerSubscription() {
+        const url = `${getBaseUrl()}/api/subscriptions`;
+        const payload = getSubPayload();
+        logOutput(`Registering subscription at ${url} ...`);
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          logOutput(JSON.stringify(data, null, 2));
+          checkHealth();
+        } catch (err) {
+          logOutput(`Error: ${err}`);
+        }
+      }
+
+      async function listSubscriptions() {
+        const url = `${getBaseUrl()}/api/subscriptions`;
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (err) {
+          logOutput(`Error: ${err}`);
+        }
+      }
+
+      // 4. Query Endpoint builder
+      function buildQueryUrl() {
+        const base = getBaseUrl();
+        const ns = document.getElementById("queryPatientNs").value.trim();
+        if (ns) {
+          return `${base}/api/fhir/patients/${encodeURIComponent(ns)}`;
+        }
+        const ep = document.getElementById("queryEndpoint").value;
+        if (ep === "/api/hl7/messages") {
+          const params = new URLSearchParams();
+          const limit = document.getElementById("queryLimit").value;
+          const trig = document.getElementById("queryTrigger").value;
+          if (limit) params.set("limit", limit);
+          if (trig) params.set("trigger", trig);
+          return `${base}${ep}?${params.toString()}`;
+        }
+        return `${base}${ep}`;
+      }
+
+      function updateQueryCmd() {
+        const url = buildQueryUrl();
+        document.getElementById("queryCmdPreview").textContent = `curl.exe "${url}"`;
+      }
+
+      async function runQuery() {
+        const url = buildQueryUrl();
+        logOutput(`Fetching GET ${url} ...`);
+        try {
+          const res = await fetch(url);
+          const contentType = res.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const data = await res.json();
+            logOutput(JSON.stringify(data, null, 2));
+          } else {
+            const text = await res.text();
+            logOutput(text);
+          }
+        } catch (err) {
+          logOutput(`Error: ${err}`);
+        }
+      }
+
+      async function checkHealth() {
+        const badge = document.getElementById("healthBadge");
+        try {
+          const res = await fetch(`${getBaseUrl()}/health`);
+          const data = await res.json();
+          badge.className = "status-badge status-ok";
+          badge.textContent = `Online (${data.messages_in_memory} msgs)`;
+        } catch (e) {
+          badge.className = "status-badge status-err";
+          badge.textContent = "Offline";
+        }
+      }
+
+      // 5. CSV Dataset functions (saves directly to server output/ directory, no browser download)
+      function updateCsvCmd() {
+        const base = getBaseUrl();
+        const days = document.getElementById("csvDays")?.value || "180";
+        const runs = document.getElementById("csvRuns")?.value || "5";
+        document.getElementById("csvCmdPreview").textContent = `curl.exe -X POST "${base}/api/csv/generate?days=${days}&runs=${runs}"`;
+      }
+
+      async function generateAndSaveCsvToOutput() {
+        const base = getBaseUrl();
+        const days = parseInt(document.getElementById("csvDays")?.value || "180", 10);
+        const runs = parseInt(document.getElementById("csvRuns")?.value || "1", 10);
+
+        const url = `${base}/api/csv/generate?days=${days}&runs=${runs}`;
+        logOutput(`Running simulation (${days} days x ${runs} runs) to generate dataset directly to output/dataset.csv ...`);
+
+        try {
+          const res = await fetch(url, { method: "POST" });
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          const data = await res.json();
+          logOutput(`[Success] Dataset generated using simulation engine and saved directly to ${data.relative_path} (${data.rows} total rows in ${data.runs || runs} runs)!
 Location: ${data.file}
 Columns: ${data.columns.join(", ")}
 `);
-    await previewCsv();
-    } catch (err) {
-      logOutput(`Error generating dataset CSV: ${err}`);
-    }
-}
-
-    async function previewCsv() {
-      const url = `${getBaseUrl()}/api/csv`;
-      const maxRows = parseInt(document.getElementById("csvRows")?.value || "20", 10);
-      logOutput(`Loading preview from output/dataset.csv ...`, true);
-      try {
-        const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          await previewCsv();
+        } catch (err) {
+          logOutput(`Error generating dataset CSV: ${err}`);
         }
-        const text = await res.text();
-        const lines = text.trim().split("\n");
-        const header = lines[0];
-        const rows = lines.slice(1, maxRows + 1);
-        let preview = `\n[Preview] output/dataset.csv (${lines.length - 1} total rows):\n----------------------------------------\n${header}\n`;
-        rows.forEach((r) => {
-          preview += `${r}\n`;
-        });
-        if (lines.length - 1 > maxRows) {
-          preview += `... and ${lines.length - 1 - maxRows} more rows in output/dataset.csv.\n`;
-        }
-        logOutput(preview, true);
-      } catch (err) {
-        logOutput(`Error previewing CSV: ${err}`, true);
       }
-    }
 
-    function updateAllCommands() {
-      updateSseCmd();
-      updateGenCmd();
-      updateSubCmd();
-      updateQueryCmd();
-      updateCsvCmd();
-    }
+      async function previewCsv() {
+        const url = `${getBaseUrl()}/api/csv`;
+        const maxRows = parseInt(document.getElementById("csvRows")?.value || "20", 10);
+        logOutput(`Loading preview from output/dataset.csv ...`, true);
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          const text = await res.text();
+          const lines = text.trim().split("\n");
+          const header = lines[0];
+          const rows = lines.slice(1, maxRows + 1);
+          let preview = `\n[Preview] output/dataset.csv (${lines.length - 1} total rows):\n----------------------------------------\n${header}\n`;
+          rows.forEach((r) => {
+            preview += `${r}\n`;
+          });
+          if (lines.length - 1 > maxRows) {
+            preview += `... and ${lines.length - 1 - maxRows} more rows in output/dataset.csv.\n`;
+          }
+          logOutput(preview, true);
+        } catch (err) {
+          logOutput(`Error previewing CSV: ${err}`, true);
+        }
+      }
 
-    // Initialize default base URL if served from the generator container itself
-    if (window.location.protocol.startsWith("http") && window.location.port === "8001") {
-      document.getElementById("baseUrl").value = window.location.origin;
-    }
-    updateAllCommands();
-    checkHealth();
+      function updateAllCommands() {
+        updateSseCmd();
+        updateGenCmd();
+        updateSubCmd();
+        updateQueryCmd();
+        updateCsvCmd();
+      }
+
+      // Initialize default base URL if served from the generator container itself
+      if (window.location.protocol.startsWith("http") && window.location.port === "8001") {
+        document.getElementById("baseUrl").value = window.location.origin;
+      }
+      updateAllCommands();
+      checkHealth();
   </script>
 </body>
 

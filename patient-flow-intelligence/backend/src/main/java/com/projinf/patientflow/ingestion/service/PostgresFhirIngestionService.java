@@ -19,12 +19,18 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Executes the Hybrid ETL Load phase into PostgreSQL:
- * 1. Transforms FHIR Bundles into a flexible JSONB payload via {@link FhirToPostgresTransformer}.
- * 2. Calls the PostgreSQL stored function {@code sp_ingest_fhir_payload(jsonb)}.
- * 3. Broadcasts resulting domain changes via {@link ChangePublisher} to WebSocket subscribers.
+ * 1. Transforms FHIR Bundles into a flexible JSONB payload via
+ * {@link FhirToPostgresTransformer}.
+ * 2. Calls the PostgreSQL stored function
+ * {@code sp_ingest_fhir_payload(jsonb)}.
+ * 3. Broadcasts resulting domain changes via {@link ChangePublisher} to
+ * WebSocket subscribers.
  *
- * <p>Designed to be invoked both inline by {@link IngestionPipelineService} today and by
- * a future HAPI FHIR batch/watermark poller or subscription webhook without modification.
+ * <p>
+ * Designed to be invoked both inline by {@link IngestionPipelineService} today
+ * and by
+ * a future HAPI FHIR batch/watermark poller or subscription webhook without
+ * modification.
  */
 @Service
 public class PostgresFhirIngestionService {
@@ -34,8 +40,7 @@ public class PostgresFhirIngestionService {
     public record EmittedEvent(
             String type,
             String resource,
-            UUID id
-    ) {
+            UUID id) {
     }
 
     public record PostgresIngestionResult(
@@ -45,8 +50,7 @@ public class PostgresFhirIngestionService {
             int encountersProcessed,
             int allocationsChanged,
             List<EmittedEvent> events,
-            String detail
-    ) {
+            String detail) {
         public static PostgresIngestionResult empty(String detail) {
             return new PostgresIngestionResult(false, 0, 0, 0, 0, List.of(), detail);
         }
@@ -57,8 +61,7 @@ public class PostgresFhirIngestionService {
             Instant lastUpdated,
             String lastResourceId,
             long bundlesProcessed,
-            Instant updatedAt
-    ) {
+            Instant updatedAt) {
     }
 
     private final FhirToPostgresTransformer transformer;
@@ -72,8 +75,7 @@ public class PostgresFhirIngestionService {
             JdbcTemplate jdbc,
             JsonMapper json,
             ChangePublisher changes,
-            KeycloakGroupService keycloakGroups
-    ) {
+            KeycloakGroupService keycloakGroups) {
         this.transformer = transformer;
         this.jdbc = jdbc;
         this.json = json;
@@ -91,7 +93,8 @@ public class PostgresFhirIngestionService {
     }
 
     /**
-     * Transforms a FHIR Bundle into the normalized JSONB contract (including optional HL7 trigger)
+     * Transforms a FHIR Bundle into the normalized JSONB contract (including
+     * optional HL7 trigger)
      * and persists it into PostgreSQL via {@code sp_ingest_fhir_payload(jsonb)}.
      */
     @Transactional
@@ -99,14 +102,14 @@ public class PostgresFhirIngestionService {
             JsonNode fhirBundle,
             String source,
             Instant eventTimestamp,
-            String trigger
-    ) {
+            String trigger) {
         ObjectNode payload = transformer.transformBundle(fhirBundle, source, eventTimestamp, trigger);
         return executeJsonbPayload(payload);
     }
 
     /**
-     * Directly executes the PostgreSQL stored procedure {@code sp_ingest_fhir_payload(jsonb)}
+     * Directly executes the PostgreSQL stored procedure
+     * {@code sp_ingest_fhir_payload(jsonb)}
      * with a pre-constructed JSONB payload and publishes any emitted domain events.
      */
     @Transactional
@@ -122,15 +125,30 @@ public class PostgresFhirIngestionService {
             return new PostgresIngestionResult(true, 0, 0, 0, 0, List.of(), "No actionable resources in bundle");
         }
 
+        List<UUID> previouslyCleaningBeds = jdbc.query(
+                "SELECT b.id FROM beds b WHERE b.status = 'CLEANING' "
+                        + "AND NOT EXISTS (SELECT 1 FROM location_allocations la WHERE la.bed_id = b.id AND la.discharged_at IS NULL)",
+                (rs, n) -> rs.getObject(1, UUID.class));
+
         String payloadJson = json.writeValueAsString(payload);
         String resultJson = jdbc.queryForObject(
                 "SELECT sp_ingest_fhir_payload(?::jsonb)::text",
                 String.class,
-                payloadJson
-        );
+                payloadJson);
 
         if (resultJson == null || resultJson.isBlank()) {
             return PostgresIngestionResult.empty("Stored procedure returned empty response");
+        }
+
+        for (UUID cleaningBedId : previouslyCleaningBeds) {
+            int updated = jdbc.update(
+                    "UPDATE beds b SET status = 'AVAILABLE', status_reason = NULL, version = b.version + 1 "
+                            + "WHERE b.id = ? AND b.status = 'CLEANING' "
+                            + "AND NOT EXISTS (SELECT 1 FROM location_allocations la WHERE la.bed_id = b.id AND la.discharged_at IS NULL)",
+                    cleaningBedId);
+            if (updated > 0) {
+                changes.changed("BED_STATUS_CHANGED", "BED", cleaningBedId);
+            }
         }
 
         JsonNode res = json.readTree(resultJson);
@@ -152,7 +170,8 @@ public class PostgresFhirIngestionService {
                         emitted.add(new EmittedEvent(type, resource, id));
                         changes.changed(type, resource, id);
                     } catch (Exception ex) {
-                        log.debug("Failed to publish WebSocket event {}/{}/{}: {}", type, resource, idStr, ex.getMessage());
+                        log.debug("Failed to publish WebSocket event {}/{}/{}: {}", type, resource, idStr,
+                                ex.getMessage());
                     }
                 }
             }
@@ -160,8 +179,7 @@ public class PostgresFhirIngestionService {
 
         String detail = String.format(
                 "Postgres stored procedure executed (locations=%d, patients=%d, encounters=%d, allocations=%d)",
-                locationsUpserted, patientsUpserted, encountersProcessed, allocationsChanged
-        );
+                locationsUpserted, patientsUpserted, encountersProcessed, allocationsChanged);
         PostgresIngestionResult result = new PostgresIngestionResult(
                 true,
                 locationsUpserted,
@@ -169,8 +187,7 @@ public class PostgresFhirIngestionService {
                 encountersProcessed,
                 allocationsChanged,
                 emitted,
-                detail
-        );
+                detail);
 
         // Sync newly created ULS / UNIT / SERVICE entries to Keycloak as groups
         if (locationsUpserted > 0) {
@@ -182,7 +199,7 @@ public class PostgresFhirIngestionService {
 
     /**
      * Idempotently ensures every ULS, UNIT, and SERVICE row in the database has a
-     * corresponding Keycloak group.  Called after any ingestion that upserted
+     * corresponding Keycloak group. Called after any ingestion that upserted
      * location hierarchy rows so that freshly auto-created nodes are immediately
      * visible as groups for user assignment.
      */
@@ -190,8 +207,7 @@ public class PostgresFhirIngestionService {
         // ULS (top-level, no parent)
         List<Object[]> ulsList = jdbc.query(
                 "SELECT id, name FROM uls ORDER BY name, id",
-                (rs, n) -> new Object[]{rs.getObject(1, UUID.class), rs.getString(2)}
-        );
+                (rs, n) -> new Object[] { rs.getObject(1, UUID.class), rs.getString(2) });
         for (Object[] row : ulsList) {
             tryEnsureGroup(Type.ULS, (UUID) row[0], (String) row[1], null);
         }
@@ -199,12 +215,11 @@ public class PostgresFhirIngestionService {
         // UNIT (child of ULS)
         List<Object[]> unitList = jdbc.query(
                 "SELECT u.id, u.name, u.uls_id FROM healthcare_units u ORDER BY u.name, u.id",
-                (rs, n) -> new Object[]{
+                (rs, n) -> new Object[] {
                         rs.getObject(1, UUID.class),
                         rs.getString(2),
                         rs.getObject(3, UUID.class)
-                }
-        );
+                });
         for (Object[] row : unitList) {
             tryEnsureGroup(Type.UNIT, (UUID) row[0], (String) row[1], (UUID) row[2]);
         }
@@ -212,16 +227,15 @@ public class PostgresFhirIngestionService {
         // SERVICE (child of UNIT, resolved through floor → building → unit)
         List<Object[]> serviceList = jdbc.query(
                 "SELECT s.id, s.name, b.unit_id "
-                + "FROM clinical_services s "
-                + "JOIN floors f ON f.id = s.floor_id "
-                + "JOIN buildings b ON b.id = f.building_id "
-                + "ORDER BY s.name, s.id",
-                (rs, n) -> new Object[]{
+                        + "FROM clinical_services s "
+                        + "JOIN floors f ON f.id = s.floor_id "
+                        + "JOIN buildings b ON b.id = f.building_id "
+                        + "ORDER BY s.name, s.id",
+                (rs, n) -> new Object[] {
                         rs.getObject(1, UUID.class),
                         rs.getString(2),
                         rs.getObject(3, UUID.class)
-                }
-        );
+                });
         for (Object[] row : serviceList) {
             tryEnsureGroup(Type.SERVICE, (UUID) row[0], (String) row[1], (UUID) row[2]);
         }
@@ -236,7 +250,8 @@ public class PostgresFhirIngestionService {
     }
 
     /**
-     * Returns the current ingestion watermarks recorded in PostgreSQL, ready for status monitoring
+     * Returns the current ingestion watermarks recorded in PostgreSQL, ready for
+     * status monitoring
      * and future HAPI FHIR batch synchronization.
      */
     @Transactional(readOnly = true)
@@ -252,10 +267,7 @@ public class PostgresFhirIngestionService {
                             lastUpd != null ? lastUpd.toInstant() : null,
                             rs.getString("last_resource_id"),
                             rs.getLong("bundles_processed"),
-                            updAt != null ? updAt.toInstant() : null
-                    );
-                }
-        );
+                            updAt != null ? updAt.toInstant() : null);
+                });
     }
 }
-
