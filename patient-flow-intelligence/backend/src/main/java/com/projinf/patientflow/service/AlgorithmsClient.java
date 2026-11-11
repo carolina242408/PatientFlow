@@ -6,7 +6,11 @@ import java.net.URI;
 import java.net.http.*;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.Flow;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +36,28 @@ public class AlgorithmsClient {
     }
     public Decision<RankOutput> rank(RankInput input) { return call("/v1/bed-ranking",input,DecisionRules.rank(input),RankOutput.class); }
     public Decision<ForecastOutput> forecast(ForecastBatch input) { return call("/v1/occupancy-forecast",input,DecisionRules.forecast(input),ForecastOutput.class); }
+
+    /** Previsão de alta. Vazio se o serviço estiver desligado, falhar ou responder mal: a admissão nunca depende disto. */
+    public Optional<Instant> predictDischarge(String gender,String birthDate,String diagnosisCode,Instant admittedAt) {
+        if(!enabled) return Optional.empty();
+        try {
+            var body=new LinkedHashMap<String,Object>();
+            if(gender!=null) body.put("gender",gender);
+            if(birthDate!=null) body.put("birthDate",birthDate);
+            body.put("diagnosisCode",diagnosisCode);
+            body.put("admittedAt",admittedAt.toString());
+            var request=HttpRequest.newBuilder(base.resolve("/v1/discharge-prediction")).timeout(timeout).header("Content-Type","application/json")
+                .header("Accept","application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();
+            var response=client.send(request,info->new LimitedBody());
+            if(response.statusCode()!=200) return Optional.empty();
+            return Optional.of(OffsetDateTime.parse(json.readTree(response.body()).path("expectedDischargeAt").asString()).toInstant());
+        } catch(InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return Optional.empty();
+        } catch(IOException|RuntimeException unavailable) {
+            return Optional.empty();
+        }
+    }
 
     private <T> Decision<T> call(String path,Object input,T baseline,Class<T> type) {
         if(!enabled) return fallback(baseline,false,"SERVICE_DISABLED");
