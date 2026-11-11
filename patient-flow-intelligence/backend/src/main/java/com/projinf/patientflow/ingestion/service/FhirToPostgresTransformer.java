@@ -59,6 +59,36 @@ public class FhirToPostgresTransformer {
     ) {
     }
 
+    private static String resolveServiceName(String serviceCode) {
+        if (serviceCode == null) return "Serviço Geral";
+        return switch (serviceCode.trim()) {
+            case "30004" -> "MEDICINA INTERNA A";
+            case "30006" -> "CIRURGIA GERAL";
+            case "30020" -> "MEDICINA INTENSIVA";
+            default -> "Serviço " + serviceCode;
+        };
+    }
+
+    private static String resolveWardName(String wardCode, String fallbackCode) {
+        String code = wardCode != null ? wardCode : fallbackCode;
+        if (code == null) return "Enfermaria Principal";
+        String cleanCode = code.replaceFirst("(?i)^Ward\s+", "").trim();
+        return switch (cleanCode) {
+            case "30004" -> "MEDICINA INTERNA A";
+            case "30006" -> "CIRURGIA GERAL";
+            case "30020" -> "MEDICINA INTENSIVA";
+            default -> "Enfermaria " + cleanCode;
+        };
+    }
+
+    private static String ensureDistinctWardName(String wardName, String serviceName, String wardCode) {
+        String candidate = wardName == null ? "" : wardName.trim();
+        if (candidate.isEmpty() || candidate.equalsIgnoreCase(serviceName)) {
+            return "Enfermaria " + (candidate.isEmpty() ? wardCode : candidate);
+        }
+        return candidate;
+    }
+
     /**
      * Transforms a FHIR Bundle into the JSONB payload expected by {@code sp_ingest_fhir_payload(jsonb)}.
      */
@@ -249,10 +279,18 @@ public class FhirToPostgresTransformer {
         String candidateDisplay = rawVal != null ? rawVal : name;
         Matcher displayMatcher = DISPLAY_PATTERN.matcher(candidateDisplay);
         if (displayMatcher.matches()) {
-            String wardCode = displayMatcher.group(1).trim();
+            String wardCodeFull = displayMatcher.group(1).trim();
             String roomCode = displayMatcher.group(2).trim();
             String bedCode = displayMatcher.group(3).trim();
-            String rawWard = wardCode.replaceFirst("(?i)^Ward\\s+", "").trim();
+            String rawWard = wardCodeFull.replaceFirst("(?i)^Ward\s+", "").trim();
+            
+            String serviceName = resolveServiceName(rawWard);
+            String wardName = ensureDistinctWardName(
+                    resolveWardName(rawWard, rawWard),
+                    serviceName,
+                    rawWard
+            );
+
             String floorName = "Piso 1";
             if (!desc.isEmpty()) {
                 Matcher m = HL7_LOC_DESC_PATTERN.matcher(desc);
@@ -264,9 +302,9 @@ public class FhirToPostgresTransformer {
                     organizationName,
                     floorName,
                     rawWard,
-                    wardCode,
-                    wardCode,
-                    wardCode,
+                    serviceName,
+                    rawWard,
+                    wardName,
                     roomCode,
                     bedCode,
                     opStatus
@@ -285,14 +323,21 @@ public class FhirToPostgresTransformer {
                 String rawWard = parts[0].trim();
                 String rawRoom = parts[1].trim();
                 String rawBed = parts[2].trim();
-                String wardName = wardRes != null ? wardRes.path("name").asString("Ward " + rawWard).trim() : "Ward " + rawWard;
+                
+                String serviceName = resolveServiceName(rawWard);
+                String wardName = ensureDistinctWardName(
+                        wardRes != null ? wardRes.path("name").asString("") : "",
+                        serviceName,
+                        rawWard
+                );
                 String floorName = extractFloorFromWard(wardRes);
+                
                 return new ResolvedLocation(
                         organizationName,
                         floorName,
                         rawWard,
-                        wardName,
-                        "Ward " + rawWard,
+                        serviceName,
+                        rawWard,
                         wardName,
                         "Room " + rawRoom,
                         "Bed " + rawBed,
@@ -307,14 +352,21 @@ public class FhirToPostgresTransformer {
             String rVal = firstIdentifierValueOrName(roomRes);
             String bVal = firstIdentifierValueOrName(bedRes);
             if (wVal != null && rVal != null && bVal != null) {
-                String wName = wardRes.path("name").asString(wVal).trim();
+                String rawService = wVal.replaceFirst("(?i)^Ward\s+", "").trim();
+                String serviceName = resolveServiceName(rawService);
+                String wName = ensureDistinctWardName(
+                        wardRes.path("name").asString(""),
+                        serviceName,
+                        rawService
+                );
                 String floorName = extractFloorFromWard(wardRes);
+                
                 return new ResolvedLocation(
                         organizationName,
                         floorName,
-                        wVal.replaceFirst("(?i)^Ward\\s+", "").trim(),
-                        wName,
-                        wVal,
+                        rawService,
+                        serviceName,
+                        rawService,
                         wName,
                         rVal,
                         bVal,
@@ -492,17 +544,21 @@ public class FhirToPostgresTransformer {
                 } else if (!locDisplay.isEmpty()) {
                     Matcher m = DISPLAY_PATTERN.matcher(locDisplay);
                     if (m.matches()) {
-                        String wCode = m.group(1).trim();
+                        String wCodeFull = m.group(1).trim();
                         String rCode = m.group(2).trim();
                         String bCode = m.group(3).trim();
-                        String rawW = wCode.replaceFirst("(?i)^Ward\\s+", "").trim();
+                        String rawW = wCodeFull.replaceFirst("(?i)^Ward\s+", "").trim();
+                        
+                        String sName = resolveServiceName(rawW);
+                        String wName = resolveWardName(rawW, rawW);
+
                         resolved = new ResolvedLocation(
                                 organizationName,
                                 singleBundleLocation != null ? singleBundleLocation.floorName() : "Piso 1",
                                 rawW,
-                                wCode,
-                                wCode,
-                                wCode,
+                                sName,
+                                rawW,
+                                wName,
                                 rCode,
                                 bCode,
                                 "AVAILABLE"
@@ -712,4 +768,3 @@ public class FhirToPostgresTransformer {
         return null;
     }
 }
-

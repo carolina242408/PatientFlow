@@ -295,7 +295,7 @@ def hospital_bundle(hospital: Hospital, doctors: dict[str, list[Staff]], at: dat
         resources.append({
             "resourceType": "Location", "id": ward.fhir_id, "status": "active", "mode": "instance",
             "identifier": [{"system": "urn:id:HOS:servico", "value": ward.code}],
-            "name": ward.name, "description": f"Especialidade {ward.specialty}, piso {ward.floor}",
+            "name": f"Enfermaria {ward.name}", "description": f"Especialidade {ward.specialty}, piso {ward.floor}",
             "physicalType": {"coding": [{"system": loc_type, "code": "wa", "display": "Ward"}]},
             "managingOrganization": {"reference": "Organization/inst"},
         })
@@ -303,7 +303,7 @@ def hospital_bundle(hospital: Hospital, doctors: dict[str, list[Staff]], at: dat
         for room in rooms:
             resources.append({
                 "resourceType": "Location", "id": room.fhir_id, "status": "active", "mode": "instance",
-                "name": f"{ward.name} - {room.label}",
+                "name": f"Enfermaria {ward.name} - {room.label}",
                 "identifier": [{"system": "urn:id:HOS:quarto", "value": f"{ward.code}^{room.number}"}],
                 "physicalType": {"coding": [{"system": loc_type, "code": "ro", "display": "Room"}]},
                 "partOf": {"reference": f"Location/{ward.fhir_id}"},
@@ -313,7 +313,7 @@ def hospital_bundle(hospital: Hospital, doctors: dict[str, list[Staff]], at: dat
                 resources.append({
                     "resourceType": "Location", "id": bed.fhir_id, "status": "active", "mode": "instance",
                     "operationalStatus": _bed_status(bed, at),
-                    "name": f"{ward.name} - {room.label} - {bed.kind} {bed.code}",
+                    "name": f"Enfermaria {ward.name} - {room.label} - {bed.kind} {bed.code}",
                     "identifier": [{"system": "urn:id:HOS:cama", "value": bed.key},
                                    {"system": "urn:id:HOS:cama-uid", "value": str(bed.uid)}],
                     "type": [{"text": bed.kind}],
