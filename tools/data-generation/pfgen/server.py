@@ -792,9 +792,10 @@ def get_dataset_csv():
     """Retrieve the generated dataset.csv from output directory."""
     csv_file = state.output_dir / "dataset.csv"
     if not csv_file.exists():
-        ensure_light_stream()
-    if not csv_file.exists():
-        raise HTTPException(status_code=404, detail="Dataset CSV not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Dataset CSV not found. Call POST /api/csv/generate first.",
+        )
     return Response(
         content=csv_file.read_text(encoding="utf-8"),
         media_type="text/csv; charset=utf-8",
