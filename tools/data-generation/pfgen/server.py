@@ -17,14 +17,27 @@ import json
 import logging
 import random
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 
-from fastapi import BackgroundTasks, Body, FastAPI, HTTPException, Header, Query, Request, Response
+from fastapi import (
+    BackgroundTasks,
+    Body,
+    FastAPI,
+    HTTPException,
+    Query,
+    Request,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import (
+    JSONResponse,
+    PlainTextResponse,
+    StreamingResponse,
+)
 from pydantic import BaseModel, Field
+from ui.app import router as ui_router
 
 from .hl7 import HL7Builder, RenderedMessage, render_all
 from .hospital import Hospital
@@ -33,7 +46,6 @@ from .publisher import build_dataset_csv, dispatch_to_subscribers, write_file_ou
 from .simulation import Simulation, output_events
 from .synthea import load_pool, run_synthea, synthetic_pool
 from .validate import validate_messages
-from ui.app import router as ui_router
 
 logger = logging.getLogger("pfgen.api")
 
@@ -87,21 +99,43 @@ state = State()
 # -----------------------------------------------------------------------------
 class GenerateRequest(BaseModel):
     days: int = Field(default=7, ge=1, le=365, description="Number of simulation days")
-    warmup_days: int = Field(default=3, ge=0, le=60, description="Warmup days prior to start")
+    warmup_days: int = Field(
+        default=3, ge=0, le=60, description="Warmup days prior to start"
+    )
     seed: int = Field(default=42, description="Random seed")
-    population: str = Field(default="20", description="Synthea population size ('auto' or integer)")
-    no_synthea: bool = Field(default=True, description="Fast lightweight mode (bypass Synthea)")
+    population: str = Field(
+        default="20", description="Synthea population size ('auto' or integer)"
+    )
+    no_synthea: bool = Field(
+        default=True, description="Fast lightweight mode (bypass Synthea)"
+    )
     warmup_output: str = Field(default="census", description="'census' or 'full'")
+    run_validation: bool = Field(
+        default=True, alias="validate", description="Run HL7 integrity validator"
+    )
     run_validation: bool = Field(default=True, alias="validate", description="Run HL7 integrity validator")
     push_to_hapi: bool = Field(default=True, description="Push generated FHIR bundles to HAPI FHIR server")
 
 
 class SubscriptionCreate(BaseModel):
-    url: str = Field(..., description="Callback webhook URL (e.g. http://localhost:8080/api/hl7/events)")
-    triggers: list[str] | None = Field(default=None, description="Optional trigger filter (e.g. ['A01', 'A02', 'A03'])")
+    url: str = Field(
+        ...,
+        description="Callback webhook URL (e.g. http://localhost:8080/api/hl7/events)",
+    )
+    triggers: list[str] | None = Field(
+        default=None, description="Optional trigger filter (e.g. ['A01', 'A02', 'A03'])"
+    )
     format: str = Field(default="json", description="Payload format: 'json' or 'hl7'")
-    auto_stream: bool = Field(default=False, description="Immediately start streaming lightweight HL7 events in the background to this subscriber")
-    delay_ms: int = Field(default=250, ge=0, le=10000, description="Inter-message delay in ms when auto_stream=True")
+    auto_stream: bool = Field(
+        default=False,
+        description="Immediately start streaming lightweight HL7 events in the background to this subscriber",
+    )
+    delay_ms: int = Field(
+        default=250,
+        ge=0,
+        le=10000,
+        description="Inter-message delay in ms when auto_stream=True",
+    )
 
 
 class SubscriptionResponse(BaseModel):
@@ -115,8 +149,15 @@ class SubscriptionResponse(BaseModel):
 
 
 class DispatchRequest(BaseModel):
-    delay_ms: int = Field(default=0, ge=0, le=10000, description="Inter-message delay in ms for simulated live replay")
-    triggers: list[str] | None = Field(default=None, description="Filter specific triggers to dispatch")
+    delay_ms: int = Field(
+        default=0,
+        ge=0,
+        le=10000,
+        description="Inter-message delay in ms for simulated live replay",
+    )
+    triggers: list[str] | None = Field(
+        default=None, description="Filter specific triggers to dispatch"
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -154,7 +195,9 @@ def run_generator(
         ns_start=int(sim_cfg["identity"].get("ns_start", 1200000)),
         processo_start=int(sim_cfg["identity"].get("processo_start", 15000000)),
         homonym_rate=float(sim_cfg["identity"].get("homonym_rate", 0.03)),
-        homonym_same_birthdate_rate=float(sim_cfg["identity"].get("homonym_same_birthdate_rate", 0.25)),
+        homonym_same_birthdate_rate=float(
+            sim_cfg["identity"].get("homonym_same_birthdate_rate", 0.25)
+        ),
         email_rate=float(sim_cfg["identity"].get("email_rate", 0.4)),
     )
 
@@ -169,7 +212,11 @@ def run_generator(
                 rate = float(spec_cfg["admissions_per_day"])
             else:
                 cap = hospital.capacity_of(s)
-                rate = cap * float(spec_cfg.get("target_occupancy", 0.85)) / float(spec_cfg["los"]["mean"])
+                rate = (
+                    cap
+                    * float(spec_cfg.get("target_occupancy", 0.85))
+                    / float(spec_cfg["los"]["mean"])
+                )
             expected_adm += rate * total_days
         population_size = max(20, int(expected_adm * 1.35))
     else:
@@ -415,7 +462,10 @@ def get_simulation_summary():
     if not state.summary:
         state.load_from_disk()
     if not state.summary:
-        raise HTTPException(status_code=404, detail="No simulation run found. Call POST /api/generate first.")
+        raise HTTPException(
+            status_code=404,
+            detail="No simulation run found. Call POST /api/generate first.",
+        )
     return state.summary
 
 
@@ -446,7 +496,9 @@ def list_hl7_messages(
             since_dt = datetime.fromisoformat(since)
             filtered = [m for m in filtered if m.msh_time >= since_dt]
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid ISO datetime format for 'since'")
+            raise HTTPException(
+                status_code=400, detail="Invalid ISO datetime format for 'since'"
+            )
 
     total = len(filtered)
     page = filtered[offset : offset + limit]
@@ -482,7 +534,9 @@ def get_hl7_message(control_id: str, request: Request):
                 "control_id": control_id,
                 "hl7": text,
             }
-        raise HTTPException(status_code=404, detail=f"Message with control_id {control_id} not found")
+        raise HTTPException(
+            status_code=404, detail=f"Message with control_id {control_id} not found"
+        )
 
     if "text/plain" in request.headers.get("accept", ""):
         return PlainTextResponse(msg.text)
@@ -512,11 +566,24 @@ def get_hl7_stream():
 
 @app.get("/api/hl7/live", tags=["HL7"])
 async def live_hl7_stream(
-    delay_ms: int = Query(default=250, ge=10, le=10000, description="Delay between events in ms"),
+    delay_ms: int = Query(
+        default=250, ge=10, le=10000, description="Delay between events in ms"
+    ),
     trigger: str | None = Query(default=None, pattern="^(A01|A02|A03)$"),
-    loop: bool = Query(default=False, description="Continuously wait for and stream new generated batches"),
-    limit: int | None = Query(default=None, ge=1, le=500, description="Optional maximum number of events to stream"),
-    auto_generate: bool = Query(default=False, description="Generate a lightweight 20-patient batch if none exists yet"),
+    loop: bool = Query(
+        default=False,
+        description="Continuously wait for and stream new generated batches",
+    ),
+    limit: int | None = Query(
+        default=None,
+        ge=1,
+        le=500,
+        description="Optional maximum number of events to stream",
+    ),
+    auto_generate: bool = Query(
+        default=False,
+        description="Generate a lightweight 20-patient batch if none exists yet",
+    ),
 ):
     """Server-Sent Events (SSE) stream of HL7 messages.
 
@@ -528,13 +595,15 @@ async def live_hl7_stream(
 
     async def event_generator() -> AsyncGenerator[str, None]:
         sent = 0
+        last_version = 0
         while True:
-            if not state.messages:
-                if not loop:
+            if not state.messages or state.generation_version == last_version:
+                if not loop and (not state.messages or last_version > 0):
                     break
                 await asyncio.sleep(0.5)
                 continue
 
+            current_version = state.generation_version
             current_messages = list(state.messages)
             for msg in current_messages:
                 if trigger and msg.trigger != trigger:
@@ -558,6 +627,7 @@ async def live_hl7_stream(
                     return
                 await asyncio.sleep(delay_ms / 1000.0)
 
+            last_version = current_version
             if not loop:
                 break
 
@@ -574,7 +644,9 @@ def get_hospital_locations():
     if not hosp_file.exists():
         ensure_light_stream()
     if not hosp_file.exists():
-        raise HTTPException(status_code=404, detail="hospital-locations.json not found.")
+        raise HTTPException(
+            status_code=404, detail="hospital-locations.json not found."
+        )
     return JSONResponse(content=json.loads(hosp_file.read_text(encoding="utf-8")))
 
 
@@ -595,14 +667,18 @@ def get_patient_fhir_bundle(ns: str):
     """Retrieve the full FHIR R4 transaction bundle for patient NS."""
     patient_file = state.output_dir / "fhir" / "patients" / f"{ns}.json"
     if not patient_file.exists():
-        raise HTTPException(status_code=404, detail=f"FHIR bundle for patient NS {ns} not found")
+        raise HTTPException(
+            status_code=404, detail=f"FHIR bundle for patient NS {ns} not found"
+        )
     return JSONResponse(content=json.loads(patient_file.read_text(encoding="utf-8")))
 
 
 # -----------------------------------------------------------------------------
 # Endpoints: Subscriptions / Webhooks (REST Push)
 # -----------------------------------------------------------------------------
-@app.post("/api/subscriptions", response_model=SubscriptionResponse, tags=["Subscriptions"])
+@app.post(
+    "/api/subscriptions", response_model=SubscriptionResponse, tags=["Subscriptions"]
+)
 def register_subscription(sub: SubscriptionCreate, background_tasks: BackgroundTasks):
     """Register a backend webhook URL to receive HL7 events.
 
@@ -620,18 +696,29 @@ def register_subscription(sub: SubscriptionCreate, background_tasks: BackgroundT
         "created_at": datetime.now().isoformat(),
     }
     state.subscribers[sub_id] = record
-    logger.info("Registered subscription %s for URL: %s (auto_stream=%s)", sub_id, sub.url, sub.auto_stream)
+    logger.info(
+        "Registered subscription %s for URL: %s (auto_stream=%s)",
+        sub_id,
+        sub.url,
+        sub.auto_stream,
+    )
 
     if sub.auto_stream:
         messages = ensure_light_stream()
         if sub.triggers:
             messages = [m for m in messages if m.trigger in sub.triggers]
-        background_tasks.add_task(dispatch_to_subscribers, messages, [record], sub.delay_ms)
+        background_tasks.add_task(
+            dispatch_to_subscribers, messages, [record], sub.delay_ms
+        )
 
     return record
 
 
-@app.get("/api/subscriptions", response_model=list[SubscriptionResponse], tags=["Subscriptions"])
+@app.get(
+    "/api/subscriptions",
+    response_model=list[SubscriptionResponse],
+    tags=["Subscriptions"],
+)
 def list_subscriptions():
     """List all registered webhook subscriptions."""
     return list(state.subscribers.values())
@@ -653,7 +740,10 @@ def dispatch_events(req: DispatchRequest = Body(...)):
     The backend will receive HTTP POST requests at its registered callback URL for each event.
     """
     if not state.subscribers:
-        raise HTTPException(status_code=400, detail="No active subscriptions registered. Call POST /api/subscriptions first.")
+        raise HTTPException(
+            status_code=400,
+            detail="No active subscriptions registered. Call POST /api/subscriptions first.",
+        )
 
     messages = ensure_light_stream()
     if req.triggers:
