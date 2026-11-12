@@ -24,8 +24,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Subscribes to external API streams (such as the Data Generator SSE `/api/hl7/live` endpoint
- * or any additional URLs configured in `INGESTION_SOURCES` in `.env`) and forwards incoming
+ * Subscribes to external API streams (such as the Data Generator SSE
+ * `/api/hl7/live` endpoint
+ * or any additional URLs configured in `INGESTION_SOURCES` in `.env`) and
+ * forwards incoming
  * HL7/FHIR events into {@link IngestionPipelineService}.
  */
 @Component
@@ -38,8 +40,7 @@ public class ApiStreamSubscriber {
             boolean active,
             String state,
             Instant lastEventAt,
-            String lastError
-    ) {
+            String lastError) {
     }
 
     private static final class SourceWorker {
@@ -139,6 +140,7 @@ public class ApiStreamSubscriber {
                 worker.state = "STREAMING";
                 worker.lastError = null;
                 String contentType = response.headers().firstValue("content-type").orElse("");
+                log.info("Connected to ingestion stream source: {} (Content-Type: {})", worker.uri, contentType);
 
                 try (Stream<String> lines = response.body()) {
                     if (contentType.contains("text/event-stream")) {
@@ -159,7 +161,7 @@ public class ApiStreamSubscriber {
             } catch (Exception ex) {
                 worker.state = "RECONNECTING";
                 worker.lastError = ex.getMessage();
-                log.debug("Stream connection to {} interrupted ({}), retrying in {} ms",
+                log.warn("Stream connection to {} interrupted ({}), retrying in {} ms",
                         worker.uri, ex.getMessage(), retryDelayMs);
             }
 
@@ -195,6 +197,7 @@ public class ApiStreamSubscriber {
                     worker.lastEventAt = Instant.now();
                 } catch (Exception ex) {
                     worker.lastError = ex.getMessage();
+                    log.warn("Error processing SSE event from {}: {}", worker.uri, ex.getMessage());
                 }
             }
         }
@@ -206,8 +209,7 @@ public class ApiStreamSubscriber {
                 worker.running.get(),
                 worker.state,
                 worker.lastEventAt,
-                worker.lastError
-        );
+                worker.lastError);
     }
 
     @PreDestroy
@@ -221,4 +223,3 @@ public class ApiStreamSubscriber {
         executor.shutdownNow();
     }
 }
-
