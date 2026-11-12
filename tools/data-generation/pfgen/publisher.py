@@ -64,6 +64,9 @@ def write_file_outputs(
     hl7_dir.mkdir(parents=True, exist_ok=True)
     patients_dir.mkdir(parents=True, exist_ok=True)
 
+    for old_file in hl7_dir.glob("*.hl7"):
+        old_file.unlink(missing_ok=True)
+
     # 1. Write individual HL7 messages
     stream_path = output_dir / "stream.hl7"
     stream_content: list[str] = []
@@ -104,12 +107,7 @@ def write_file_outputs(
     # 6. Persist registry state for subsequent runs
     registry.save(output_dir / "identity-registry.json")
 
-    # 7. Write CSV dataset
-    csv_path = output_dir / "dataset.csv"
-    csv_content = build_dataset_csv(sim_result.episodes)
-    csv_path.write_text(csv_content, encoding="utf-8")
-
-    # 8. Write summary report
+    # 7. Write summary report
     summary = {
         "generated_at": datetime.now().isoformat(),
         "simulation": {
@@ -133,7 +131,6 @@ def write_file_outputs(
             "stream_file": str(stream_path.relative_to(output_dir)),
             "fhir_hospital": str((fhir_dir / "hospital-locations.json").relative_to(output_dir)),
             "fhir_patients_dir": str(patients_dir.relative_to(output_dir)),
-            "csv_dataset": str(csv_path.relative_to(output_dir)),
         },
         "validation": validation_report or {},
     }
