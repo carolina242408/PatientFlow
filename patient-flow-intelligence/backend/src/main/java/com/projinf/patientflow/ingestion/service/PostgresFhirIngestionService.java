@@ -189,7 +189,7 @@ public class PostgresFhirIngestionService {
                 emitted,
                 detail);
 
-        // Sync newly created ULS / UNIT / SERVICE entries to Keycloak as groups
+        // Sync hierarchy entries to Keycloak as groups.
         if (locationsUpserted > 0) {
             syncHierarchyToKeycloak();
         }
@@ -198,7 +198,7 @@ public class PostgresFhirIngestionService {
     }
 
     /**
-     * Idempotently ensures every ULS, UNIT, and SERVICE row in the database has a
+     * Idempotently ensures every ULS-through-WARD row in the database has a
      * corresponding Keycloak group. Called after any ingestion that upserted
      * location hierarchy rows so that freshly auto-created nodes are immediately
      * visible as groups for user assignment.
@@ -224,13 +224,33 @@ public class PostgresFhirIngestionService {
             tryEnsureGroup(Type.UNIT, (UUID) row[0], (String) row[1], (UUID) row[2]);
         }
 
-        // SERVICE (child of UNIT, resolved through floor → building → unit)
+        // BUILDING (child of UNIT)
+        List<Object[]> buildingList = jdbc.query(
+                "SELECT b.id, b.name, b.unit_id FROM buildings b ORDER BY b.name, b.id",
+                (rs, n) -> new Object[] {
+                        rs.getObject(1, UUID.class),
+                        rs.getString(2),
+                        rs.getObject(3, UUID.class)
+                });
+        for (Object[] row : buildingList) {
+            tryEnsureGroup(Type.BUILDING, (UUID) row[0], (String) row[1], (UUID) row[2]);
+        }
+
+        // FLOOR (child of BUILDING)
+        List<Object[]> floorList = jdbc.query(
+                "SELECT f.id, f.level_name, f.building_id FROM floors f ORDER BY f.level_name, f.id",
+                (rs, n) -> new Object[] {
+                        rs.getObject(1, UUID.class),
+                        rs.getString(2),
+                        rs.getObject(3, UUID.class)
+                });
+        for (Object[] row : floorList) {
+            tryEnsureGroup(Type.FLOOR, (UUID) row[0], (String) row[1], (UUID) row[2]);
+        }
+
+        // SERVICE (child of FLOOR)
         List<Object[]> serviceList = jdbc.query(
-                "SELECT s.id, s.name, b.unit_id "
-                        + "FROM clinical_services s "
-                        + "JOIN floors f ON f.id = s.floor_id "
-                        + "JOIN buildings b ON b.id = f.building_id "
-                        + "ORDER BY s.name, s.id",
+                "SELECT s.id, s.name, s.floor_id FROM clinical_services s ORDER BY s.name, s.id",
                 (rs, n) -> new Object[] {
                         rs.getObject(1, UUID.class),
                         rs.getString(2),
@@ -238,6 +258,30 @@ public class PostgresFhirIngestionService {
                 });
         for (Object[] row : serviceList) {
             tryEnsureGroup(Type.SERVICE, (UUID) row[0], (String) row[1], (UUID) row[2]);
+        }
+
+        // WING (child of SERVICE)
+        List<Object[]> wingList = jdbc.query(
+                "SELECT w.id, w.name, w.service_id FROM wings w ORDER BY w.name, w.id",
+                (rs, n) -> new Object[] {
+                        rs.getObject(1, UUID.class),
+                        rs.getString(2),
+                        rs.getObject(3, UUID.class)
+                });
+        for (Object[] row : wingList) {
+            tryEnsureGroup(Type.WING, (UUID) row[0], (String) row[1], (UUID) row[2]);
+        }
+
+        // WARD (child of WING)
+        List<Object[]> wardList = jdbc.query(
+                "SELECT w.id, w.name, w.wing_id FROM wards w ORDER BY w.name, w.id",
+                (rs, n) -> new Object[] {
+                        rs.getObject(1, UUID.class),
+                        rs.getString(2),
+                        rs.getObject(3, UUID.class)
+                });
+        for (Object[] row : wardList) {
+            tryEnsureGroup(Type.WARD, (UUID) row[0], (String) row[1], (UUID) row[2]);
         }
     }
 
