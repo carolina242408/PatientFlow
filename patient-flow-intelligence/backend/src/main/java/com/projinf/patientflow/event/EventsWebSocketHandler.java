@@ -65,10 +65,14 @@ public class EventsWebSocketHandler extends TextWebSocketHandler {
         if(event.subject()!=null) return event.subject().equals(identity.subject());
         for(var scope:event.scopes()) {
             Map<String,Object> args=new HashMap<>(access.bindings(identity));
-            // Explicit UUID casts also handle scopes of organizational ancestors with null fields.
-            args.put("eventUls",scope.ulsId()); args.put("eventUnit",scope.unitId()); args.put("eventService",scope.serviceId());
-            if(jdbc.queryForObject("SELECT "+access.sql("CAST(:eventUls AS uuid)","CAST(:eventUnit AS uuid)",
-                "CAST(:eventService AS uuid)"),args,Boolean.class)) return true;
+            args.put("eventUls",scope.ulsId()); args.put("eventUnit",scope.unitId());
+            args.put("eventBuilding",scope.buildingId()); args.put("eventFloor",scope.floorId());
+            args.put("eventService",scope.serviceId()); args.put("eventWing",scope.wingId());
+            args.put("eventWard",scope.wardId());
+            if(jdbc.queryForObject("SELECT "+access.sql(identity,
+                "CAST(:eventUls AS uuid)", "CAST(:eventUnit AS uuid)", "CAST(:eventBuilding AS uuid)",
+                "CAST(:eventFloor AS uuid)", "CAST(:eventService AS uuid)",
+                "CAST(:eventWing AS uuid)", "CAST(:eventWard AS uuid)"),args,Boolean.class)) return true;
         }
         return false;
     }

@@ -4,24 +4,29 @@
 
 O JWT é validado pelo resource server contra o issuer Keycloak configurado.
 Os papéis são lidos das authorities derivadas de `realm_access.roles` e os
-âmbitos são lidos do claim `groups`. Os grupos organizacionais incluem o UUID
-da entidade no nome (`ULS_<nome>__<uuid>`, `UNIT_<nome>__<uuid>` e
-`SERVICE_<nome>__<uuid>`), pelo que a associação é resolvida sem consultar
-`/api/access/grants`.
+âmbitos são lidos do claim `groups`. Existem apenas os papéis `ADMIN_ROLE` e
+`MANAGER_ROLE`. Os grupos organizacionais incluem o tipo, nome e UUID da entidade
+(`ULS_<nome>__<uuid>`, `UNIT_<nome>__<uuid>`, `BUILDING_<nome>__<uuid>`,
+`FLOOR_<nome>__<uuid>`, `SERVICE_<nome>__<uuid>`, `WING_<nome>__<uuid>` e
+`WARD_<nome>__<uuid>`).
 
-Um gestor precisa simultaneamente de papel e associação do tipo correspondente:
+| Papel Keycloak | Âmbito efetivo |
+| --- | --- |
+| `ADMIN_ROLE` | Global; não exige grupo |
+| `MANAGER_ROLE` | Apenas o nível mais específico dos grupos atribuídos |
 
-| Papel Keycloak | Tipo de associação | Âmbito efetivo |
-| --- | --- | --- |
-| `ROLE_ADMIN` | Não exige associação | Global |
-| `LHU_MANAGER` | `ULS` | Unidades e serviços dessa ULS |
-| `UNIT_MANAGER` | `UNIT` | Serviços dessa unidade |
-| `SERVICE_MANAGER` | `SERVICE` | Serviço e suas enfermarias/camas |
+Para um gestor com grupos de vários níveis, aplica-se apenas o nível mais
+específico, nesta ordem: `WARD`, `WING`, `SERVICE`, `FLOOR`, `BUILDING`,
+`UNIT`, `ULS`. Todos os grupos atribuídos desse nível continuam válidos;
+grupos de níveis mais amplos não aumentam o acesso. A API de hierarquia cria
+grupos Keycloak aninhados até à enfermaria; quartos e camas não têm grupos.
+Um gestor só recebe acesso operacional se tiver o papel `MANAGER_ROLE` e pelo
+menos um grupo válido.
 
-É possível atribuir vários âmbitos; o acesso efetivo é a união dos grupos
-compatíveis com os papéis presentes no JWT. Um grupo `UNIT` sem papel
-`UNIT_MANAGER` não concede esse acesso. Ao criar ULS, unidade ou serviço pela
-API de hierarquia, o backend cria o grupo Keycloak correspondente.
+Ao atualizar um realm Keycloak já existente, o import do ficheiro do realm não
+renomeia automaticamente os papéis existentes. Substitua `ROLE_ADMIN` por
+`ADMIN_ROLE` e `MANAGER` por `MANAGER_ROLE` no realm e nas atribuições dos
+utilizadores antes de voltar a iniciar sessão.
 
 ## Matriz de operações
 
@@ -67,33 +72,31 @@ demográficos. Os identificadores e resultados devolvidos são validados pelo ba
 Sem autenticação, as rotas protegidas respondem `401`. Sem papel/associação operacional,
 responde `403`. Um recurso individual desconhecido ou fora do âmbito devolve
 `404`, impedindo a distinção por enumeração de identificadores. Uma coleção
-filtrada para outro âmbito fica vazia. A API legada de grants devolve `403`
-para utilizadores sem `ROLE_ADMIN`.
+filtrada para outro âmbito fica vazia. A gestão de associações devolve `403`
+para utilizadores sem `ADMIN_ROLE`.
 
 ## Atribuição inicial de acessos
 
-1. Configurar `KEYCLOAK_ADMIN_BASE_URL`, `KEYCLOAK_ADMIN_USERNAME` e
-   `KEYCLOAK_ADMIN_PASSWORD` no backend. As credenciais permitem obter um token
-   administrativo no realm `master` para criar grupos no realm `patientflow`.
-   O Compose de desenvolvimento injeta as credenciais de `.env`; o backend
-   iniciado no host não lê esse ficheiro automaticamente.
-2. Criar a hierarquia através da API: ULS → unidade → edifício → piso → serviço.
-   O backend cria os grupos aninhados para ULS, unidade e serviço. Dados
-   inseridos diretamente por SQL, incluindo os cenários de demonstração, não
-   passam por essa criação de grupos. Para esses dados, criar os grupos no
-   Keycloak com os UUID reais, por exemplo:
+1. Criar os elementos da hierarquia pela API; o backend cria grupos Keycloak
+   aninhados até à enfermaria.
+2. Atribuir ao utilizador o grupo desejado no Keycloak e o papel `MANAGER_ROLE`.
+3. Renovar o token. O claim `groups` contém os caminhos necessários ao cálculo
+   do nível mais específico de acesso.
 
-   ```text
-   /ULS_Demonstracao__UUID_ULS/UNIT_Centro__UUID_UNIDADE/SERVICE_Medicina__UUID_SERVICO
-   ```
+```http
+<!-- Legacy grant API is not used for authorization. -->
+Authorization: Bearer ACCESS_TOKEN_ADMIN
+Content-Type: application/json
 
-   Substituir os marcadores por UUID completos. A resolução usa o prefixo de
-   tipo e o UUID após `__`; os nomes intermédios são descritivos.
-3. Atribuir o utilizador ao grupo correspondente no Keycloak e atribuir-lhe o
-   papel `LHU_MANAGER`, `UNIT_MANAGER` ou `SERVICE_MANAGER`.
-4. Configurar o mapper de grupos indicado abaixo e renovar o token do utilizador.
-   O claim `groups` passa a conter o caminho
-   do grupo e o acesso é aplicado sem grant na base de dados.
+{
+  "subject":"SUB_KEYCLOAK_DO_GESTOR",
+  "type":"UNIT",
+  "scopeId":"UUID_DA_UNIDADE"
+}
+```
+
+`/api/access/grants` mantém-se por compatibilidade e não concede acesso
+operacional; a autorização usa exclusivamente o papel e os grupos do token.
 
 O realm deve ter um mapper de grupos com `full.path=true` no claim `groups`.
 O ficheiro `keycloak/realm/patientflow-realm.json` configura esse mapper e

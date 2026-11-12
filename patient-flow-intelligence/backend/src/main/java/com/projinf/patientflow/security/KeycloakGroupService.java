@@ -37,7 +37,8 @@ public class KeycloakGroupService {
     }
 
     public void ensureHierarchyGroup(Type type, UUID id, String name, UUID parentId) {
-        if (type != Type.ULS && type != Type.UNIT && type != Type.SERVICE) return;
+        if (!type.supportsKeycloakGroup()) return;
+
         String groupName = groupName(type, id, name);
         String parentGroupId = parentId == null ? null : findGroupId(parentType(type), parentId);
         if (parentGroupId == null && parentId != null) {

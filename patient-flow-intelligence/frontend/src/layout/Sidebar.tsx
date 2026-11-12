@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
-import { useKeycloak } from '../auth/context'
+import { useKeycloak, type AccessScopeType } from '../auth/context'
 import { Button } from '@/components/Button'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
@@ -26,24 +26,28 @@ interface SidebarItem {
   icon: LucideIcon
 }
 
-const getManagementSidebarItems = (roles: string[] = []): SidebarItem[] => {
-  if (roles.includes('ROLE_ADMIN')) {
+const getManagementSidebarItems = (
+  roles: string[] = [],
+  scopeType: AccessScopeType | null = null,
+): SidebarItem[] => {
+  if (roles.includes('ADMIN_ROLE')) {
     return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
-  if (roles.includes('LHU_MANAGER')) {
-    return [{ labelKey: 'nav.lhu', path: '/lhu', icon: House }]
-  }
-  if (roles.includes('UNIT_MANAGER')) {
-    return [{ labelKey: 'nav.unit', path: '/unit', icon: House }]
-  }
-  if (roles.includes('SERVICE_MANAGER')) {
-    return [{ labelKey: 'nav.service', path: '/service', icon: House }]
+  if (roles.includes('MANAGER_ROLE') && scopeType) {
+    return [
+      { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
+      {
+        labelKey: scopeType ? `nav.scopeLevels.${scopeType}` : 'nav.noScope',
+        path: '/manager-hierarchy',
+        icon: House,
+      }
+    ]
   }
   return []
 }
 
 const getWorkspaceLabel = (roles: string[] = []): string => {
-  if (roles.includes('ROLE_ADMIN')) return 'nav.workspace.admin'
+  if (roles.includes('ADMIN_ROLE')) return 'nav.workspace.admin'
   else return 'nav.workspace.manager'
 }
 
@@ -54,13 +58,12 @@ const Sidebar = () => {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
-  const managementItems = getManagementSidebarItems(user?.roles)
+  const managementItems = getManagementSidebarItems(user?.roles, user?.scopeType)
   const workspaceLabelKey = getWorkspaceLabel(user?.roles)
   const userRoles = user?.roles ?? []
 
   const sections : Record<string, SidebarItem[]> = {
     Menu: [
-      { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
       ...managementItems,
     ],
     Settings: [
@@ -103,7 +106,7 @@ const Sidebar = () => {
       <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-5 ${collapsed ? 'px-2' : 'px-3'}`}>
         {Object.entries(sections).map(([section, items]) => {
           const filteredItems = items.filter((item) => {
-            const isAdmin = userRoles.includes('ROLE_ADMIN')
+            const isAdmin = userRoles.includes('ADMIN_ROLE')
             if (isAdmin && item.path === '/dashboard') {
               return false
             }

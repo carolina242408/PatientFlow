@@ -4,6 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
+import { useOutletContext } from 'react-router'
+import type { AppOutletContext } from '@/layout/ManagerScopeContext'
+import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
 import UpcomingDischargesTable, {
@@ -66,11 +69,18 @@ const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
 
 type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
 
-const getProfileScope = (roles: string[] = []): Scope | undefined => {
-  if (roles.includes('ROLE_ADMIN') || roles.includes('LHU_MANAGER')) return 'LHU'
-  if (roles.includes('UNIT_MANAGER')) return 'Unit'
-  if (roles.includes('SERVICE_MANAGER')) return 'Service'
-  return undefined
+const getProfileScope = (roles: string[] = [], scopeType: string | null = null): Scope | undefined => {
+  if (roles.includes('ADMIN_ROLE')) return 'LHU'
+  switch (scopeType) {
+    case 'ULS': return 'LHU'
+    case 'UNIT':
+    case 'BUILDING':
+    case 'FLOOR': return 'Unit'
+    case 'SERVICE':
+    case 'WING':
+    case 'WARD': return 'Service'
+    default: return undefined
+  }
 }
 
 interface DashboardProps {
@@ -80,13 +90,15 @@ interface DashboardProps {
 const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { t, i18n } = useTranslation()
   const { user } = useKeycloak()
+  const { managerScope } = useOutletContext<AppOutletContext>()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
-  const profileScope = getProfileScope(user?.roles) ?? scope
-  const metrics = SCOPE_METRICS[scope]
+  const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
+  const metrics = SCOPE_METRICS[profileScope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
-    queryKey: ['dashboard-occupancy'],
-    queryFn: () => fetchOccupancy(),
+    queryKey: ['dashboard-occupancy', managerScope.root?.id],
+    queryFn: () => fetchOccupancy(managerScope.scope),
+    enabled: user?.roles.includes('MANAGER_ROLE') === true && Boolean(managerScope.root),
   })
 
   useEffect(() => {
@@ -121,6 +133,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const criticalThreshold = occupancy?.criticalOccupancyPercent ?? CRITICAL_THRESHOLD
   const occupancyGap = occupancyPercent === null ? null : criticalThreshold - occupancyPercent
 
+  if (managerScope.isPending) {
+    return <div className="p-6">{t('managerHierarchy.loading')}</div>
+  }
+  if (managerScope.isError) {
+    return <div className="p-6 text-red-600">{t('lhuHierarchy.error')}</div>
+  }
+  if (!managerScope.root) {
+    return <div className="p-6">{t('lhuHierarchy.noData')}</div>
+  }
+
   const forecasts: ForecastCardData[] = [
     {
       id: 'today',
@@ -147,6 +169,13 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
+      {managerScope.hasMultipleScopes && managerScope.root && (
+        <ManagerScopeSelector
+          scopes={managerScope.scopes}
+          selectedScope={managerScope.root}
+          onSelect={managerScope.selectScope}
+        />
+      )}
       {/* Header */}
       <section className="flex flex-col items-start justify-between gap-4 xl:flex-row xl:items-end">
         <div>

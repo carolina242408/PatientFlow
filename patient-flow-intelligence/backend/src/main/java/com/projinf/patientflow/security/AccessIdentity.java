@@ -3,15 +3,15 @@ package com.projinf.patientflow.security;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import com.projinf.patientflow.repository.HierarchyRepository.Type;
 
 /** A websocket retains identity and expiry, never a bearer token. */
 public record AccessIdentity(String subject, Set<String> roles, Instant expiresAt,
-        Set<UUID> ulsIds, Set<UUID> unitIds, Set<UUID> serviceIds) {
+        Type scopeType, Set<UUID> scopeIds) {
     public AccessIdentity {
         roles = Set.copyOf(roles);
-        ulsIds = Set.copyOf(ulsIds);
-        unitIds = Set.copyOf(unitIds);
-        serviceIds = Set.copyOf(serviceIds);
+        scopeIds = Set.copyOf(scopeIds);
     }
-    public boolean admin() { return roles.contains("ROLE_ADMIN"); }
+    public boolean admin() { return roles.contains("ADMIN_ROLE"); }
+    public boolean manager() { return roles.contains("MANAGER_ROLE"); }
 }
