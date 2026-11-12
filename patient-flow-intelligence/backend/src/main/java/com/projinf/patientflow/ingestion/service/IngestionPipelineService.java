@@ -19,10 +19,14 @@ import tools.jackson.databind.node.ObjectNode;
 /**
  * Core ingestion pipeline service:
  * 1. Inspects incoming messages from subscribed APIs or HTTP endpoints.
- * 2. Converts raw or wrapped HL7 v2 messages into FHIR Bundles via {@link Hl7ToFhirConverter}.
- * 3. Persists the FHIR contents into HAPI FHIR (Data Lake) via {@link HapiFhirClient}.
- * 4. Transforms the FHIR Bundle into JSONB and executes the PostgreSQL stored procedure
- *    {@code sp_ingest_fhir_payload(jsonb)} via {@link PostgresFhirIngestionService}.
+ * 2. Converts raw or wrapped HL7 v2 messages into FHIR Bundles via
+ * {@link Hl7ToFhirConverter}.
+ * 3. Persists the FHIR contents into HAPI FHIR (Data Lake) via
+ * {@link HapiFhirClient}.
+ * 4. Transforms the FHIR Bundle into JSONB and executes the PostgreSQL stored
+ * procedure
+ * {@code sp_ingest_fhir_payload(jsonb)} via
+ * {@link PostgresFhirIngestionService}.
  */
 @Service
 public class IngestionPipelineService {
@@ -38,8 +42,7 @@ public class IngestionPipelineService {
             boolean storedInPostgres,
             PostgresIngestionResult postgresResult,
             JsonNode fhirBundle,
-            String detail
-    ) {
+            String detail) {
         public IngestionOutcome(
                 String source,
                 boolean convertedFromHl7,
@@ -47,9 +50,9 @@ public class IngestionPipelineService {
                 int hapiStatusCode,
                 int resourceCount,
                 JsonNode fhirBundle,
-                String detail
-        ) {
-            this(source, convertedFromHl7, storedInHapi, hapiStatusCode, resourceCount, false, null, fhirBundle, detail);
+                String detail) {
+            this(source, convertedFromHl7, storedInHapi, hapiStatusCode, resourceCount, false, null, fhirBundle,
+                    detail);
         }
     }
 
@@ -59,8 +62,7 @@ public class IngestionPipelineService {
             long storedInHapi,
             long storedInPostgres,
             long failed,
-            Instant lastIngestedAt
-    ) {
+            Instant lastIngestedAt) {
     }
 
     private final Hl7ToFhirConverter converter;
@@ -80,8 +82,7 @@ public class IngestionPipelineService {
             Hl7ToFhirConverter converter,
             HapiFhirClient hapiClient,
             PostgresFhirIngestionService postgresIngestion,
-            JsonMapper json
-    ) {
+            JsonMapper json) {
         this.converter = converter;
         this.hapiClient = hapiClient;
         this.postgresIngestion = postgresIngestion;
@@ -91,8 +92,7 @@ public class IngestionPipelineService {
     public IngestionPipelineService(
             Hl7ToFhirConverter converter,
             HapiFhirClient hapiClient,
-            JsonMapper json
-    ) {
+            JsonMapper json) {
         this(converter, hapiClient, null, json);
     }
 
@@ -127,7 +127,8 @@ public class IngestionPipelineService {
             throw new IllegalArgumentException("JSON payload must be a JSON object");
         }
 
-        // Case 1: JSON wrapper containing an "hl7" field (e.g. SSE event from data-generator /api/hl7/live)
+        // Case 1: JSON wrapper containing an "hl7" field (e.g. SSE event from
+        // data-generator /api/hl7/live)
         JsonNode hl7Field = node.path("hl7");
         if (hl7Field.isString() && !hl7Field.asString().isBlank()) {
             String rawHl7 = hl7Field.asString();
@@ -182,8 +183,7 @@ public class IngestionPipelineService {
             String source,
             boolean wasConverted,
             Instant eventTime,
-            String trigger
-    ) {
+            String trigger) {
         // 1. Store raw/normalized FHIR transaction bundle in HAPI FHIR (Data Lake)
         HapiStoreResponse hapiRes = hapiClient.storeBundle(bundle);
         if (hapiRes.stored()) {
@@ -199,6 +199,9 @@ public class IngestionPipelineService {
                 pgStored = pgRes.stored();
                 if (pgStored) {
                     storedInPostgres.incrementAndGet();
+                    log.info("Ingested event [trigger={}] from {}: HAPI={} (HTTP {}), Postgres={}",
+                            trigger != null ? trigger : "BUNDLE", source, hapiRes.stored(), hapiRes.statusCode(),
+                            pgRes.detail());
                 }
             } catch (Exception ex) {
                 log.warn("Failed to persist FHIR bundle into PostgreSQL via stored procedure (source={}): {}",
@@ -226,8 +229,7 @@ public class IngestionPipelineService {
                 pgStored,
                 pgRes,
                 bundle,
-                combinedDetail
-        );
+                combinedDetail);
     }
 
     public PipelineMetrics metrics() {
@@ -237,8 +239,7 @@ public class IngestionPipelineService {
                 storedInHapi.get(),
                 storedInPostgres.get(),
                 failed.get(),
-                lastIngestedAt.get()
-        );
+                lastIngestedAt.get());
     }
 
     public List<PostgresFhirIngestionService.SyncWatermark> watermarks() {

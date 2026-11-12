@@ -58,17 +58,48 @@ BEGIN
     -- Serialize hierarchy creation per ward code to avoid race conditions
     PERFORM pg_advisory_xact_lock(hashtextextended('hierarchy:ward:' || v_ward_code, 0));
 
-    -- Hospital configuration!!!
+    -- Hospital configuration hierarchy: ULS -> Unit -> Building -> Floor -> Service -> Wing -> Ward -> Room
     v_uls_name      := left(COALESCE(NULLIF(btrim(p_loc->>'ulsName'), ''), 'ULS Hospitalar'), 255);
     v_unit_name     := left(COALESCE(NULLIF(btrim(p_loc->>'unitName'), ''), 'Unidade Hospitalar Principal'), 255);
-    v_building_name := left(COALESCE(NULLIF(btrim(p_loc->>'buildingName'), ''), 'Edifício Principal'), 255);
-    v_floor_name    := left(COALESCE(NULLIF(btrim(p_loc->>'floorName'), ''), 'Piso 1'), 255);
+    v_building_name := left(COALESCE(NULLIF(btrim(p_loc->>'buildingName'), ''), 'Edifício 1'), 255);
+    v_floor_name    := left(COALESCE(
+                            NULLIF(btrim(p_loc->>'floorName'), ''),
+                            CASE WHEN p_loc->>'floor' IS NOT NULL THEN 'Piso ' || (p_loc->>'floor') ELSE NULL END,
+                            'Piso 1'
+                        ), 255);
+    
+    -- Service code and name derived from ward data with clean fallback mapping
     v_service_code  := left(COALESCE(NULLIF(btrim(p_loc->>'serviceCode'), ''),
                             NULLIF(btrim(regexp_replace(v_ward_code, '^Ward\s+', '', 'i')), ''),
                             v_ward_code), 255);
-    v_ward_name     := left(COALESCE(NULLIF(btrim(p_loc->>'wardName'), ''), v_ward_code), 255);
-    v_service_name  := left(COALESCE(NULLIF(btrim(p_loc->>'serviceName'), ''), v_ward_name), 255);
+
+    v_ward_code     := left(COALESCE(NULLIF(btrim(regexp_replace(v_ward_code, '^Ward\s+', '', 'i')), ''), v_ward_code), 255);
+
+    v_service_name  := left(COALESCE(
+                            NULLIF(btrim(p_loc->>'serviceName'), ''),
+                            CASE v_service_code
+                                WHEN '30004' THEN 'MEDICINA INTERNA A'
+                                WHEN '30006' THEN 'CIRURGIA GERAL'
+                                WHEN '30020' THEN 'MEDICINA INTENSIVA'
+                                ELSE 'Serviço ' || v_service_code
+                            END
+                        ), 255);
+
+    -- A enfermaria deve ter um nome próprio, diferente do serviço, mesmo para bundles antigos
+    v_ward_name     := left(COALESCE(
+                            NULLIF(
+                                CASE
+                                    WHEN lower(btrim(p_loc->>'wardName')) = lower(v_service_name)
+                                        THEN 'Enfermaria ' || btrim(p_loc->>'wardName')
+                                    ELSE btrim(p_loc->>'wardName')
+                                END,
+                                ''
+                            ),
+                            'Enfermaria ' || v_ward_code
+                        ), 255);
+
     v_wing_name     := left(COALESCE(NULLIF(btrim(p_loc->>'wingName'), ''), 'Ala ' || v_service_code), 255);
+    
     v_initial_status := COALESCE(NULLIF(btrim(p_loc->>'operationalStatus'), ''), 'AVAILABLE');
     IF v_initial_status NOT IN ('AVAILABLE', 'OCCUPIED', 'BLOCKED', 'CLEANING') THEN
         v_initial_status := 'AVAILABLE';
@@ -82,7 +113,7 @@ BEGIN
      WHERE w.code = v_ward_code;
 
     IF v_ward_id IS NULL THEN
-        -- 1. ULS (reuse existing ULS if ulsName was not explicitly specified, so user scopes match)
+        -- 1. ULS
         SELECT id INTO v_uls_id FROM uls WHERE name = v_uls_name LIMIT 1;
         IF v_uls_id IS NULL AND NULLIF(btrim(p_loc->>'ulsName'), '') IS NULL THEN
             SELECT id INTO v_uls_id FROM uls ORDER BY name, id LIMIT 1;
@@ -140,14 +171,14 @@ BEGIN
         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
         RETURNING id INTO v_ward_id;
     ELSE
-        -- Update ward & service name if a richer human-readable name arrived (e.g. from hospital-locations.json)
+        -- Update ward & service name if a richer human-readable name arrived
         IF NULLIF(btrim(p_loc->>'wardName'), '') IS NOT NULL AND (p_loc->>'wardName') <> v_ward_code THEN
-            UPDATE wards SET name = v_ward_name WHERE id = v_ward_id AND name = code;
-            UPDATE clinical_services SET name = v_service_name WHERE id = v_service_id AND name = code;
+            UPDATE wards SET name = v_ward_name WHERE id = v_ward_id;
+            UPDATE clinical_services SET name = v_service_name WHERE id = v_service_id;
         END IF;
     END IF;
 
-    -- 8. Room (optional if location entry is only ward-level)
+    -- 8. Room
     IF v_room_code <> '' THEN
         SELECT id INTO v_room_id FROM rooms WHERE ward_id = v_ward_id AND code = v_room_code;
         IF v_room_id IS NULL THEN
@@ -159,7 +190,7 @@ BEGIN
         END IF;
     END IF;
 
-    -- 9. Bed (optional if location entry is only ward/room-level)
+    -- 9. Bed
     IF v_bed_code <> '' AND v_room_id IS NOT NULL THEN
         SELECT id INTO v_bed_id FROM beds WHERE room_id = v_room_id AND code = v_bed_code;
         IF v_bed_id IS NULL THEN
@@ -240,7 +271,7 @@ BEGIN
     v_auto_locations := COALESCE((p_payload->>'autoCreateLocations')::boolean, TRUE);
 
     -- ========================================================================
-    -- STEP 1: Upsert Hospital Locations Hierarchy (if present in payload)
+    -- STEP 1: Upsert Hospital Locations Hierarchy
     -- ========================================================================
     IF jsonb_typeof(p_payload->'locations') = 'array' THEN
         FOR v_loc IN SELECT value FROM jsonb_array_elements(p_payload->'locations')
@@ -317,7 +348,7 @@ BEGIN
     END IF;
 
     -- ========================================================================
-    -- STEP 3: Process Encounters & Bed Allocations (A01 / A02 / A03 / Batch)
+    -- STEP 3: Process Encounters & Bed Allocations
     -- ========================================================================
     IF jsonb_typeof(p_payload->'encounters') = 'array' THEN
         FOR v_enc IN SELECT value FROM jsonb_array_elements(p_payload->'encounters')
@@ -328,7 +359,6 @@ BEGIN
                 CONTINUE;
             END IF;
 
-            -- Acquire transaction-scoped advisory locks matching OperationLocks.java
             PERFORM pg_advisory_xact_lock(hashtextextended('visit:' || v_visit_number, 0));
             PERFORM pg_advisory_xact_lock(hashtextextended('patient:' || v_sns, 0));
 
@@ -346,7 +376,7 @@ BEGIN
             v_end_period   := date_trunc('microseconds', NULLIF(btrim(COALESCE(v_enc->>'endPeriod', '')), '')::timestamptz);
             v_event_time   := date_trunc('microseconds', NULLIF(btrim(COALESCE(v_enc->>'eventTime', '')), '')::timestamptz);
 
-            -- Resolve or auto-create the primary target bed hierarchy
+            -- Resolve target bed hierarchy
             v_bed_id := NULL;
             v_service_id := NULL;
             IF v_auto_locations THEN
@@ -369,22 +399,16 @@ BEGIN
                 CONTINUE;
             END IF;
 
-            -- Lock the target bed
             PERFORM 1 FROM beds WHERE id = v_bed_id FOR UPDATE;
 
-            -- Check if encounter already exists
             SELECT * INTO v_existing_enc FROM encounters WHERE visit_number = v_visit_number FOR UPDATE;
 
             IF v_existing_enc.id IS NULL THEN
-                -- ============================================================
-                -- NEW ENCOUNTER (A01 Admission, Census A02/A03, or Batch Load)
-                -- ============================================================
                 v_enc_id := gen_random_uuid();
 
                 IF v_status = 'IN_PROGRESS' THEN
                     v_eff_start := COALESCE(v_start_period, v_event_time, date_trunc('microseconds', now()));
 
-                    -- Close any prior lingering IN_PROGRESS encounter for the same patient (uq_active_encounter_patient)
                     FOR v_stale_enc IN
                         SELECT id, start_period, clinical_discharge_at
                           FROM encounters
@@ -416,7 +440,6 @@ BEGIN
                          WHERE id = v_stale_enc.id;
                     END LOOP;
 
-                    -- Ensure target bed has no lingering open allocation from another encounter (uq_open_allocation_bed)
                     FOR v_stale_alloc IN
                         SELECT id, encounter_id, assigned_at
                           FROM location_allocations
@@ -442,7 +465,6 @@ BEGIN
                     INSERT INTO encounters (id, visit_number, patient_id, status, start_period, end_period, service_id, version)
                     VALUES (v_enc_id, v_visit_number, v_patient_id, 'IN_PROGRESS', v_eff_start, NULL, v_service_id, 0);
 
-                    -- Insert any historical closed movements if provided in allocations array
                     IF jsonb_typeof(v_enc->'allocations') = 'array' AND jsonb_array_length(v_enc->'allocations') > 1 THEN
                         FOR v_alloc IN SELECT value FROM jsonb_array_elements(v_enc->'allocations')
                         LOOP
@@ -459,7 +481,6 @@ BEGIN
                         END LOOP;
                     END IF;
 
-                    -- Insert current open allocation
                     INSERT INTO location_allocations (id, encounter_id, bed_id, assigned_at, discharged_at)
                     VALUES (gen_random_uuid(), v_enc_id, v_bed_id, GREATEST(v_eff_start, COALESCE(v_event_time, v_eff_start)), NULL);
 
@@ -476,7 +497,6 @@ BEGIN
                     ));
 
                 ELSE
-                    -- New encounter arriving already FINISHED (e.g. census discharge A03 or historical batch)
                     v_eff_start := COALESCE(v_start_period, v_end_period, v_event_time, date_trunc('microseconds', now()));
                     v_eff_end   := GREATEST(v_eff_start, COALESCE(v_end_period, v_event_time, v_eff_start));
 
@@ -501,7 +521,6 @@ BEGIN
                         v_allocations_changed := v_allocations_changed + 1;
                     END IF;
 
-                    -- If target bed is not currently occupied by an active allocation, mark it CLEANING
                     IF NOT EXISTS (SELECT 1 FROM location_allocations WHERE bed_id = v_bed_id AND discharged_at IS NULL) THEN
                         UPDATE beds
                            SET status = 'CLEANING', status_reason = NULL, version = version + 1
@@ -517,9 +536,6 @@ BEGIN
                 END IF;
 
             ELSE
-                -- ============================================================
-                -- EXISTING ENCOUNTER (Transfer A02, Discharge A03, or Duplicate)
-                -- ============================================================
                 v_enc_id := v_existing_enc.id;
 
                 SELECT * INTO v_open_alloc
@@ -530,22 +546,18 @@ BEGIN
                  FOR UPDATE;
 
                 IF v_status = 'IN_PROGRESS' THEN
-                    -- An A01 (admission) for an encounter that already exists is always a duplicate/replayed message, never a transfer
                     IF UPPER(btrim(COALESCE(v_enc->>'trigger', ''))) = 'A01' THEN
                         CONTINUE;
                     END IF;
 
-                    -- Only process transfer if encounter is still IN_PROGRESS
                     IF v_existing_enc.status = 'IN_PROGRESS' THEN
                         IF v_open_alloc.id IS NULL OR v_open_alloc.bed_id IS DISTINCT FROM v_bed_id THEN
-                            -- Chronological guard: a real transfer (A02) must have an event timestamp strictly after the current allocation's assigned_at
                             v_transfer_at := COALESCE(v_event_time, v_start_period);
                             IF v_open_alloc.id IS NOT NULL AND (v_transfer_at IS NULL OR v_transfer_at <= v_open_alloc.assigned_at) THEN
                                 CONTINUE;
                             END IF;
                             v_transfer_at := COALESCE(v_transfer_at, date_trunc('microseconds', now()));
 
-                            -- Idempotency guard: skip if this exact (encounter, bed, assigned_at) allocation already exists
                             IF EXISTS (
                                 SELECT 1 FROM location_allocations
                                  WHERE encounter_id = v_enc_id
@@ -565,7 +577,6 @@ BEGIN
                                  WHERE id = v_open_alloc.bed_id;
                             END IF;
 
-                            -- Ensure destination bed has no stale open allocation
                             FOR v_stale_alloc IN
                                 SELECT id, encounter_id, assigned_at
                                   FROM location_allocations
@@ -611,7 +622,6 @@ BEGIN
                     END IF;
 
                 ELSE
-                    -- Incoming status = FINISHED (Discharge A03)
                     IF v_existing_enc.status = 'IN_PROGRESS' THEN
                         v_discharge_at := GREATEST(
                             COALESCE(v_existing_enc.start_period, '-infinity'::timestamptz),
@@ -682,4 +692,3 @@ BEGIN
     p_result := sp_ingest_fhir_payload(p_payload);
 END;
 $$;
-
