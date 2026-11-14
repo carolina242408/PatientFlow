@@ -516,6 +516,7 @@ def run_generator(
     warmup_output: str,
     validate: bool,
     push_to_hapi: bool = True,
+    write_files: bool = True,
 ) -> dict[str, Any]:
     import yaml
 
@@ -616,29 +617,40 @@ def run_generator(
     )
 
     validation_report = None
-    if validate:
+    if validate and write_files:
         raw_texts = [m.text for m in messages]
         validation_report = validate_messages(raw_texts, check_converter=False)
 
-    summary = write_file_outputs(
-        output_dir=state.output_dir,
-        rendered_messages=messages,
-        sim_result=sim_result,
-        hospital=hospital,
-        registry=registry,
-        pool_patients=pool,
-        drop_fhir_types=set(sim_cfg["fhir"].get("drop_resource_types", [])),
-        pretty_fhir=bool(sim_cfg["fhir"].get("pretty", False)),
-        validation_report=validation_report,
-        push_to_hapi=push_to_hapi,
-    )
+    summary = {}
+    if write_files:
+        summary = write_file_outputs(
+            output_dir=state.output_dir,
+            rendered_messages=messages,
+            sim_result=sim_result,
+            hospital=hospital,
+            registry=registry,
+            pool_patients=pool,
+            drop_fhir_types=set(sim_cfg["fhir"].get("drop_resource_types", [])),
+            pretty_fhir=bool(sim_cfg["fhir"].get("pretty", False)),
+            validation_report=validation_report,
+            push_to_hapi=push_to_hapi,
+        )
+    else:
+        summary = {
+            "simulation": {
+                "start": sim_result.start.isoformat(),
+                "end": sim_result.end.isoformat(),
+                "total_episodes": len(sim_result.episodes),
+                "total_messages": len(messages),
+            }
+        }
 
     state.episodes = sim_result.episodes
     state.messages = messages
     state.by_id = {m.control_id: m for m in messages}
     state.summary = summary
     state.generation_version += 1
-    if push_to_hapi:
+    if push_to_hapi and write_files:
         state.broadcast_to_passive(messages)
     return summary
 
@@ -740,14 +752,14 @@ def generate_csv_file(
     base_seed: int = Query(default=42, description="Seed inicial de aleatoriedade"),
     push_to_hapi: bool = Query(default=False, description="Enviar bundles FHIR para o servidor HAPI durante a geração do CSV"),
 ):
-    """Gera o dataset CSV rodando a simulação N vezes com seeds diferentes e acumula os resultados."""
-    
+    """Gera o dataset CSV rodando a simulação N vezes com seeds diferentes e acumula os dados."""
     all_episodes = []
 
     for i in range(runs):
-        current_seed = base_seed + i  # Garantir seeds diferentes em cada rodada
+        current_seed = base_seed + i  
         
-        sim_summary = run_generator(
+        # CHAMA O GERADOR MAS DIZ-LHE PARA NÃO ESCREVER OS FICHEIROS HL7/FHIR (write_files=False)
+        run_generator(
             days=days,
             warmup_days=7,
             seed=current_seed,
@@ -755,21 +767,22 @@ def generate_csv_file(
             no_synthea=True,
             warmup_output="census",
             validate=False,
-            push_to_hapi=push_to_hapi,  # Default: False para a geração de CSV
+            push_to_hapi=push_to_hapi,
+            write_files=False, 
         )
         
-        # Acumular os episódios gerados nesta rodada
+        # Acumula os episódios gerados nesta iteração
         if hasattr(state, "episodes") and state.episodes:
             all_episodes.extend(state.episodes)
 
-    # Construir o CSV final com TODOS os episódios acumulados
+    # Usa o publisher para construir a string CSV com todos os episódios acumulados
     csv_content = build_dataset_csv(all_episodes)
     
-    # Guardar no ficheiro dataset.csv
+    # Guarda o ficheiro final dataset.csv na pasta output/
     csv_file = state.output_dir / "dataset.csv"
+    csv_file.parent.mkdir(parents=True, exist_ok=True)
     csv_file.write_text(csv_content, encoding="utf-8")
     
-    # Contar linhas reais no CSV gravado (excluindo cabeçalho e linhas em branco)
     lines = [line for line in csv_content.strip().splitlines() if line]
     lines_count = max(0, len(lines) - 1)
     
@@ -801,6 +814,7 @@ def get_dataset_csv():
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="dataset.csv"'},
     )
+
 
 
 @app.get("/api/simulation/summary", tags=["Simulation"])
