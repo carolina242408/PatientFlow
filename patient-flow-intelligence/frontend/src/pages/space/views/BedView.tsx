@@ -11,13 +11,11 @@ const BedView = ({ node }: ViewProps) => {
 
   const bedCharacteristics = {
     id: resource?.id ?? '—',
-    type: '—',
+    code: resource?.code ?? '—',
+    type: resource?.type ? t(`space.resourceLabel.${resource.type}`, resource.type) : '—',
     location: node.name || '—',
     status: resource?.status ?? 'available',
-    equipment: '—',
-    connectivity: '—',
-    lastMaintenance: '—',
-    lastSanitization: '—',
+    locationDetails: resource?.location ?? '—',
   }
 
   const isOccupied = resource?.status === 'occupied' && Boolean(patient)
@@ -74,10 +72,21 @@ const BedView = ({ node }: ViewProps) => {
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              {t('space.bedView.bedCode', 'Bed code')}
+            </p>
+            <p className="mt-1.5 text-sm font-semibold text-slate-800">
+              {bedCharacteristics.code}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
               {t('space.bedView.location', 'Location')}
             </p>
             <p className="mt-1.5 text-sm font-semibold text-slate-800">
-              {bedCharacteristics.location}
+              {bedCharacteristics.locationDetails !== '—'
+                ? `${bedCharacteristics.location} · ${bedCharacteristics.locationDetails}`
+                : bedCharacteristics.location}
             </p>
           </div>
 
@@ -90,41 +99,6 @@ const BedView = ({ node }: ViewProps) => {
             </p>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t('space.bedView.equipment', 'Equipment')}
-            </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">
-              {bedCharacteristics.equipment}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t('space.bedView.connectivity', 'Connectivity')}
-            </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">
-              {bedCharacteristics.connectivity}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t('space.bedView.lastMaintenance', 'Last Maintenance')}
-            </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">
-              {bedCharacteristics.lastMaintenance}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t('space.bedView.lastSanitization', 'Last Sanitization')}
-            </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">
-              {bedCharacteristics.lastSanitization}
-            </p>
-          </div>
         </div>
       </section>
 
@@ -163,28 +137,28 @@ const BedView = ({ node }: ViewProps) => {
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {t('space.bedView.ageAndCondition', 'Age and condition')}
+                    {t('space.bedView.ageAndGender', 'Age and gender')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {patient?.age === undefined ? '—' : `${patient.age}y`} · {patient?.diagnosis || '—'}
+                    {patient?.age === undefined ? '—' : `${patient.age}y`} · {patient?.gender || '—'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {t('space.bedView.primaryDiagnosis', 'Primary diagnosis')}
+                    {t('space.bedView.snsNumber', 'SNS number')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {patient?.diagnosis || '—'}
+                    {patient?.snsNumber || '—'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {t('space.bedView.attendingPhysician', 'Attending physician')}
+                    {t('space.bedView.hospitalNumber', 'Hospital number')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    —
+                    {patient?.hospitalNumber || '—'}
                   </p>
                 </div>
 
@@ -199,28 +173,28 @@ const BedView = ({ node }: ViewProps) => {
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {t('space.bedView.allergies', 'Allergies')}
+                    {t('space.bedView.expectedDischarge', 'Expected discharge')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    —
+                    {patient?.expectedDischargeAt ? formatDate(patient.expectedDischargeAt) : '—'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {t('space.bedView.bloodGroup', 'Blood group')}
+                    {t('space.bedView.service', 'Service')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    —
+                    {patient?.serviceName || '—'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {t('space.bedView.carePlan', 'Care plan')}
+                    {t('space.bedView.ward', 'Ward')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    —
+                    {patient?.wardCode || '—'}
                   </p>
                 </div>
               </div>

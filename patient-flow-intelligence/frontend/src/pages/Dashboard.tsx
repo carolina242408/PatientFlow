@@ -90,6 +90,7 @@ interface DashboardProps {
 const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { t, i18n } = useTranslation()
   const { user } = useKeycloak()
+  const [lastUpdatedAt] = useState(() => new Date())
   const { managerScope } = useOutletContext<AppOutletContext>()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
@@ -188,7 +189,12 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
-          {t('dashboard.lastUpdated', { time: '09:40' })}
+          {t('dashboard.lastUpdated', {
+            time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(lastUpdatedAt),
+          })}
         </div>
       </section>
 
