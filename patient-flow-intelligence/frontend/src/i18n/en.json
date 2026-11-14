@@ -295,6 +295,45 @@
       "clinicalReview": "Clinical review"
     }
   },
+  "manualAdmission": {
+    "title": "Manual admission",
+    "body": "Enter a patient and get bed suggestions.",
+    "open": "Open form",
+    "submit": "Suggest a bed",
+    "cancel": "Cancel",
+    "accept": "Accept",
+    "reject": "Reject",
+    "loading": "Computing suggestions...",
+    "field": {
+      "fullName": "Full name",
+      "birthDate": "Birth date",
+      "gender": "Gender",
+      "service": "Service",
+      "priority": "Priority",
+      "expectedDischargeAt": "Expected discharge",
+      "autoAccept": "Automatically accept the solver's top suggestion"
+    },
+    "gender": { "female": "Female", "male": "Male", "unspecified": "Unspecified" },
+    "priority": {
+      "1": "1 — Normal", "2": "2 — Low", "3": "3 — Medium", "4": "4 — High", "5": "5 — Urgent"
+    },
+    "results": {
+      "title": "Bed suggestions",
+      "empty": {
+        "title": "No compatible bed",
+        "body": "Beds with expected discharge in the next 24 hours:"
+      }
+    },
+    "success": {
+      "assigned": "Patient allocated successfully.",
+      "suggested": "Suggestions generated."
+    },
+    "errors": {
+      "conflict": "Bed no longer available. Please try again.",
+      "validation": "Check the required fields.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
   "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },
   "settings": {
     "title": "Interface preferences",

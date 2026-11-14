@@ -10,6 +10,7 @@ from bed_allocation.schemas.patient_waiting import PatientWaiting
 PATIENT_QUERY = text(
     """
     SELECT e.id AS encounter_id, e.service_id, p.id AS patient_id, p.full_name,
+           p.birth_date,
            p.gender, e.expected_discharge_at
     FROM encounters e
     JOIN patients p ON p.id = e.patient_id

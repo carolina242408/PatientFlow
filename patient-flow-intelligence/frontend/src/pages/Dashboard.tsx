@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
@@ -9,6 +9,14 @@ import type { AppOutletContext } from '@/layout/ManagerScopeContext'
 import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
+import {
+  createManualAdmission,
+  fetchCamasEmLibertacaoBreve,
+  fetchServicos,
+  updateSugestaoStatus,
+  type ManualAdmissionInput,
+  type ManualAdmissionResult,
+} from '../api/bed-allocation'
 import UpcomingDischargesTable, {
   type UpcomingDischarge,
 } from './dashboard_components/UpcomingDischargesTable'
@@ -93,6 +101,64 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { managerScope } = useOutletContext<AppOutletContext>()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
+  const manualDialogRef = useRef<HTMLDialogElement>(null)
+  const queryClient = useQueryClient()
+  const [manualOpen, setManualOpen] = useState(false)
+  const [manualResult, setManualResult] = useState<ManualAdmissionResult | null>(null)
+  const [manualError, setManualError] = useState<string | null>(null)
+  const [manualForm, setManualForm] = useState<ManualAdmissionInput>({
+    full_name: '',
+    priority: 3,
+    auto_accept: false,
+  })
+  const resetManualAdmission = () => {
+    setManualForm({ full_name: '', priority: 3, auto_accept: false })
+    setManualResult(null)
+    setManualError(null)
+  }
+  const { data: services = [] } = useQuery({
+    queryKey: ['servicos'],
+    queryFn: fetchServicos,
+  })
+  const invalidateOperational = () => {
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['space-hierarchy'] }),
+      queryClient.invalidateQueries({ queryKey: ['beds-operational'] }),
+      queryClient.invalidateQueries({ queryKey: ['space-bed-summary-current'] }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard-occupancy'] }),
+    ])
+  }
+  const manualAdmission = useMutation({
+    mutationFn: createManualAdmission,
+    onSuccess: (result) => {
+      setManualResult(result)
+      setManualError(null)
+      if (result.accepted_allocation_id) {
+        invalidateOperational()
+        manualDialogRef.current?.close()
+      }
+    },
+    onError: (error: unknown) => {
+      const status = (error as { response?: { status?: number } }).response?.status
+      setManualResult(null)
+      setManualError(
+        status === 409
+          ? 'manualAdmission.errors.conflict'
+          : status === 422
+            ? 'manualAdmission.errors.validation'
+            : 'manualAdmission.errors.generic',
+      )
+    },
+  })
+  const suggestionMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'ACEITE' | 'REJEITADA' }) =>
+      updateSugestaoStatus(id, status),
+    onSuccess: () => {
+      invalidateOperational()
+      manualDialogRef.current?.close()
+    },
+    onError: () => setManualError('manualAdmission.errors.generic'),
+  })
   const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
   const metrics = SCOPE_METRICS[profileScope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
@@ -105,6 +171,11 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     const dialog = dashboardDialogRef.current
     if (expandedItem && dialog && !dialog.open) dialog.showModal()
   }, [expandedItem])
+
+  useEffect(() => {
+    const dialog = manualDialogRef.current
+    if (manualOpen && dialog && !dialog.open) dialog.showModal()
+  }, [manualOpen])
 
   const today = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'long',
@@ -448,6 +519,173 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       >
           <UpcomingDischargesTable discharges={UPCOMING_DISCHARGES} />
       </DashboardPanel>
+
+      <DashboardPanel
+        title={t('manualAdmission.title')}
+        description={t('manualAdmission.body')}
+        expandLabel={t('manualAdmission.open')}
+        onExpand={() => setManualOpen(true)}
+        contentClassName="p-6"
+      >
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <p className="text-sm text-gray-500">{t('manualAdmission.body')}</p>
+          <Button type="button" onClick={() => setManualOpen(true)}>
+            {t('manualAdmission.open')}
+          </Button>
+        </div>
+      </DashboardPanel>
+
+      <dialog
+        ref={manualDialogRef}
+        onClose={() => {
+          setManualOpen(false)
+          resetManualAdmission()
+        }}
+        className="w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/40"
+      >
+        <form
+          className="space-y-5 p-6 sm:p-8"
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (event.currentTarget.checkValidity()) manualAdmission.mutate(manualForm)
+          }}
+        >
+          <header className="flex items-start justify-between gap-4 border-b border-gray-200 pb-5">
+            <div>
+              <h2 className="text-xl font-semibold">{t('manualAdmission.title')}</h2>
+              <p className="mt-1 text-sm text-gray-500">{t('manualAdmission.body')}</p>
+            </div>
+            <Button type="button" variant="ghost" onClick={() => manualDialogRef.current?.close()}>
+              <X aria-hidden="true" className="h-5 w-5" />
+            </Button>
+          </header>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {([
+              ['full_name', 'text', 'manualAdmission.field.fullName'],
+              ['birth_date', 'date', 'manualAdmission.field.birthDate'],
+              ['expected_discharge_at', 'datetime-local', 'manualAdmission.field.expectedDischargeAt'],
+            ] as const).map(([field, type, label]) => (
+              <label key={field} className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                {t(label)}
+                <input
+                  type={type}
+                  required={field === 'full_name'}
+                  minLength={field === 'full_name' ? 2 : undefined}
+                  maxLength={field === 'full_name' ? 120 : undefined}
+                  value={manualForm[field] ?? ''}
+                  onChange={(event) =>
+                    setManualForm((current) => ({ ...current, [field]: event.target.value }))
+                  }
+                  className="h-10 rounded-md border border-gray-300 px-3 font-normal"
+                />
+              </label>
+            ))}
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              {t('manualAdmission.field.gender')}
+              <select
+                value={manualForm.gender ?? ''}
+                onChange={(event) =>
+                  setManualForm((current) => ({
+                    ...current,
+                    gender: (event.target.value || undefined) as 'F' | 'M' | undefined,
+                  }))
+                }
+                className="h-10 rounded-md border border-gray-300 px-3 font-normal"
+              >
+                <option value="">{t('manualAdmission.gender.unspecified')}</option>
+                <option value="F">{t('manualAdmission.gender.female')}</option>
+                <option value="M">{t('manualAdmission.gender.male')}</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              {t('manualAdmission.field.service')}
+              <select
+                value={manualForm.service_id ?? ''}
+                onChange={(event) =>
+                  setManualForm((current) => ({ ...current, service_id: event.target.value || undefined }))
+                }
+                className="h-10 rounded-md border border-gray-300 px-3 font-normal"
+              >
+                <option value="">—</option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>{service.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              {t('manualAdmission.field.priority')}
+              <select
+                required
+                value={manualForm.priority}
+                onChange={(event) =>
+                  setManualForm((current) => ({
+                    ...current,
+                    priority: event.target.value ? Number(event.target.value) : undefined,
+                  }))
+                }
+                className="h-10 rounded-md border border-gray-300 px-3 font-normal"
+              >
+                <option value="">—</option>
+                {[1, 2, 3, 4, 5].map((priority) => (
+                  <option key={priority} value={priority}>{t(`manualAdmission.priority.${priority}`)}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={manualForm.auto_accept}
+              onChange={(event) => setManualForm((current) => ({ ...current, auto_accept: event.target.checked }))}
+            />
+            {t('manualAdmission.field.autoAccept')}
+          </label>
+          {manualError && <p className="text-sm text-red-600">{t(manualError)}</p>}
+          {manualAdmission.isPending && <p className="text-sm text-gray-500">{t('manualAdmission.loading')}</p>}
+          {manualResult && !manualResult.accepted_allocation_id && (
+            <div className="space-y-3">
+              <h3 className="font-semibold">{t('manualAdmission.results.title')}</h3>
+              {manualResult.suggestions.map((suggestion) => (
+                <div key={suggestion.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">{suggestion.bed_label}</p>
+                    <p className="text-sm text-gray-500">{suggestion.justification}</p>
+                    <Badge variant="secondary">{suggestion.score}</Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" disabled={suggestionMutation.isPending} onClick={() => suggestionMutation.mutate({ id: suggestion.id, status: 'ACEITE' })}>{t('manualAdmission.accept')}</Button>
+                    <Button type="button" variant="ghost" disabled={suggestionMutation.isPending} onClick={() => suggestionMutation.mutate({ id: suggestion.id, status: 'REJEITADA' })}>{t('manualAdmission.reject')}</Button>
+                  </div>
+                </div>
+              ))}
+              {manualResult.suggestions.length === 0 && (
+                <EmptyDischarges
+                  title={t('manualAdmission.results.empty.title')}
+                  message={t('manualAdmission.results.empty.body')}
+                />
+              )}
+            </div>
+          )}
+          <footer className="flex justify-end gap-3 border-t border-gray-200 pt-5">
+            <Button type="button" variant="outline" onClick={() => manualDialogRef.current?.close()}>{t('manualAdmission.cancel')}</Button>
+            <Button type="submit" disabled={manualAdmission.isPending}>{t('manualAdmission.submit')}</Button>
+          </footer>
+        </form>
+      </dialog>
+    </div>
+  )
+}
+
+function EmptyDischarges({ title, message }: { title: string; message: string }) {
+  const { data = [] } = useQuery({
+    queryKey: ['camas-em-libertacao-breve'],
+    queryFn: () => fetchCamasEmLibertacaoBreve(24),
+  })
+  return (
+    <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+      <p className="font-medium">{title}</p>
+      <p>{message}</p>
+      {data.map((bed) => <p key={bed.bed_id}>{bed.bed_label} · {bed.current_patient_name}</p>)}
     </div>
   )
 }

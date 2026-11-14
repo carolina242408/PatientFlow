@@ -1,4 +1,4 @@
-from .allocation import LocationAllocation, SugestaoAlocacao
+from .allocation import AllocationSuggestionRecord, LocationAllocation
 from .hierarchy import Base
 
-__all__ = ["Base", "LocationAllocation", "SugestaoAlocacao"]
+__all__ = ["Base", "LocationAllocation", "AllocationSuggestionRecord"]

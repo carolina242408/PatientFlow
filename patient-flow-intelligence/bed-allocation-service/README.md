@@ -26,14 +26,16 @@ alembic upgrade head
 uvicorn bed_allocation.main:app --app-dir src
 ```
 
-The migration creates the only table owned by this service: `sugestoes_alocacao`.
-The existing hospital tables are read-only mirrors. The API is available at
+The migration creates the only table owned by this service:
+`allocation_suggestions`. The existing hospital tables are read-only mirrors
+managed by the backend Flyway migrations. The API is available at
 `/api/v1/health`, `/api/v1/sugerir-alocacao`, and `/api/v1/sugestoes`.
 
 ## PatientFlow integration
 
 The root Docker Compose stack starts this service as `bed-allocation-service` on
-port 8001 and connects it to the same PostgreSQL database as the Spring Boot
+host port 8002 (container port 8001), after the backend Flyway migrations have
+created the shared hospital schema. It connects to the same PostgreSQL database as the Spring Boot
 backend. The frontend exposes it through the same-origin `/allocation-api`
 proxy, avoiding browser CORS issues. Open **Bed allocation** in the frontend to
 generate suggestions and accept or reject them; accepting a suggestion only

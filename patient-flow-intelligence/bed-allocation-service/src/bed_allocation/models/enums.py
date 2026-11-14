@@ -14,7 +14,7 @@ class EncounterStatus(StrEnum):
 
 
 class SuggestionStatus(StrEnum):
-    PENDENTE = "PENDENTE"
-    ACEITE = "ACEITE"
-    REJEITADA = "REJEITADA"
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
 

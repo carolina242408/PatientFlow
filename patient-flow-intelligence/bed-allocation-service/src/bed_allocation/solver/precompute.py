@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 from bed_allocation.config import settings
@@ -5,9 +6,22 @@ from bed_allocation.schemas.bed_flat import BedFlat
 from bed_allocation.schemas.patient_waiting import PatientWaiting
 
 
+def is_priority_age_cohort(birth_date: date | None, today: date | None = None) -> bool:
+    if birth_date is None:
+        return False
+    reference_date = today or date.today()
+    if birth_date > reference_date:
+        return False
+    age = reference_date.year - birth_date.year - (
+        (reference_date.month, reference_date.day) < (birth_date.month, birth_date.day)
+    )
+    return age < 18 or age >= 65
+
+
 def build_pair_flags(
-    patients: list[PatientWaiting], beds: list[BedFlat]
-) -> dict[tuple[UUID, UUID], dict[str, bool]]:
+    patients: list[PatientWaiting], beds: list[BedFlat],
+    imminent_beds: dict[UUID, float] | None = None,
+) -> dict[tuple[UUID, UUID], dict[str, bool | float | None]]:
     flags = {}
     for patient in patients:
         for bed in beds:
@@ -21,6 +35,9 @@ def build_pair_flags(
                 "sex_ok": sex_ok,
                 "isolation_ok": not settings.bed_isolation.get(bed.bed_id, False)
                 or settings.priority_by_encounter.get(patient.encounter_id, 1) > 1,
+                "imminent_discharge": bed.bed_id in (imminent_beds or {}),
+                "age_cohort_priority": is_priority_age_cohort(patient.birth_date),
+                "hours_until_free": (imminent_beds or {}).get(bed.bed_id),
             }
     return flags
 

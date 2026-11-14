@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -9,6 +9,7 @@ class PatientWaiting(BaseModel):
     service_id: UUID | None
     patient_id: UUID
     full_name: str
+    birth_date: date | None = None
     gender: str | None = None
     expected_discharge_at: datetime | None = None
 

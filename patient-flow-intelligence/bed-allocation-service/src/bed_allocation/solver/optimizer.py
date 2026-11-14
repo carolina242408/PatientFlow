@@ -9,7 +9,11 @@ from .id_mapper import IdMapper
 from .precompute import build_pair_flags
 
 
-def optimize(patients: list[PatientWaiting], beds: list[BedFlat]) -> AllocationResult:
+def optimize(
+    patients: list[PatientWaiting],
+    beds: list[BedFlat],
+    imminent_beds: dict | None = None,
+) -> AllocationResult:
     if not patients or not beds:
         return AllocationResult()
     id_mapper = IdMapper()
@@ -17,7 +21,7 @@ def optimize(patients: list[PatientWaiting], beds: list[BedFlat]) -> AllocationR
         id_mapper.to_int(patient.encounter_id)
     for bed in beds:
         id_mapper.to_int(bed.bed_id)
-    flags = build_pair_flags(patients, beds)
+    flags = build_pair_flags(patients, beds, imminent_beds)
     model = cp_model.CpModel()
     variables = {}
     for p, patient in enumerate(patients):
@@ -28,6 +32,10 @@ def optimize(patients: list[PatientWaiting], beds: list[BedFlat]) -> AllocationR
                 (patient.service_id is not None and not pair["service_match"])
                 or not pair["sex_ok"]
                 or not pair["isolation_ok"]
+                or (
+                    pair["imminent_discharge"]
+                    and settings.priority_by_encounter.get(patient.encounter_id, 1) >= 4
+                )
             ):
                 model.add(variable == 0)
             variables[p, b] = variable
@@ -47,6 +55,14 @@ def optimize(patients: list[PatientWaiting], beds: list[BedFlat]) -> AllocationR
                 + weights.get("W_SAME_ULS", 10) * pair["same_uls"]
                 + weights.get("W_SAME_UNIT", 5) * pair["same_unit"]
                 + weights.get("W_SAME_FLOOR", 2) * pair["same_floor"]
+                + weights.get("W_AGE_COHORT", 25) * pair["age_cohort_priority"]
+                + (
+                    weights.get("W_IMMINENT_DISCHARGE", 30)
+                    * max(0, (settings.imminent_discharge_hours - pair["hours_until_free"])
+                          / settings.imminent_discharge_hours)
+                    if pair["imminent_discharge"] and priority <= 2
+                    else 0
+                )
             )
             objective.append(score * variables[p, b])
     model.maximize(sum(objective))
@@ -59,11 +75,15 @@ def optimize(patients: list[PatientWaiting], beds: list[BedFlat]) -> AllocationR
             if solver.value(variables[p, b]):
                 pair = flags[(patient.encounter_id, bed.bed_id)]
                 score = solver.objective_value
-                reasons = ["cama disponível"]
+                reasons = ["bed available"]
                 if pair["service_match"] and patient.service_id:
-                    reasons.insert(0, f"serviço compatível ({bed.service_name})")
+                    reasons.insert(0, f"compatible service ({bed.service_name})")
                 if pair["same_floor"]:
-                    reasons.append("mesmo piso")
+                    reasons.append("same floor")
+                if pair["imminent_discharge"]:
+                    reasons.append(
+                        f"bed of patient with discharge expected in {int(pair['hours_until_free'])}h"
+                    )
                 suggestions.append(
                     AllocationSuggestion(
                         encounter_id=patient.encounter_id,

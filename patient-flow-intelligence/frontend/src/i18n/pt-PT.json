@@ -295,6 +295,45 @@
       "clinicalReview": "Revisão clínica"
     }
   },
+  "manualAdmission": {
+    "title": "Admissão manual",
+    "body": "Introduza um paciente e obtenha sugestões de cama.",
+    "open": "Abrir formulário",
+    "submit": "Sugerir cama",
+    "cancel": "Cancelar",
+    "accept": "Aceitar",
+    "reject": "Rejeitar",
+    "loading": "A calcular sugestões...",
+    "field": {
+      "fullName": "Nome completo",
+      "birthDate": "Data de nascimento",
+      "gender": "Sexo",
+      "service": "Serviço",
+      "priority": "Prioridade",
+      "expectedDischargeAt": "Alta prevista",
+      "autoAccept": "Aceitar automaticamente a sugestão de topo do solver"
+    },
+    "gender": { "female": "Feminino", "male": "Masculino", "unspecified": "Não especificado" },
+    "priority": {
+      "1": "1 — Normal", "2": "2 — Baixa", "3": "3 — Média", "4": "4 — Alta", "5": "5 — Urgente"
+    },
+    "results": {
+      "title": "Sugestões de cama",
+      "empty": {
+        "title": "Sem cama compatível",
+        "body": "Camas com alta prevista nas próximas 24 horas:"
+      }
+    },
+    "success": {
+      "assigned": "Paciente alocado com sucesso.",
+      "suggested": "Sugestões geradas."
+    },
+    "errors": {
+      "conflict": "A cama já não está disponível. Tente novamente.",
+      "validation": "Verifique os campos obrigatórios.",
+      "generic": "Ocorreu um erro. Tente novamente."
+    }
+  },
   "admin": { "title": "Consola de administração", "body": "Área reservada a administradores." },
   "settings": {
     "title": "Preferências da interface",

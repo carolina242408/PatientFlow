@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     use_excel: bool = False
     config_json_path: str | None = None
     solver_time_limit_seconds: float = 10
+    imminent_discharge_hours: int = 24
     weights: dict[str, int] = Field(
         default_factory=lambda: {
             "W_PRIORITY": 100,
@@ -20,6 +21,8 @@ class Settings(BaseSettings):
             "W_SAME_UNIT": 5,
             "W_SAME_FLOOR": 2,
             "W_SERVICE_MATCH": 50,
+            "W_IMMINENT_DISCHARGE": 30,
+            "W_AGE_COHORT": 25,
         }
     )
     room_sex_rules: dict[UUID, str] = Field(default_factory=dict)
