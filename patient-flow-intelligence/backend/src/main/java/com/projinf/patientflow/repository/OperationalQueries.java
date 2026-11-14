@@ -76,7 +76,13 @@ public class OperationalQueries {
     }
 
     private String scope(Scope scope) {
-        return " AND " + access.sql("u.uls_id", "u.id", "s.id") + (scope.ulsId() == null ? "" : " AND u.uls_id=:uls")
+        return scope(scope, true);
+    }
+
+    private String scope(Scope scope, boolean hasWardLocation) {
+        return " AND " + access.sql("u.uls_id", "u.id", "bu.id", "f.id", "s.id",
+            hasWardLocation ? "wi.id" : null, hasWardLocation ? "w.id" : null)
+            + (scope.ulsId() == null ? "" : " AND u.uls_id=:uls")
             + (scope.unitId() == null ? "" : " AND u.id=:unit")
         + (scope.buildingId() == null ? "" : " AND bu.id=:building")
         + (scope.floorId() == null ? "" : " AND f.id=:floor")
@@ -108,7 +114,8 @@ public class OperationalQueries {
         return page(BED_SELECT, BED_FROM, where, params, "u.name, w.code, r.code, b.code, b.id", page, size, bedMapper);
     }
 
-    public BedView bed(UUID id) { return one(BED_SELECT + BED_FROM + " WHERE b.id=:id AND " + access.sql("u.uls_id", "u.id", "s.id"), id, bedMapper); }
+    public BedView bed(UUID id) { return one(BED_SELECT + BED_FROM + " WHERE b.id=:id AND "
+        + access.sql("u.uls_id", "u.id", "bu.id", "f.id", "s.id", "wi.id", "w.id"), id, bedMapper); }
 
     public BedMap bedMap(Scope filter, BedStatus status, int page, int size) {
         Map<BedStatus, Long> counts = new EnumMap<>(BedStatus.class);
@@ -151,7 +158,8 @@ public class OperationalQueries {
         return page(ENCOUNTER_SELECT, ENCOUNTER_FROM, where, params, "e.start_period DESC NULLS LAST, e.id", page, size, encounterMapper);
     }
 
-    public EncounterView encounter(UUID id) { return one(ENCOUNTER_SELECT + ENCOUNTER_FROM + " WHERE e.id=:id AND " + access.sql("u.uls_id", "u.id", "s.id"), id, encounterMapper); }
+    public EncounterView encounter(UUID id) { return one(ENCOUNTER_SELECT + ENCOUNTER_FROM + " WHERE e.id=:id AND "
+        + access.sql("u.uls_id", "u.id", "bu.id", "f.id", "s.id", "wi.id", "w.id"), id, encounterMapper); }
 
     public PageResult<AllocationView> allocations(Scope filter, UUID bedId, UUID encounterId, UUID patientId,
             Boolean active, int page, int size) {
@@ -173,13 +181,14 @@ public class OperationalQueries {
             int page, int size) {
         if (filter.wardId() != null) throw new IllegalArgumentException("Pedidos em espera não têm enfermaria atribuída");
         var params = params(filter);
-        String where = " WHERE 1=1" + scope(filter);
+        String where = " WHERE 1=1" + scope(filter, false);
         if (status != null) { where += " AND q.status=:status"; params.put("status", status.name()); }
         if (origin != null) { where += " AND q.origin=:origin"; params.put("origin", origin.name()); }
         return page(REQUEST_SELECT, REQUEST_FROM, where, params, "q.priority, q.requested_at, q.id", page, size, requestMapper);
     }
 
-    public AdmissionRequestView request(UUID id) { return one(REQUEST_SELECT + REQUEST_FROM + " WHERE q.id=:id AND " + access.sql("u.uls_id", "u.id", "s.id"), id, requestMapper); }
+    public AdmissionRequestView request(UUID id) { return one(REQUEST_SELECT + REQUEST_FROM + " WHERE q.id=:id AND "
+        + access.sql("u.uls_id", "u.id", "bu.id", "f.id", "s.id", null, null), id, requestMapper); }
 
     private static UUID uuid(ResultSet r, String field) throws SQLException { return r.getObject(field, UUID.class); }
     private static Instant instant(ResultSet r, String field) throws SQLException {

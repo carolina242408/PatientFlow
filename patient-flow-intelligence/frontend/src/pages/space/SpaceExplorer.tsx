@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
+import { hasAdminRole, useKeycloak } from '@/auth/context'
 import {
   fetchHierarchyChildren,
   fetchHierarchyLevel,
+  fetchHierarchyNode,
   hierarchyChildrenQueryKey,
 } from '@/features/lhu-hierarchy/api/hierarchy'
 import { fetchBedMap, fetchBeds, fetchEncounter, fetchPatient } from '@/api/operational'
@@ -36,8 +38,10 @@ const VIEWS: Record<Level, ComponentType<ViewProps>> = {
 }
 
 interface SpaceExplorerProps {
-  /** Highest level the user may see: LHU manager 'lhu', unit manager 'unit', service manager 'service' */
+  /** Highest level the user may see */
   startLevel?: Level
+  /** Restricts the starting list to one assigned root */
+  rootId?: string
   /** Level that is open on first render (defaults to startLevel) */
   initialLevel?: Level
   adminMode?: boolean
@@ -77,11 +81,14 @@ function calculateAge(birthDate: string | null): number | undefined {
 
 const SpaceExplorer = ({
   startLevel = 'lhu',
+  rootId,
   initialLevel,
   adminMode = false,
   onAddChild,
 }: SpaceExplorerProps) => {
   const { t } = useTranslation()
+  const { user } = useKeycloak()
+  const hasApplicationRole = user?.roles.includes('MANAGER_ROLE') === true || hasAdminRole(user?.roles)
   const [selectedRoomId, setSelectedRoomId] = useState<string>()
 
   // 1. Hierarquia real (ULS → unidade → edifício → piso → serviço → enfermaria → sala → cama)
@@ -90,15 +97,20 @@ const SpaceExplorer = ({
     isPending,
     isError,
   } = useQuery({
-    queryKey: ['space-hierarchy', startLevel],
-    queryFn: () => fetchHierarchyLevel(startLevel),
+    queryKey: ['space-hierarchy', startLevel, rootId],
+    queryFn: async () => {
+      if (rootId) return [await fetchHierarchyNode(startLevel, rootId)]
+      const nodes = await fetchHierarchyLevel(startLevel)
+      return nodes
+    },
+    enabled: hasApplicationRole,
   })
 
   // Camas detalhadas só são carregadas dentro de um quarto.
   const { data: bedsData } = useQuery({
     queryKey: ['beds-operational', selectedRoomId],
     queryFn: () => fetchBeds({ roomId: selectedRoomId }, undefined, 0, 50),
-    enabled: !adminMode && Boolean(selectedRoomId),
+    enabled: hasApplicationRole && !adminMode && Boolean(selectedRoomId),
     refetchInterval: 60_000,
   })
 
@@ -137,7 +149,7 @@ const SpaceExplorer = ({
         ]),
       )
     },
-    enabled: !adminMode && Boolean(selectedRoomId && occupiedBeds.length),
+    enabled: hasApplicationRole && !adminMode && Boolean(selectedRoomId && occupiedBeds.length),
     refetchInterval: 60_000,
   })
 
@@ -241,7 +253,7 @@ const SpaceExplorer = ({
   const { data: currentBedSummary } = useQuery({
     queryKey: ['space-bed-summary-current', current?.level, current?.id],
     queryFn: () => fetchBedMap(currentSummaryScope, undefined, 0, 1),
-    enabled: !adminMode && Boolean(
+    enabled: hasApplicationRole && !adminMode && Boolean(
       current && ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'room'].includes(current.level),
     ),
   })
@@ -263,14 +275,15 @@ const SpaceExplorer = ({
       if (!currentOrgNode) throw new Error('Cannot load children without a selected hierarchy node')
       return fetchHierarchyChildren(currentOrgNode)
     },
-    enabled: Boolean(currentOrgNode && current?.level !== 'bed' && !current?.children),
+    enabled: hasApplicationRole && Boolean(currentOrgNode && current?.level !== 'bed' && !current?.children),
     staleTime: 30_000,
   })
   const loadingChildren = childrenQuery.isPending && childrenQuery.isFetching
   const childrenError = childrenQuery.isError
 
   if (isPending) return <div>Loading...</div>
-  if (isError || !path.length) return <div>{t('lhuHierarchy.error')}</div>
+  if (isError) return <div>{t('lhuHierarchy.error')}</div>
+  if (!hierarchy?.length || !path.length) return <div>{t('lhuHierarchy.noData')}</div>
 
   // Re-sincroniza os nós do caminho atual com a árvore enriquecida (para refletir dados operacionais atualizados)
   const syncedPath = path.map((p) => {

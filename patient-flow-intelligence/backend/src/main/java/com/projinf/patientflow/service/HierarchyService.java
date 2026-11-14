@@ -44,22 +44,16 @@ public class HierarchyService {
     }
 
     private void ensureKeycloakHierarchyGroup(Type type, HierarchyNode node) {
-        if (type == Type.ULS) {
+        if (!type.supportsKeycloakGroup()) return;
+
+        if (type.parentType == null) {
             keycloakGroups.ensureHierarchyGroup(type, node.id(), node.name(), null);
             return;
         }
-        if (type == Type.UNIT) {
-            var uls = repository.get(Type.ULS, node.parentId());
-            ensureKeycloakHierarchyGroup(Type.ULS, uls);
-            keycloakGroups.ensureHierarchyGroup(type, node.id(), node.name(), uls.id());
-            return;
-        }
-        if (type == Type.SERVICE) {
-            UUID unitId = repository.unitOfFloor(node.parentId());
-            var unit = repository.get(Type.UNIT, unitId);
-            ensureKeycloakHierarchyGroup(Type.UNIT, unit);
-            keycloakGroups.ensureHierarchyGroup(type, node.id(), node.name(), unit.id());
-        }
+
+        var parent = repository.get(type.parentType, node.parentId());
+        ensureKeycloakHierarchyGroup(type.parentType, parent);
+        keycloakGroups.ensureHierarchyGroup(type, node.id(), node.name(), parent.id());
     }
 
     public HierarchyNode update(Type type, UUID id, HierarchyWrite input) {

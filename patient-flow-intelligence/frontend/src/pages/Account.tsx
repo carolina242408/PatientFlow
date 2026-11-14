@@ -1,13 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/Card'
+import { useKeycloak } from '@/auth/context'
 import { fetchAccount } from '../api/account'
 
 const getProfile = (roles: string[] = []) => {
-  if (roles.includes('ROLE_ADMIN')) return 'admin'
-  if (roles.includes('LHU_MANAGER')) return 'lhu'
-  if (roles.includes('UNIT_MANAGER')) return 'unit'
-  if (roles.includes('SERVICE_MANAGER')) return 'service'
+  if (roles.includes('ADMIN_ROLE')) return 'admin'
+  if (roles.includes('MANAGER_ROLE')) return 'manager'
   return 'default'
 }
 
@@ -28,6 +27,7 @@ const Field = ({ label, value }: { label: string; value: string }) => (
 
 const Account = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useKeycloak()
   const { data: account, isPending, isError } = useQuery({
     queryKey: ['account'],
     queryFn: fetchAccount,
@@ -35,8 +35,28 @@ const Account = () => {
 
   const name = account?.name || account?.login || '—'
   const email = account?.email || '—'
-  const profile = getProfile(account?.roles)
-  const profileLabel = t(`account.profiles.${profile}`)
+  const roles = user?.roles ?? account?.roles ?? []
+  const hasAdminRole = roles.includes('ADMIN_ROLE')
+  const hasManagerRole = roles.includes('MANAGER_ROLE')
+  const hasApplicationRole = hasAdminRole || hasManagerRole
+  const scopeType = user?.scopeType
+  const hasScope = scopeType !== null && scopeType !== undefined
+  const profile = getProfile(roles)
+  const profileLabel = hasApplicationRole
+    ? t(`account.profiles.${profile}`)
+    : t('account.profiles.none')
+  const scopeLabel = hasAdminRole
+    ? t('account.scopes.admin')
+    : hasScope
+      ? t(`account.scopeLevels.${scopeType}`)
+      : t('account.scopes.default')
+  const accessDescription = !hasApplicationRole && !hasScope
+    ? t('account.access.missingRoleAndScope')
+    : !hasApplicationRole
+      ? t('account.access.missingRoleDescription')
+      : !hasScope
+        ? t('account.access.missingScopeDescription')
+        : t(`account.access.${profile}`)
   const languageLabel = t(`account.languages.${i18n.resolvedLanguage ?? 'en'}`, {
     defaultValue: i18n.resolvedLanguage ?? 'English',
   })
@@ -72,7 +92,7 @@ const Account = () => {
         <Field label={t('account.fullName')} value={name} />
         <Field label={t('account.email')} value={email} />
         <Field label={t('account.profile')} value={profileLabel} />
-        <Field label={t('account.scope')} value={t(`account.scopes.${profile}`)} />
+        <Field label={t('account.scope')} value={scopeLabel} />
         <Field label={t('account.status')} value={t('account.active')} />
         <Field label={t('account.language')} value={languageLabel} />
       </dl>
@@ -80,8 +100,8 @@ const Account = () => {
       {/* Access info */}
       <section className="rounded-xl bg-slate-50 p-6">
         <h2 className="text-base font-semibold text-slate-900">{t('account.access.title')}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-gray-500">
-          {t(`account.access.${profile}`)}
+        <p className={`mt-2 text-sm leading-relaxed ${!hasApplicationRole || (!hasScope && !hasAdminRole) ? 'font-medium text-red-700' : 'text-gray-500'}`}>
+          {accessDescription}
         </p>
       </section>
     </Card>

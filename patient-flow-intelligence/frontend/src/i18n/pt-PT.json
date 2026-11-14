@@ -24,7 +24,17 @@
       "admin": "Área de Administração",
       "manager": "Área de Gestão"
     },
-    "lhuHierarchy": "Hierarquia LHU"
+    "lhuHierarchy": "Hierarquia LHU",
+    "noScope": "Sem âmbito atribuído",
+    "scopeLevels": {
+      "ULS": "ULS",
+      "UNIT": "Unidade",
+      "BUILDING": "Edifício",
+      "FLOOR": "Piso",
+      "SERVICE": "Serviço",
+      "WING": "Ala",
+      "WARD": "Enfermaria"
+    }
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },
@@ -32,6 +42,20 @@
     "unit": { "title": "Unidades", "description": "Gerir a capacidade, alocação de recursos e o fluxo de doentes da unidade." },
     "admin": { "title": "Consola de administração", "description": "Gerir a administração da aplicação" },
     "lhu": { "title": "Unidade Local de Saúde", "description": "Gerir o fluxo da Unidade Local de Saúde" },
+    "hierarchy": {
+      "title": "Hierarquia da organização",
+      "description": "Explorar o âmbito organizacional atribuído",
+      "scopes": {
+        "ULS": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
+        "UNIT": { "title": "Hierarquia da unidade", "description": "Explorar a unidade atribuída e os seus espaços." },
+        "BUILDING": { "title": "Hierarquia do edifício", "description": "Explorar o edifício atribuído e os seus espaços." },
+        "FLOOR": { "title": "Hierarquia do piso", "description": "Explorar o piso atribuído e os seus espaços." },
+        "SERVICE": { "title": "Hierarquia do serviço", "description": "Explorar o serviço atribuído e os seus espaços." },
+        "WING": { "title": "Hierarquia da ala", "description": "Explorar a ala atribuída e os seus espaços." },
+        "WARD": { "title": "Hierarquia da enfermaria", "description": "Explorar a enfermaria atribuída e os seus espaços." },
+        "unassigned": { "title": "Hierarquia da organização", "description": "Não está atribuído um âmbito organizacional à sua conta." }
+      }
+    },
     "settings": { "title": "Definições", "description": "Gerir as definições e preferências da aplicação" },
     "account": { "title": "A Minha Conta", "description": "Gerir o perfil e dados da conta" },
     "lhu-hierarchy": { "title": "Hierarquia LHU", "description": "Estrutura organizacional da Unidade Local de Saúde" },
@@ -96,7 +120,8 @@
       "building": "Continuar para o edifício",
       "floor": "Continuar para o piso",
       "service": "Continuar para o serviço",
-      "ward": "Continuar para a ala",
+      "wing": "Continuar para a ala",
+      "ward": "Continuar para a enfermaria",
       "nursery": "Continuar para o enfermaria",
       "room": "Continuar para o quarto"
     },
@@ -313,14 +338,26 @@
       "lhu": "Gestor da ULS",
       "unit": "Gestor de Unidade",
       "service": "Gestor de Serviço",
-      "default": "Utilizador"
+      "manager": "Gestor",
+      "default": "Utilizador",
+      "none": "—"
     },
     "scopes": {
       "admin": "Plataforma",
       "lhu": "Unidade Local de Saúde",
       "unit": "Unidade Hospitalar",
       "service": "Serviço",
+      "manager": "Âmbito organizacional atribuído",
       "default": "—"
+    },
+    "scopeLevels": {
+      "ULS": "Unidade Local de Saúde",
+      "UNIT": "Unidade Hospitalar",
+      "BUILDING": "Edifício",
+      "FLOOR": "Piso",
+      "SERVICE": "Serviço",
+      "WING": "Ala",
+      "WARD": "Enfermaria"
     },
     "languages": { "en": "English", "pt": "Português" },
     "access": {
@@ -329,7 +366,11 @@
       "lhu": "O teu perfil de Gestor da ULS dá acesso aos KPIs de toda a ULS e à hierarquia de espaços de saúde a partir da tua ULS.",
       "unit": "O teu perfil de Gestor de Unidade dá acesso aos KPIs da unidade e à hierarquia de espaços de saúde a partir da tua Unidade.",
       "service": "O teu perfil de Gestor de Serviço dá acesso aos KPIs do serviço e à hierarquia de espaços de saúde a partir do teu Serviço.",
-      "default": "O teu perfil dá acesso básico à plataforma."
+      "manager": "O acesso está limitado aos grupos organizacionais mais específicos atribuídos.",
+      "default": "O teu perfil dá acesso básico à plataforma.",
+      "missingRoleDescription": "A sua conta não tem um perfil de administrador ou gestor. Contacte um administrador para solicitar acesso.",
+      "missingScopeDescription": "A sua conta de gestor não tem um grupo organizacional atribuído. Contacte um administrador para solicitar acesso.",
+      "missingRoleAndScope": "A sua conta não tem um perfil de acesso nem um âmbito organizacional. Contacte um administrador para solicitar acesso."
     }
   },
   "lhu": {
@@ -419,10 +460,19 @@
     }
   },
   "notFound": { "title": "Página não encontrada", "back": "Voltar ao dashboard" },
+  "managerHierarchy": {
+    "currentContext": "Contexto de gestão atual",
+    "switchContext": "Alterar espaço gerido",
+    "selectContext": "Seleciona o contexto de gestão",
+    "contextUpdates": "Os dados do dashboard e da hierarquia serão atualizados.",
+    "active": "Ativo",
+    "loading": "A carregar os espaços atribuídos..."
+  },
   "lhuHierarchy": {
     "title": "Hierarquia da organização",
     "description": "Espaços e recursos ordenados pelo seu nível hierárquico",
     "error": "Não foi possível carregar a hierarquia.",
+    "noData": "Ainda não existem espaços ou recursos.",
     "root": "Raiz da organização",
     "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
     "admin": {

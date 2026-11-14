@@ -68,6 +68,13 @@ export async function fetchHierarchyLevel(type: OrgType, parentId?: string): Pro
   return mapNodes(response.data.content)
 }
 
+export async function fetchHierarchyNode(type: OrgType, id: string): Promise<OrgNode> {
+  const response = await api.get<HierarchyResponse["content"][number]>(
+    `/hierarchy/${backendType(type)}/${id}`,
+  )
+  return mapNodes([response.data])[0]
+}
+
 export async function fetchLHUHierarchy(startType: OrgType = "lhu"): Promise<OrgNode[]> {
   return fetchHierarchyLevel(startType)
 }
