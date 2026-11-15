@@ -301,8 +301,6 @@
     "open": "Open form",
     "submit": "Suggest a bed",
     "cancel": "Cancel",
-    "accept": "Accept",
-    "reject": "Reject",
     "loading": "Computing suggestions...",
     "field": {
       "fullName": "Full name",
@@ -310,8 +308,8 @@
       "gender": "Gender",
       "service": "Service",
       "priority": "Priority",
-      "expectedDischargeAt": "Expected discharge",
-      "autoAccept": "Automatically accept the solver's top suggestion"
+      "isolation": "Requires isolation room",
+      "expectedDischargeAt": "Expected discharge"
     },
     "gender": { "female": "Female", "male": "Male", "unspecified": "Unspecified" },
     "priority": {
@@ -319,10 +317,18 @@
     },
     "results": {
       "title": "Bed suggestions",
+      "direct": "Direct suggestions",
       "empty": {
         "title": "No compatible bed",
         "body": "Beds with expected discharge in the next 24 hours:"
-      }
+      },
+      "reallocations": "Reallocation suggestions (require moving an existing patient)",
+      "freeBed": "Free {{bed}} by moving",
+      "priority": "priority {{priority}}",
+      "noBed": "— no bed available —",
+      "combinedScore": "Combined score: {{score}}",
+      "roomEvictionScore": "Room eviction score: {{score}}",
+      "roomRanking": "Room eviction ranking"
     },
     "success": {
       "assigned": "Patient allocated successfully.",
@@ -332,6 +338,10 @@
       "conflict": "Bed no longer available. Please try again.",
       "validation": "Check the required fields.",
       "generic": "Something went wrong. Please try again."
+    },
+    "debug": {
+      "toggle": "Show solver debug details",
+      "title": "Solver debug"
     }
   },
   "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },

@@ -27,11 +27,54 @@ export interface Servico {
 }
 
 export interface Suggestion {
-  id: string
   bed_id: string
   bed_label: string
   score: number
   justification: string
+}
+
+export interface ReallocationSuggestion {
+  new_patient_encounter_id: string
+  from_bed_id: string
+  from_bed_label: string
+  displaced_encounter_id: string
+  displaced_patient_name: string
+  to_bed_id: string | null
+  to_bed_label: string | null
+  target_is_ward_transfer: boolean
+  score_combined: number
+  justification: string
+  room_eviction_score: number
+  displaced_priority: number
+  displaced_original_score: number
+  warning: {
+    code: 'WARD_TRANSFER' | 'NO_BED_AVAILABLE'
+    message: string
+    affected_patients: string[]
+  } | null
+}
+
+export interface RoomEvictionEntry {
+  room_id: string
+  room_label: string
+  eviction_score: number
+  occupant_scores: [string, number][]
+  is_isolation_room: boolean
+}
+
+export interface DebugEntry {
+  encounter_id: string
+  patient_name: string
+  bed_id: string
+  bed_label: string
+  score_breakdown: Record<string, number>
+  total_score: number
+}
+
+export interface BedComparison {
+  bed_id: string
+  bed_label: string
+  candidates: DebugEntry[]
 }
 
 export interface ImminentBed {
@@ -46,25 +89,27 @@ export interface ManualAdmissionInput {
   full_name: string
   birth_date?: string
   gender?: 'F' | 'M'
+  isolation: boolean
   service_id?: string
   priority: number | undefined
   expected_discharge_at?: string
-  auto_accept: boolean
 }
 
 export interface ManualAdmissionResult {
   encounter_id: string
   patient_id: string
   suggestions: Suggestion[]
+  reallocations: ReallocationSuggestion[]
+  comparisons: BedComparison[]
+  room_eviction_ranking: RoomEvictionEntry[]
   solver_status: string
-  accepted_allocation_id: string | null
+  debug_enabled: boolean
 }
 
 export async function fetchServicos(): Promise<Servico[]> {
   const { data } = await bedApi.get<Servico[]>('/api/v1/servicos')
   return data
 }
-
 export async function fetchCamasEmLibertacaoBreve(withinHours = 24): Promise<ImminentBed[]> {
   const { data } = await bedApi.get<ImminentBed[]>('/api/v1/camas-em-libertacao-breve', {
     params: { within_hours: withinHours },
@@ -74,17 +119,12 @@ export async function fetchCamasEmLibertacaoBreve(withinHours = 24): Promise<Imm
 
 export async function createManualAdmission(
   input: ManualAdmissionInput,
+  debug = false,
 ): Promise<ManualAdmissionResult> {
-  const { data } = await bedApi.post<ManualAdmissionResult>('/api/v1/manual-admissions', input)
-  return data
-}
-
-export async function updateSugestaoStatus(
-  id: string,
-  status: 'ACEITE' | 'REJEITADA',
-): Promise<Suggestion> {
-  const { data } = await bedApi.patch<Suggestion>(`/api/v1/sugestoes/${id}`, {
-    status,
-  })
+  const { data } = await bedApi.post<ManualAdmissionResult>(
+    '/api/v1/manual-admissions',
+    input,
+    { params: { debug } },
+  )
   return data
 }

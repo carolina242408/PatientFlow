@@ -301,8 +301,6 @@
     "open": "Abrir formulário",
     "submit": "Sugerir cama",
     "cancel": "Cancelar",
-    "accept": "Aceitar",
-    "reject": "Rejeitar",
     "loading": "A calcular sugestões...",
     "field": {
       "fullName": "Nome completo",
@@ -310,8 +308,8 @@
       "gender": "Sexo",
       "service": "Serviço",
       "priority": "Prioridade",
-      "expectedDischargeAt": "Alta prevista",
-      "autoAccept": "Aceitar automaticamente a sugestão de topo do solver"
+      "isolation": "Requer quarto de isolamento",
+      "expectedDischargeAt": "Alta prevista"
     },
     "gender": { "female": "Feminino", "male": "Masculino", "unspecified": "Não especificado" },
     "priority": {
@@ -319,10 +317,18 @@
     },
     "results": {
       "title": "Sugestões de cama",
+      "direct": "Sugestões diretas",
       "empty": {
         "title": "Sem cama compatível",
         "body": "Camas com alta prevista nas próximas 24 horas:"
-      }
+      },
+      "reallocations": "Sugestões de realocação (requerem mover um doente existente)",
+      "freeBed": "Libertar {{bed}} movendo",
+      "priority": "prioridade {{priority}}",
+      "noBed": "— sem cama disponível —",
+      "combinedScore": "Pontuação combinada: {{score}}",
+      "roomEvictionScore": "Pontuação de remoção do quarto: {{score}}",
+      "roomRanking": "Classificação de remoção dos quartos"
     },
     "success": {
       "assigned": "Paciente alocado com sucesso.",
@@ -332,6 +338,10 @@
       "conflict": "A cama já não está disponível. Tente novamente.",
       "validation": "Verifique os campos obrigatórios.",
       "generic": "Ocorreu um erro. Tente novamente."
+    },
+    "debug": {
+      "toggle": "Mostrar detalhes de depuração do solver",
+      "title": "Depuração do solver"
     }
   },
   "admin": { "title": "Consola de administração", "body": "Área reservada a administradores." },

@@ -11,5 +11,6 @@ class PatientWaiting(BaseModel):
     full_name: str
     birth_date: date | None = None
     gender: str | None = None
+    isolation: bool = False
     expected_discharge_at: datetime | None = None
 

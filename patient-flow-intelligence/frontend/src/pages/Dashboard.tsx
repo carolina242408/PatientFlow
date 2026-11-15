@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
@@ -13,7 +13,6 @@ import {
   createManualAdmission,
   fetchCamasEmLibertacaoBreve,
   fetchServicos,
-  updateSugestaoStatus,
   type ManualAdmissionInput,
   type ManualAdmissionResult,
 } from '../api/bed-allocation'
@@ -102,17 +101,17 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
   const manualDialogRef = useRef<HTMLDialogElement>(null)
-  const queryClient = useQueryClient()
   const [manualOpen, setManualOpen] = useState(false)
   const [manualResult, setManualResult] = useState<ManualAdmissionResult | null>(null)
   const [manualError, setManualError] = useState<string | null>(null)
+  const [manualDebug, setManualDebug] = useState(false)
   const [manualForm, setManualForm] = useState<ManualAdmissionInput>({
     full_name: '',
     priority: 3,
-    auto_accept: false,
+    isolation: false,
   })
   const resetManualAdmission = () => {
-    setManualForm({ full_name: '', priority: 3, auto_accept: false })
+    setManualForm({ full_name: '', priority: 3, isolation: false })
     setManualResult(null)
     setManualError(null)
   }
@@ -120,23 +119,12 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     queryKey: ['servicos'],
     queryFn: fetchServicos,
   })
-  const invalidateOperational = () => {
-    void Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['space-hierarchy'] }),
-      queryClient.invalidateQueries({ queryKey: ['beds-operational'] }),
-      queryClient.invalidateQueries({ queryKey: ['space-bed-summary-current'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard-occupancy'] }),
-    ])
-  }
   const manualAdmission = useMutation({
-    mutationFn: createManualAdmission,
+    mutationFn: (input: ManualAdmissionInput) =>
+      createManualAdmission(input, manualDebug),
     onSuccess: (result) => {
       setManualResult(result)
       setManualError(null)
-      if (result.accepted_allocation_id) {
-        invalidateOperational()
-        manualDialogRef.current?.close()
-      }
     },
     onError: (error: unknown) => {
       const status = (error as { response?: { status?: number } }).response?.status
@@ -149,15 +137,6 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             : 'manualAdmission.errors.generic',
       )
     },
-  })
-  const suggestionMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'ACEITE' | 'REJEITADA' }) =>
-      updateSugestaoStatus(id, status),
-    onSuccess: () => {
-      invalidateOperational()
-      manualDialogRef.current?.close()
-    },
-    onError: () => setManualError('manualAdmission.errors.generic'),
   })
   const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
   const metrics = SCOPE_METRICS[profileScope]
@@ -246,6 +225,28 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           selectedScope={managerScope.root}
           onSelect={managerScope.selectScope}
         />
+      )}
+      {manualResult && manualResult.debug_enabled && (
+        <details className="rounded-lg border border-gray-200 p-3">
+          <summary className="cursor-pointer font-medium">{t('manualAdmission.debug.title')}</summary>
+          <div className="mt-3 space-y-3 text-sm">
+            {manualResult.comparisons.map((comparison) => (
+              <div key={comparison.bed_id}>
+                <p className="font-medium">{comparison.bed_label}</p>
+                {comparison.candidates.map((candidate) => (
+                  <div key={candidate.encounter_id}>
+                    <p>{candidate.patient_name}: {candidate.total_score}</p>
+                    <p className="pl-3 text-xs text-gray-500">
+                      {Object.entries(candidate.score_breakdown)
+                        .map(([name, value]) => `${name}: ${value}`)
+                        .join(' · ')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
       {/* Header */}
       <section className="flex flex-col items-start justify-between gap-4 xl:flex-row xl:items-end">
@@ -635,30 +636,92 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
-              checked={manualForm.auto_accept}
-              onChange={(event) => setManualForm((current) => ({ ...current, auto_accept: event.target.checked }))}
+              checked={manualForm.isolation}
+              onChange={(event) =>
+                setManualForm((current) => ({ ...current, isolation: event.target.checked }))
+              }
             />
-            {t('manualAdmission.field.autoAccept')}
+            {t('manualAdmission.field.isolation')}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={manualDebug}
+              onChange={(event) => setManualDebug(event.target.checked)}
+            />
+            {t('manualAdmission.debug.toggle')}
           </label>
           {manualError && <p className="text-sm text-red-600">{t(manualError)}</p>}
           {manualAdmission.isPending && <p className="text-sm text-gray-500">{t('manualAdmission.loading')}</p>}
-          {manualResult && !manualResult.accepted_allocation_id && (
+          {manualResult && (
             <div className="space-y-3">
               <h3 className="font-semibold">{t('manualAdmission.results.title')}</h3>
+              {manualResult.suggestions.length > 0 && (
+                <h4 className="font-semibold">{t('manualAdmission.results.direct')}</h4>
+              )}
               {manualResult.suggestions.map((suggestion) => (
-                <div key={suggestion.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={suggestion.bed_id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">{suggestion.bed_label}</p>
                     <p className="text-sm text-gray-500">{suggestion.justification}</p>
                     <Badge variant="secondary">{suggestion.score}</Badge>
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="button" disabled={suggestionMutation.isPending} onClick={() => suggestionMutation.mutate({ id: suggestion.id, status: 'ACEITE' })}>{t('manualAdmission.accept')}</Button>
-                    <Button type="button" variant="ghost" disabled={suggestionMutation.isPending} onClick={() => suggestionMutation.mutate({ id: suggestion.id, status: 'REJEITADA' })}>{t('manualAdmission.reject')}</Button>
-                  </div>
                 </div>
               ))}
-              {manualResult.suggestions.length === 0 && (
+              {manualResult.reallocations.length > 0 && (
+                <h4 className="font-semibold">{t('manualAdmission.results.reallocations')}</h4>
+              )}
+              {manualResult.reallocations.map((suggestion) => (
+                <div key={`${suggestion.displaced_encounter_id}-${suggestion.to_bed_id}`} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="font-medium">
+                    {t('manualAdmission.results.freeBed', { bed: suggestion.from_bed_label })}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {suggestion.displaced_patient_name} ({t('manualAdmission.results.priority', { priority: suggestion.displaced_priority })})
+                    {' → '}
+                    {suggestion.to_bed_label ?? t('manualAdmission.results.noBed')}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {t('manualAdmission.results.combinedScore', { score: suggestion.score_combined })}
+                    {' · '}
+                    {t('manualAdmission.results.roomEvictionScore', { score: suggestion.room_eviction_score })}
+                  </p>
+                  <p className="text-sm text-gray-600">{suggestion.justification}</p>
+                  {suggestion.warning && (
+                    <div className="mt-2 rounded border border-amber-300 bg-amber-100 p-2 text-sm text-amber-900">
+                      <p>{suggestion.warning.message}</p>
+                      {suggestion.warning.code === 'NO_BED_AVAILABLE' && (
+                        <ul className="list-disc pl-5">
+                          {suggestion.warning.affected_patients.map((patient) => <li key={patient}>{patient}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                  <Badge variant="secondary">{suggestion.score_combined}</Badge>
+                </div>
+              ))}
+              {manualResult.room_eviction_ranking.length > 0 && (
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <h4 className="font-semibold">{t('manualAdmission.results.roomRanking')}</h4>
+                  <div className="mt-2 space-y-2 text-sm">
+                    {manualResult.room_eviction_ranking.map((room, index) => (
+                      <div
+                        key={room.room_id}
+                        className={index === 0 ? 'rounded border border-blue-200 bg-blue-50 p-2' : 'p-2'}
+                      >
+                        <div className="flex justify-between gap-3">
+                          <span>{room.room_label}</span>
+                          <span>{room.eviction_score}</span>
+                        </div>
+                        <p className="text-gray-600">
+                          {room.occupant_scores.map(([name, score]) => `${name} (${score})`).join(', ')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {manualResult.suggestions.length === 0 && manualResult.reallocations.length === 0 && (
                 <EmptyDischarges
                   title={t('manualAdmission.results.empty.title')}
                   message={t('manualAdmission.results.empty.body')}

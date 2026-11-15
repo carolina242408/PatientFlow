@@ -20,4 +20,5 @@ class BedFlat(BaseModel):
     unit_name: str
     uls_id: UUID
     uls_name: str
+    is_isolation_room: bool = False
 

@@ -7,10 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bed_allocation.config import settings
 from bed_allocation.models.allocation import AllocationSuggestionRecord, LocationAllocation
 from bed_allocation.models.hierarchy import Bed
-from bed_allocation.repositories.bed_repo import get_available_beds, get_beds_with_imminent_discharge
+from bed_allocation.repositories.bed_repo import (
+    get_available_beds,
+    get_beds_with_imminent_discharge,
+    get_displaceable_allocations,
+)
 from bed_allocation.repositories.patient_repo import get_patients_waiting
 from bed_allocation.schemas.allocation import AllocationResult
-from bed_allocation.solver.optimizer import optimize
+from bed_allocation.solver.optimizer import optimize, reallocation_suggestions
 
 
 async def suggest_allocations(
@@ -25,7 +29,30 @@ async def suggest_allocations(
     beds = await get_available_beds(session)
     imminent = await get_beds_with_imminent_discharge(session, settings.imminent_discharge_hours)
     imminent_map = {bed.bed_id: hours for bed, hours, _ in imminent}
-    result = optimize(patients, beds, imminent_map)
+    allocations = await get_displaceable_allocations(session)
+    result = optimize(patients, beds, imminent_map, allocations=allocations)
+    reallocations = []
+    for patient in patients:
+        if not patient.isolation:
+            continue
+        direct_score = max(
+            (
+                suggestion.score
+                for suggestion in result.suggestions
+                if suggestion.encounter_id == patient.encounter_id
+            ),
+            default=None,
+        )
+        reallocations.extend(
+            reallocation_suggestions(
+                patient,
+                beds,
+                allocations,
+                imminent_map,
+                direct_score,
+            )
+        )
+    result.reallocations = reallocations
     if not settings.use_excel:
         await save_suggestions(session, result)
         await session.commit()

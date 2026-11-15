@@ -33,8 +33,8 @@ def build_pair_flags(
                 "same_unit": patient.service_id is not None and patient.service_id == bed.service_id,
                 "same_floor": patient.service_id is not None and patient.service_id == bed.service_id,
                 "sex_ok": sex_ok,
-                "isolation_ok": not settings.bed_isolation.get(bed.bed_id, False)
-                or settings.priority_by_encounter.get(patient.encounter_id, 1) > 1,
+                "isolation_ok": patient.isolation == bed.is_isolation_room,
+                "isolation_match": patient.isolation == bed.is_isolation_room,
                 "imminent_discharge": bed.bed_id in (imminent_beds or {}),
                 "age_cohort_priority": is_priority_age_cohort(patient.birth_date),
                 "hours_until_free": (imminent_beds or {}).get(bed.bed_id),

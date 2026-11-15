@@ -8,13 +8,21 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def is_isolation_bed(bed_id: UUID, room_id: UUID, room_is_empty: bool = False) -> bool:
+    if bed_id in settings.bed_isolation:
+        return settings.bed_isolation[bed_id]
+    if room_id in settings.room_sex_rules:
+        return settings.room_sex_rules[room_id] == "ISOLATION"
+    return room_is_empty
+
+
 class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://patientflow:patientflow@localhost:5432/patientflow"
     use_excel: bool = False
     config_json_path: str | None = None
     solver_time_limit_seconds: float = 10
     imminent_discharge_hours: int = 24
-    weights: dict[str, int] = Field(
+    weights: dict[str, float] = Field(
         default_factory=lambda: {
             "W_PRIORITY": 100,
             "W_SAME_ULS": 10,
@@ -23,6 +31,10 @@ class Settings(BaseSettings):
             "W_SERVICE_MATCH": 50,
             "W_IMMINENT_DISCHARGE": 30,
             "W_AGE_COHORT": 25,
+            "W_ISOLATION_MATCH": 20,
+            "W_REALLOCATION_FRICTION": 0.5,
+            "W_DISPLACEMENT_PENALTY": 50,
+            "W_DISRUPTION": 10,
         }
     )
     room_sex_rules: dict[UUID, str] = Field(default_factory=dict)

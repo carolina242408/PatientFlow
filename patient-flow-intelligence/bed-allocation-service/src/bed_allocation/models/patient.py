@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .hierarchy import Base
@@ -17,6 +17,7 @@ class Patient(Base):
     full_name: Mapped[str] = mapped_column(String)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     gender: Mapped[str | None] = mapped_column(String, nullable=True)
+    isolation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     version: Mapped[int] = mapped_column(Integer)
 
 

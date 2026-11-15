@@ -17,6 +17,7 @@ from bed_allocation.models.enums import SuggestionStatus
 from bed_allocation.repositories.bed_repo import (
     get_available_beds,
     get_beds_with_imminent_discharge,
+    get_displaceable_allocations,
 )
 from bed_allocation.repositories.patient_repo import get_patients_waiting
 from bed_allocation.repositories.suggestion_repo import list_suggestions, update_status
@@ -25,14 +26,13 @@ from bed_allocation.schemas.allocation import (
     ImminentBed,
     ManualAdmissionRequest,
     ManualAdmissionResult,
-    ManualAdmissionSuggestion,
     ServiceResponse,
     SuggestionResponse,
     SuggestionStatusUpdate,
 )
 from bed_allocation.schemas.patient_waiting import PatientWaiting
-from bed_allocation.services.allocation_service import materialize_allocation, suggest_allocations
-from bed_allocation.solver.optimizer import optimize
+from bed_allocation.services.allocation_service import suggest_allocations
+from bed_allocation.solver.optimizer import optimize, reallocation_suggestions
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
@@ -127,6 +127,7 @@ async def imminent_beds(
 )
 async def manual_admission(
     payload: ManualAdmissionRequest,
+    debug: bool = Query(default=False),
     session: AsyncSession = Depends(get_session),
 ) -> ManualAdmissionResult:
     patient_id = uuid4()
@@ -137,6 +138,7 @@ async def manual_admission(
             full_name=payload.full_name,
             birth_date=payload.birth_date,
             gender=payload.gender,
+            isolation=payload.isolation,
             sns_number=payload.sns_number,
             hospital_number=payload.hospital_number,
             version=0,
@@ -166,6 +168,7 @@ async def manual_admission(
                 full_name=payload.full_name,
                 birth_date=payload.birth_date,
                 gender=payload.gender,
+                isolation=payload.isolation,
                 expected_discharge_at=payload.expected_discharge_at,
             )
         ]
@@ -173,53 +176,33 @@ async def manual_admission(
         imminent = await get_beds_with_imminent_discharge(
             session, settings.imminent_discharge_hours
         )
-        result = optimize(waiting, beds, {bed.bed_id: hours for bed, hours, _ in imminent})
-        if payload.diagnosis_code or payload.diagnosis_description:
-            diagnosis = payload.diagnosis_code or payload.diagnosis_description
-            result.suggestions = [
-                suggestion.model_copy(
-                    update={"justification": f"{suggestion.justification} Diagnosis: {diagnosis}."}
-                )
-                for suggestion in result.suggestions
-            ]
-        from bed_allocation.repositories.suggestion_repo import save_suggestions
-
-        await save_suggestions(session, result)
-        await session.flush()
-        records = list(
-            (
-                await session.scalars(
-                    select(AllocationSuggestionRecord).where(
-                        AllocationSuggestionRecord.encounter_id == encounter_id
-                    )
-                )
-            ).all()
+        waiting_patients = await get_patients_waiting(session)
+        allocations = await get_displaceable_allocations(session)
+        result = optimize(
+            [waiting[0]],
+            beds,
+            {bed.bed_id: hours for bed, hours, _ in imminent},
+            comparison_patients=waiting_patients,
+            debug=debug,
+            allocations=allocations,
         )
-        accepted_id = None
-        if payload.auto_accept and records:
-            allocation = await materialize_allocation(session, records[0])
-            accepted_id = allocation.id
+        reallocations = reallocation_suggestions(
+            waiting[0],
+            beds,
+            allocations,
+            {bed.bed_id: hours for bed, hours, _ in imminent},
+            max((suggestion.score for suggestion in result.suggestions), default=None),
+        )
         await session.commit()
-        by_bed = {bed.bed_id: bed for bed in beds}
         return ManualAdmissionResult(
             encounter_id=encounter_id,
             patient_id=patient_id,
-            suggestions=[
-                ManualAdmissionSuggestion(
-                    id=record.id,
-                    bed_id=record.bed_id,
-                    bed_label=(
-                        f"{by_bed[record.bed_id].ward_name} · "
-                        f"{by_bed[record.bed_id].room_code} · "
-                        f"Cama {by_bed[record.bed_id].bed_code}"
-                    ),
-                    score=record.score,
-                    justification=record.justification,
-                )
-                for record in records
-            ],
+            suggestions=result.suggestions,
+            reallocations=reallocations,
+            comparisons=result.comparisons,
+            room_eviction_ranking=result.room_eviction_ranking,
             solver_status=result.solver_status,
-            accepted_allocation_id=accepted_id,
+            debug_enabled=debug,
         )
     except IntegrityError as error:
         await session.rollback()
