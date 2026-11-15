@@ -49,21 +49,21 @@ or creating model artifacts:
 Run these separately and sequentially to avoid GPU resource contention:
 
 ```powershell
-./model/.venv/Scripts/python.exe -m model.train --model catboost --device cuda --trials 100 --output-dir model/artifacts/catboost_27k
+./model/.venv/Scripts/python.exe -m model.train --model catboost --device cuda --trials 100 --output-dir model/artifacts/catboost_87k
 ./model/.venv/Scripts/python.exe -m model.train --model xgboost --device cuda --trials 100
 ./model/.venv/Scripts/python.exe -m model.train --model random_forest --device cpu --trials 60
 ./model/.venv/Scripts/python.exe -m model.train --model ft_transformer --device cuda --trials 50
 ```
 
-CatBoost now defaults to `datasetgenerator/ml_hospital_consumption_27k.csv`
-(27,465 rows) and uses eight predictors: the five listed below plus `specialty`,
+CatBoost now defaults to `datasetgenerator/ml_hospital_consumption_87k.csv`
+(87,468 rows) and uses eight predictors: the five listed below plus `specialty`,
 `admission_weekday`, and `time_period`, all three categorical. The target remains
-`los_days`. Its default 80/20 split contains 21,972 training rows and 5,493 test
-rows, with five-fold CV and seed 8228, matching the Kumo evaluation's row splits.
+`los_days`. Its default 80/20 split contains 69,974 training rows and 17,494 test
+rows, with five-fold CV and seed 8228, matching the Kumo evaluation on the same CSV.
 The command above saves the CatBoost model and report under
-`model/artifacts/catboost_27k/catboost/`. Choose a new output directory for a repeat.
+`model/artifacts/catboost_87k/catboost/`. Choose a new output directory for a repeat.
 It trains only CatBoost; its model and report are available without training the
-other models. Use `--artifact-dir model/artifacts/catboost_27k/catboost` for prediction.
+other models. Use `--artifact-dir model/artifacts/catboost_87k/catboost` for prediction.
 
 The other models retain their existing dataset and five-feature defaults. Their
 runs cannot be combined with this CatBoost run in the automatic four-model
@@ -92,7 +92,7 @@ outside `model/artifacts` must be managed separately.
 
 ## Data and evaluation protocol
 
-The default CSV is `datasetgenerator/ml_hospital_consumption_27k.csv` for
+The default CSV is `datasetgenerator/ml_hospital_consumption_87k.csv` for
 CatBoost and `datasetgenerator/ml_hospital_consumption.csv` for the other models,
 resolved relative to the package rather than the current working directory.
 Override it with `--data path/to/data.csv`; the CSV must match that model's schema.
@@ -121,8 +121,8 @@ by row count. The current dataset has no patient identifier, so the default
 row-based split cannot guarantee separation of repeated patients. A temporal
 validation would require admission dates, which are also absent from this CSV.
 
-1. Reserve 20% of the rows as the final test set (5,493 for CatBoost; 403 for the original CSV).
-2. Use shuffled five-fold CV splits inside the remaining 80% (21,972 for CatBoost; 1,609 for the original CSV). Identical datasets and settings produce identical splits.
+1. Reserve 20% of the rows as the final test set (17,494 for CatBoost; 403 for the original CSV).
+2. Use shuffled five-fold CV splits inside the remaining 80% (69,974 for CatBoost; 1,609 for the original CSV). Identical datasets and settings produce identical splits.
 3. Tune every model with Optuna TPE, minimizing mean validation **MAE in days**.
    CatBoost uses MAE loss, XGBoost uses absolute-error loss, FT-Transformer uses
    L1 loss, and Random Forest uses its default squared-error splitting criterion.

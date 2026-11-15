@@ -31,7 +31,7 @@ def positive_integer(value):
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Tune and train one LOS model; the target is untransformed los_days.")
     parser.add_argument("--model", required=True, choices=MODEL_NAMES)
-    parser.add_argument("--data", type=Path, help="Default: ml_hospital_consumption_27k.csv for CatBoost; ml_hospital_consumption.csv for the other models.")
+    parser.add_argument("--data", type=Path, help="Default: ml_hospital_consumption_87k.csv for CatBoost; ml_hospital_consumption.csv for the other models.")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--trials", type=positive_integer, help="Default: CatBoost/XGBoost 100, Random Forest 60, FT-Transformer 50.")
     parser.add_argument("--test-size", type=float, default=0.2)
