@@ -1,3 +1,10 @@
 fastapi==0.115.12
 uvicorn==0.34.2
 pydantic>=2.0,<3
+
+# NVIDIA Kumo-Tabular (Python 3.11+).
+# For GPU inference, install the CUDA PyTorch wheel first; see README.md.
+torch==2.14.1
+structured-data-models==0.2.1
+pandas==3.1.1
+scikit-learn==1.9.1

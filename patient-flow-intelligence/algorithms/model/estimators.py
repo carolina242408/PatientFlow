@@ -56,13 +56,13 @@ def suggest_parameters(name, trial):
     raise ValueError(f"Unsupported model: {name}")
 
 
-def make_tree_model(name, parameters, device, workers):
+def make_tree_model(name, parameters, device, workers, *, categorical_features=CATEGORICAL_FEATURES):
     if name == "catboost":
         from catboost import CatBoostRegressor
 
         return CatBoostRegressor(
             **parameters,
-            cat_features=CATEGORICAL_FEATURES,
+            cat_features=categorical_features,
             loss_function="MAE",
             bootstrap_type="Bayesian",
             random_seed=SEED,
