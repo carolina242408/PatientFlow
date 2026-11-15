@@ -542,10 +542,10 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           setManualOpen(false)
           resetManualAdmission()
         }}
-        className="w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/40"
+        className="m-auto w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/40"
       >
         <form
-          className="space-y-5 p-6 sm:p-8"
+          className="mx-auto w-full max-w-2xl space-y-5 p-6 sm:p-8"
           onSubmit={(event) => {
             event.preventDefault()
             if (event.currentTarget.checkValidity()) manualAdmission.mutate(manualForm)
