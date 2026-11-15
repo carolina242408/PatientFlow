@@ -13,7 +13,10 @@ import statistics
 import sys
 import time
 
-from .config import DEFAULT_DATASET, DEFAULT_OUTPUT, DEFAULT_TRIALS, MODEL_NAMES, SEED
+from .config import (
+    CATBOOST_CATEGORICAL_FEATURES, CATBOOST_DATASET, CATEGORICAL_FEATURES,
+    DEFAULT_DATASET, DEFAULT_OUTPUT, DEFAULT_TRIALS, MODEL_NAMES, SEED,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +31,7 @@ def positive_integer(value):
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Tune and train one LOS model; the target is untransformed los_days.")
     parser.add_argument("--model", required=True, choices=MODEL_NAMES)
-    parser.add_argument("--data", type=Path, default=DEFAULT_DATASET)
+    parser.add_argument("--data", type=Path, help="Default: ml_hospital_consumption_27k.csv for CatBoost; ml_hospital_consumption.csv for the other models.")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--trials", type=positive_integer, help="Default: CatBoost/XGBoost 100, Random Forest 60, FT-Transformer 50.")
     parser.add_argument("--test-size", type=float, default=0.2)
@@ -40,6 +43,8 @@ def parse_arguments():
     parser.add_argument("--patience", type=positive_integer, default=20, help="FT-Transformer early-stopping patience.")
     parser.add_argument("--validate-only", action="store_true", help="Validate dataset, splits, dependencies, and hardware without fitting or writing artifacts.")
     arguments = parser.parse_args()
+    if arguments.data is None:
+        arguments.data = CATBOOST_DATASET if arguments.model == "catboost" else DEFAULT_DATASET
     if not 0 < arguments.test_size < 1:
         parser.error("--test-size must be between zero and one.")
     if arguments.folds < 2:
@@ -116,7 +121,9 @@ def run(arguments):
     random.seed(SEED)
     np.random.seed(SEED)
     runtime = runtime_information(arguments)
-    data = load_experiment(arguments.data.resolve(), arguments.test_size, arguments.folds, arguments.group_column)
+    categorical_features = CATBOOST_CATEGORICAL_FEATURES if arguments.model == "catboost" else CATEGORICAL_FEATURES
+    data = load_experiment(arguments.data.resolve(), arguments.test_size, arguments.folds, arguments.group_column,
+                           categorical_features=categorical_features)
     source = b"".join(
         path.name.encode() + path.read_bytes()
         for path in sorted(Path(__file__).resolve().parent.glob("*.py"))
@@ -165,7 +172,8 @@ def run(arguments):
 
             return FTTransformerRegressor(parameters, arguments.device, arguments.workers,
                                           arguments.max_epochs, arguments.patience)
-        return make_tree_model(arguments.model, parameters, arguments.device, arguments.workers)
+        return make_tree_model(arguments.model, parameters, arguments.device, arguments.workers,
+                               categorical_features=categorical_features)
 
     def fit_model(model, features, target, groups=None, epochs=None):
         if arguments.model == "ft_transformer":

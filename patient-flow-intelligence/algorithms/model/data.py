@@ -9,14 +9,15 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit, KFold, train_test_split
 
-from .config import CATEGORICAL_FEATURES, FEATURES, PROTOCOL_VERSION, SEED, TARGET
+from .config import CATEGORICAL_FEATURES, NUMERIC_FEATURES, PROTOCOL_VERSION, SEED, TARGET
 
 
-def validate_features(frame: pd.DataFrame) -> pd.DataFrame:
-    missing = set(FEATURES) - set(frame.columns)
+def validate_features(frame: pd.DataFrame, *, categorical_features=CATEGORICAL_FEATURES) -> pd.DataFrame:
+    feature_columns = NUMERIC_FEATURES + list(categorical_features)
+    missing = set(feature_columns) - set(frame.columns)
     if missing:
         raise ValueError(f"Missing feature columns: {sorted(missing)}")
-    result = frame.loc[:, FEATURES].copy()
+    result = frame.loc[:, feature_columns].copy()
     if result.empty:
         raise ValueError("At least one patient row is required.")
     if result.isna().any().any():
@@ -33,7 +34,7 @@ def validate_features(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("month must be an integer between 1 and 12.")
     # Month is categorical: December and January must not imply a linear distance.
     result["month"] = months.astype(int).astype(str)
-    for column in CATEGORICAL_FEATURES:
+    for column in categorical_features:
         result[column] = result[column].astype(str).str.strip()
         if result[column].eq("").any():
             raise ValueError(f"{column} cannot contain empty values.")
@@ -51,20 +52,22 @@ class ExperimentData:
     protocol: dict
 
 
-def load_experiment(path: Path, test_size: float, n_folds: int, group_column: str | None) -> ExperimentData:
+def load_experiment(path: Path, test_size: float, n_folds: int, group_column: str | None,
+                    *, categorical_features=CATEGORICAL_FEATURES) -> ExperimentData:
+    feature_columns = NUMERIC_FEATURES + list(categorical_features)
     if not path.is_file():
         raise ValueError(f"Dataset not found: {path}")
-    if group_column and group_column in FEATURES + [TARGET]:
+    if group_column and group_column in feature_columns + [TARGET]:
         raise ValueError("The grouping column must be a separate patient identifier.")
     frame = pd.read_csv(path, encoding="utf-8-sig", dtype=str)
-    expected = set(FEATURES + [TARGET] + ([group_column] if group_column else []))
+    expected = set(feature_columns + [TARGET] + ([group_column] if group_column else []))
     if set(frame.columns) != expected:
         raise ValueError(
             f"Dataset schema mismatch. Missing: {sorted(expected - set(frame.columns))}; "
             f"unexpected: {sorted(set(frame.columns) - expected)}. "
             "Only admission-time features, los_days, and an explicitly configured grouping column are allowed."
         )
-    features = validate_features(frame)
+    features = validate_features(frame, categorical_features=categorical_features)
     target = pd.to_numeric(frame[TARGET], errors="raise").astype(float)
     if not np.isfinite(target).all() or (target < 0).any():
         raise ValueError("los_days must contain finite, nonnegative numbers; zero-day stays are allowed.")
@@ -101,8 +104,8 @@ def load_experiment(path: Path, test_size: float, n_folds: int, group_column: st
         "dataset_sha256": sha256(path.read_bytes()).hexdigest(),
         "split_sha256": sha256(json.dumps(split_record, sort_keys=True).encode()).hexdigest(),
         "seed": SEED,
-        "features": FEATURES,
-        "categorical_features": CATEGORICAL_FEATURES,
+        "features": feature_columns,
+        "categorical_features": list(categorical_features),
         "target": TARGET,
         "target_transform": "none",
         "prediction_transform": "none",

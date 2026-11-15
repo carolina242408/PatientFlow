@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .config import DEFAULT_OUTPUT, FEATURES, MODEL_NAMES
+from .config import CATBOOST_CATEGORICAL_FEATURES, CATBOOST_FEATURES, CATEGORICAL_FEATURES, DEFAULT_OUTPUT, FEATURES, MODEL_NAMES
 
 
 class LOSPredictor:
@@ -18,8 +18,10 @@ class LOSPredictor:
         directory = Path(directory).resolve()
         metadata = json.loads((directory / "artifact.json").read_text(encoding="utf-8"))
         self.name = metadata["model"]
-        if self.name not in MODEL_NAMES or metadata["features"] != FEATURES:
+        supported_schemas = [FEATURES, CATBOOST_FEATURES] if self.name == "catboost" else [FEATURES]
+        if self.name not in MODEL_NAMES or metadata["features"] not in supported_schemas:
             raise ValueError("Unsupported model artifact or incompatible input schema.")
+        self.categorical_features = CATBOOST_CATEGORICAL_FEATURES if metadata["features"] == CATBOOST_FEATURES else CATEGORICAL_FEATURES
         if metadata["target_transform"] != "none" or metadata["prediction_transform"] != "none":
             raise ValueError("This predictor expects untransformed los_days predictions.")
         if self.name == "ft_transformer":
@@ -51,7 +53,7 @@ class LOSPredictor:
 
         from .data import validate_features
 
-        validated = validate_features(features)
+        validated = validate_features(features, categorical_features=self.categorical_features)
         if self.name == "catboost":
             values = self.model.predict(validated, task_type=self.catboost_device)
         else:
