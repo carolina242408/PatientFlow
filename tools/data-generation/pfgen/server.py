@@ -748,7 +748,7 @@ def generate_data(req: GenerateRequest = Body(...)):
 def generate_csv_file(
     days: int = Query(default=180, ge=1, le=1000, description="Dias por simulação"),
     population: str = Query(default="auto", description="Tamanho da população ou 'auto'"),
-    runs: int = Query(default=1, ge=1, le=50, description="Número de vezes a rodar a simulação para acumular dados"),
+    runs: int = Query(default=1, ge=1, le=80, description="Número de vezes a rodar a simulação para acumular dados"),
     base_seed: int = Query(default=42, description="Seed inicial de aleatoriedade"),
     push_to_hapi: bool = Query(default=False, description="Enviar bundles FHIR para o servidor HAPI durante a geração do CSV"),
 ):
