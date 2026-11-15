@@ -795,7 +795,7 @@ def generate_csv_file(
         "relative_path": "output/dataset.csv",
         "runs": runs,
         "rows": lines_count,
-        "columns": ["gender", "diagnosis code", "birthdate", "admission date", "discharge date"],
+        "columns": ["gender", "specialty", "diagnosis code", "birthdate", "admission date", "discharge date"],
     }
 
 
