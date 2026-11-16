@@ -1,24 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { Badge } from '@/components/Badge'
 import { useOutletContext } from 'react-router'
 import type { AppOutletContext } from '@/layout/ManagerScopeContext'
 import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
-import { useKeycloak } from '../auth/context'
+import { useKeycloak, type AccessScopeType } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
-import DischargeForecastBarChart from '../dashboard_widgets/DischargeForecastBarChart'
-import UpcomingDischargesTable, {
-  type UpcomingDischarge,
-} from '../dashboard_widgets/UpcomingDischargesTable'
-import HospitalStayByConditionTable from '../dashboard_widgets/HospitalStayByConditionTable'
-import OccupancyBarChart from '../dashboard_widgets/OccupancyBarChart'
-import DashboardPanel from '@/components/DashboardPanel'
-import ForecastCard, {
-  type ForecastCardData,
-} from '../dashboard_widgets/ForecastCard'
+import type { UpcomingDischarge } from '@/components/dashboard_components/UpcomingDischargesTable'
+import type { ForecastCardData } from '@/components/dashboard_components/ForecastCard'
+import DischargeForecastBarChart from '@/components/dashboard_components/DischargeForecastBarChart'
+import HospitalStayByConditionTable from '@/components/dashboard_components/HospitalStayByConditionTable'
+import OccupancyBarChart from '@/components/dashboard_components/OccupancyBarChart'
+import UpcomingDischargesTable from '@/components/dashboard_components/UpcomingDischargesTable'
+import DischargeForecastWidget from '../dashboard_widgets/DischargeForecastWidget'
+import ForecastWidget from '../dashboard_widgets/ForecastWidget'
+import HospitalStayByConditionWidget from '../dashboard_widgets/HospitalStayByConditionWidget'
+import OccupancyWidget from '../dashboard_widgets/OccupancyWidget'
+import OccupancySummaryWidget from '../dashboard_widgets/OccupancySummaryWidget'
+import UpcomingDischargesWidget from '../dashboard_widgets/UpcomingDischargesWidget'
 import {
   getDashboardWidgets,
   type DashboardWidgetId,
@@ -79,38 +80,32 @@ type DashboardItem =
   | 'lengthOfStay'
   | 'upcomingDischarges'
 
-const getProfileScope = (roles: string[] = [], scopeType: string | null = null): Scope | undefined => {
-  if (roles.includes('ADMIN_ROLE')) return 'LHU'
+const getProfileScope = (scopeType: AccessScopeType | null): Scope | undefined => {
   switch (scopeType) {
     case 'LHU': return 'LHU'
-    case 'UNIT':
-    case 'BUILDING':
-    case 'FLOOR': return 'Unit'
-    case 'SERVICE':
-    case 'WING':
-    case 'WARD': return 'Service'
+    case 'UNIT': return 'Unit'
+    case 'SERVICE': return 'Service'
     default: return undefined
   }
 }
 
-interface DashboardProps {
-  scope?: Scope
-}
-
-const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
+const Dashboard = () => {
   const { t, i18n } = useTranslation()
   const { user } = useKeycloak()
   const { managerScope } = useOutletContext<AppOutletContext>()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
-  const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
+  const profileScope = getProfileScope(user?.scopeType ?? null)
   const dashboardWidgets: readonly DashboardWidgetId[] = getDashboardWidgets(user?.scopeType)
+  const hasConfiguredWidgets = dashboardWidgets.length > 0
   const hasWidget = (widgetId: DashboardWidgetId) => dashboardWidgets.includes(widgetId)
-  const metrics = SCOPE_METRICS[profileScope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy', managerScope.root?.id],
     queryFn: () => fetchOccupancy(managerScope.scope),
-    enabled: user?.roles.includes('MANAGER_ROLE') === true && Boolean(managerScope.root),
+    enabled:
+      hasConfiguredWidgets &&
+      user?.roles.includes('MANAGER_ROLE') === true &&
+      Boolean(managerScope.root),
   })
 
   useEffect(() => {
@@ -129,19 +124,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const unitOccupancy = occupancy?.units ?? []
   const occupancyChartRows = profileScope === 'Service' ? wingOccupancy : serviceOccupancy
   const occupancyChartTranslation = profileScope === 'Service' ? 'dashboard.perWing' : 'dashboard.perService'
-  const occupancySummary = serviceOccupancy.reduce(
-    (summary, item) => ({
-      occupiedBeds: summary.occupiedBeds + item.occupied,
-      totalBeds: summary.totalBeds + item.capacity,
-    }),
-    { occupiedBeds: 0, totalBeds: 0 },
-  )
-  const occupancyPercent =
-    occupancySummary.totalBeds > 0
-      ? Math.round((occupancySummary.occupiedBeds / occupancySummary.totalBeds) * 10000) / 100
-      : null
   const criticalThreshold = occupancy?.criticalOccupancyPercent ?? CRITICAL_THRESHOLD
-  const occupancyGap = occupancyPercent === null ? null : criticalThreshold - occupancyPercent
 
   if (managerScope.isPending) {
     return <div className="p-6">{t('managerHierarchy.loading')}</div>
@@ -152,6 +135,9 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   if (!managerScope.root) {
     return <div className="p-6">{t('lhuHierarchy.noData')}</div>
   }
+  if (!profileScope) return null
+
+  const metrics = SCOPE_METRICS[profileScope]
 
   const forecasts: ForecastCardData[] = [
     {
@@ -176,6 +162,62 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       tone: 'bg-amber-50 text-amber-700',
     },
   ]
+
+  const occupancySummary = serviceOccupancy.reduce(
+    (summary, item) => ({
+      occupiedBeds: summary.occupiedBeds + item.occupied,
+      totalBeds: summary.totalBeds + item.capacity,
+    }),
+    { occupiedBeds: 0, totalBeds: 0 },
+  )
+
+  const widgets: Record<DashboardWidgetId, ReactNode> = {
+    occupancy: (
+      <OccupancyWidget
+        translationKey={profileScope === 'Service' ? 'dashboard.perWing' : 'dashboard.perService'}
+        rows={occupancyChartRows}
+        isPending={occupancyPending}
+        isError={occupancyError}
+        onExpand={() => setExpandedItem('service')}
+      />
+    ),
+    occupancyByUnit: (
+      <OccupancyWidget
+        translationKey="dashboard.perUnit"
+        rows={unitOccupancy}
+        isPending={occupancyPending}
+        isError={occupancyError}
+        onExpand={() => setExpandedItem('unit')}
+      />
+    ),
+    occupancySummary: (
+      <OccupancySummaryWidget
+        scope={profileScope}
+        occupiedBeds={occupancySummary.occupiedBeds}
+        totalBeds={occupancySummary.totalBeds}
+        criticalThreshold={criticalThreshold}
+      />
+    ),
+    forecast: <ForecastWidget forecasts={forecasts} />,
+    dischargeForecast: (
+      <DischargeForecastWidget
+        forecast={DISCHARGE_FORECAST}
+        onExpand={() => setExpandedItem('discharges')}
+      />
+    ),
+    hospitalStayByCondition: (
+      <HospitalStayByConditionWidget
+        forecasts={LENGTH_OF_STAY_FORECAST}
+        onExpand={() => setExpandedItem('lengthOfStay')}
+      />
+    ),
+    upcomingDischarges: (
+      <UpcomingDischargesWidget
+        discharges={UPCOMING_DISCHARGES}
+        onExpand={() => setExpandedItem('upcomingDischarges')}
+      />
+    ),
+  }
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
@@ -202,119 +244,32 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         </div>
       </section>
 
-      {/* KPI cards */}
-      <section className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
-        <article className="rounded-xl border border-blue-100 bg-white p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                {t('dashboard.occupancyRate', { scope: t(`dashboard.scopes.${scope}.name`) })}
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">
-                {occupancyPercent === null ? '—' : `${occupancyPercent}%`}
-              </p>
-            </div>
-            <Badge className="shrink-0 rounded-full border-0 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">
-              {t('dashboard.beds', {
-                occupied: occupancySummary.occupiedBeds,
-                total: occupancySummary.totalBeds,
-              })}
-            </Badge>
-          </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-blue-500"
-              style={{ width: `${occupancyPercent ?? 0}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-gray-400">
-            {occupancyGap === null
-              ? t('dashboard.occupancyLoading')
-              : occupancyGap >= 0
-                ? t('dashboard.thresholdBelow', { value: occupancyGap })
-                : t('dashboard.thresholdAbove', { value: Math.abs(occupancyGap) })}
-          </p>
-        </article>
-
-        {hasWidget('forecast') &&
-          forecasts.map((forecast) => (
-            <ForecastCard
-              key={forecast.id}
-              forecast={forecast}
-              badgeLabel={t('dashboard.forecast.badge')}
-            />
-          ))}
-      </section>
-
-      {/* Charts */}
-      {hasWidget('occupancy') && (
-        <section
-          className={`grid min-w-0 grid-cols-1 gap-4 ${profileScope !== 'Service' ? '2xl:grid-cols-2' : ''}`}
-        >
-          <DashboardPanel
-            title={t(`${occupancyChartTranslation}.title`)}
-            description={t(`${occupancyChartTranslation}.body`)}
-            expandLabel={t('dashboard.expandChart')}
-            onExpand={() => setExpandedItem('service')}
-            onClick={() => setExpandedItem('service')}
-            contentClassName="p-6"
-          >
-            <OccupancyBarChart
-              rows={occupancyChartRows}
-              isPending={occupancyPending}
-              isError={occupancyError}
-            />
-          </DashboardPanel>
-
-          {profileScope !== 'Service' && (
-            <DashboardPanel
-              title={t('dashboard.perUnit.title')}
-              description={t('dashboard.perUnit.body')}
-              expandLabel={t('dashboard.expandChart')}
-              onExpand={() => setExpandedItem('unit')}
-              onClick={() => setExpandedItem('unit')}
-              contentClassName="p-6"
-            >
-              <OccupancyBarChart
-                rows={unitOccupancy}
-                isPending={occupancyPending}
-                isError={occupancyError}
-              />
-            </DashboardPanel>
+      {(hasWidget('occupancySummary') || hasWidget('forecast')) && (
+        <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-4">
+          {hasWidget('occupancySummary') && (
+            <div className="2xl:col-span-1">{widgets.occupancySummary}</div>
+          )}
+          {hasWidget('forecast') && (
+            <div className="2xl:col-span-3">{widgets.forecast}</div>
           )}
         </section>
       )}
 
-      {/* Forecasts */}
-      {hasWidget('dischargeForecast') || hasWidget('hospitalStayByCondition') ? (
+      {(hasWidget('occupancy') || hasWidget('occupancyByUnit')) && (
         <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
-          {hasWidget('dischargeForecast') && (
-            <DashboardPanel
-              title={t('dashboard.forecastChart.title')}
-              description={t('dashboard.forecastChart.body')}
-              expandLabel={t('dashboard.expandChart')}
-              onExpand={() => setExpandedItem('discharges')}
-              onClick={() => setExpandedItem('discharges')}
-              contentClassName="p-6"
-            >
-              <DischargeForecastBarChart forecast={DISCHARGE_FORECAST} />
-            </DashboardPanel>
-          )}
+          {hasWidget('occupancy') && <div>{widgets.occupancy}</div>}
+          {hasWidget('occupancyByUnit') && <div>{widgets.occupancyByUnit}</div>}
+        </section>
+      )}
 
+      {(hasWidget('dischargeForecast') || hasWidget('hospitalStayByCondition')) && (
+        <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
+          {hasWidget('dischargeForecast') && <div>{widgets.dischargeForecast}</div>}
           {hasWidget('hospitalStayByCondition') && (
-            <DashboardPanel
-              title={t('dashboard.lengthOfStay.title')}
-              description={t('dashboard.lengthOfStay.body')}
-              expandLabel={t('dashboard.expandTable')}
-              onExpand={() => setExpandedItem('lengthOfStay')}
-              onContentClick={() => setExpandedItem('lengthOfStay')}
-              contentClassName="cursor-zoom-in overflow-x-auto"
-            >
-              <HospitalStayByConditionTable forecasts={LENGTH_OF_STAY_FORECAST} />
-            </DashboardPanel>
+            <div>{widgets.hospitalStayByCondition}</div>
           )}
         </section>
-      ) : null}
+      )}
 
       <dialog
         ref={dashboardDialogRef}
@@ -365,11 +320,11 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               </Button>
             </header>
 
-            {expandedItem === 'service' && (
+            {hasWidget('occupancy') && expandedItem === 'service' && (
               <OccupancyBarChart rows={occupancyChartRows} expanded />
             )}
 
-            {expandedItem === 'unit' && (
+            {hasWidget('occupancyByUnit') && expandedItem === 'unit' && (
               <OccupancyBarChart rows={unitOccupancy} expanded />
             )}
 
@@ -398,18 +353,11 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         )}
       </dialog>
 
-      {/* Upcoming discharges */}
       {hasWidget('upcomingDischarges') && (
-        <DashboardPanel
-          title={t('dashboard.discharges.title')}
-          description={t('dashboard.discharges.body')}
-          expandLabel={t('dashboard.expandTable')}
+        <UpcomingDischargesWidget
+          discharges={UPCOMING_DISCHARGES}
           onExpand={() => setExpandedItem('upcomingDischarges')}
-          onContentClick={() => setExpandedItem('upcomingDischarges')}
-          contentClassName="cursor-zoom-in overflow-x-auto"
-        >
-          <UpcomingDischargesTable discharges={UPCOMING_DISCHARGES} />
-        </DashboardPanel>
+        />
       )}
     </div>
   )

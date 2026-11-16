@@ -3,31 +3,38 @@ import type { AccessScopeType } from '@/auth/context'
 export type DashboardWidgetId =
   | 'hospitalStayByCondition'
   | 'occupancy'
+  | 'occupancyByUnit'
+  | 'occupancySummary'
   | 'upcomingDischarges'
   | 'forecast'
   | 'dischargeForecast'
 
 export const DASHBOARD_WIDGETS_BY_GROUP = {
   LHU: [
-    'hospitalStayByCondition',
-    'occupancy',
-    'upcomingDischarges',
+    'occupancySummary',
     'forecast',
+    'occupancy',
+    'occupancyByUnit',
     'dischargeForecast',
+    'hospitalStayByCondition',
+    'upcomingDischarges',
   ],
   UNIT: [
-    'hospitalStayByCondition',
-    'occupancy',
-    'upcomingDischarges',
+    'occupancySummary',
     'forecast',
+    'occupancy',
+    'occupancyByUnit',
     'dischargeForecast',
+    'hospitalStayByCondition',
+    'upcomingDischarges',
   ],
   SERVICE: [
-    'hospitalStayByCondition',
-    'occupancy',
-    'upcomingDischarges',
+    'occupancySummary',
     'forecast',
+    'occupancy',
     'dischargeForecast',
+    'hospitalStayByCondition',
+    'upcomingDischarges',
   ],
 } as const satisfies Partial<Record<AccessScopeType, readonly DashboardWidgetId[]>>
 

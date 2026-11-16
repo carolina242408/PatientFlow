@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import type { OccupancyRow } from '../api/operational'
+import type { OccupancyRow } from '../../api/operational'
 
 interface OccupancyBarChartProps {
   rows: OccupancyRow[]
