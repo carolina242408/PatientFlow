@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/Badge'
-import DashboardTable, { type DashboardTableColumn } from '../DashboardTable'
+import DashboardTable, { type DashboardTableColumn } from '../components/DashboardTable'
 
 type DischargeStatus = 'ready' | 'pendingTransport' | 'medicationReview' | 'clinicalReview'
 type Destination = 'home' | 'rehabilitation' | 'primaryCare'
