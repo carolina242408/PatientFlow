@@ -15,8 +15,23 @@ import DashboardPanel from './dashboard_components/DashboardPanel'
 import ForecastCard, {
   type ForecastCardData,
 } from './dashboard_components/ForecastCard'
+import {
+  DASHBOARD_WIDGETS_BY_GROUP,
+  getDashboardGroupType,
+  type DashboardGroupType,
+  type DashboardWidgetId,
+} from './dashboard_widgets/widgetConfig'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
+
+const GROUP_TYPE_BY_SCOPE: Record<Scope, DashboardGroupType> = {
+  LHU: 'ULS',
+  Unit: 'UNIT',
+  Service: 'SERVICE',
+}
+
+const scopeForGroupType = (groupType: DashboardGroupType): Scope =>
+  groupType === 'ULS' ? 'LHU' : groupType === 'UNIT' ? 'Unit' : 'Service'
 
 // Dados de exemplo: substitui por dados do backend
 const CRITICAL_THRESHOLD = 82
@@ -82,8 +97,14 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { user } = useKeycloak()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
-  const profileScope = getProfileScope(user?.roles) ?? scope
-  const metrics = SCOPE_METRICS[scope]
+  const roleScope = getProfileScope(user?.roles)
+  const roleGroupType = roleScope ? GROUP_TYPE_BY_SCOPE[roleScope] : undefined
+  const groupType =
+    getDashboardGroupType(user?.groups ?? []) ?? roleGroupType ?? GROUP_TYPE_BY_SCOPE[scope]
+  const profileScope = scopeForGroupType(groupType)
+  const dashboardWidgets = DASHBOARD_WIDGETS_BY_GROUP[groupType]
+  const hasWidget = (widgetId: DashboardWidgetId) => dashboardWidgets.includes(widgetId)
+  const metrics = SCOPE_METRICS[profileScope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy'],
     queryFn: () => fetchOccupancy(),
@@ -197,51 +218,54 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           </p>
         </article>
 
-        {forecasts.map((forecast) => (
-          <ForecastCard
-            key={forecast.id}
-            forecast={forecast}
-            badgeLabel={t('dashboard.forecast.badge')}
-          />
-        ))}
+        {hasWidget('forecast') &&
+          forecasts.map((forecast) => (
+            <ForecastCard
+              key={forecast.id}
+              forecast={forecast}
+              badgeLabel={t('dashboard.forecast.badge')}
+            />
+          ))}
       </section>
 
       {/* Charts */}
-      <section
-        className={`grid min-w-0 grid-cols-1 gap-4 ${profileScope !== 'Service' ? '2xl:grid-cols-2' : ''}`}
-      >
-        <DashboardPanel
-          title={t(`${occupancyChartTranslation}.title`)}
-          description={t(`${occupancyChartTranslation}.body`)}
-          expandLabel={t('dashboard.expandChart')}
-          onExpand={() => setExpandedItem('service')}
-          onClick={() => setExpandedItem('service')}
-          contentClassName="p-6"
+      {hasWidget('occupancy') && (
+        <section
+          className={`grid min-w-0 grid-cols-1 gap-4 ${profileScope !== 'Service' ? '2xl:grid-cols-2' : ''}`}
         >
-          <OccupancyBarChart
-            rows={occupancyChartRows}
-            isPending={occupancyPending}
-            isError={occupancyError}
-          />
-        </DashboardPanel>
-
-        {profileScope !== 'Service' && (
           <DashboardPanel
-            title={t('dashboard.perUnit.title')}
-            description={t('dashboard.perUnit.body')}
+            title={t(`${occupancyChartTranslation}.title`)}
+            description={t(`${occupancyChartTranslation}.body`)}
             expandLabel={t('dashboard.expandChart')}
-            onExpand={() => setExpandedItem('unit')}
-            onClick={() => setExpandedItem('unit')}
+            onExpand={() => setExpandedItem('service')}
+            onClick={() => setExpandedItem('service')}
             contentClassName="p-6"
           >
             <OccupancyBarChart
-              rows={unitOccupancy}
+              rows={occupancyChartRows}
               isPending={occupancyPending}
               isError={occupancyError}
             />
           </DashboardPanel>
-        )}
-      </section>
+
+          {profileScope !== 'Service' && (
+            <DashboardPanel
+              title={t('dashboard.perUnit.title')}
+              description={t('dashboard.perUnit.body')}
+              expandLabel={t('dashboard.expandChart')}
+              onExpand={() => setExpandedItem('unit')}
+              onClick={() => setExpandedItem('unit')}
+              contentClassName="p-6"
+            >
+              <OccupancyBarChart
+                rows={unitOccupancy}
+                isPending={occupancyPending}
+                isError={occupancyError}
+              />
+            </DashboardPanel>
+          )}
+        </section>
+      )}
 
       {/* Forecasts */}
       <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
@@ -286,16 +310,18 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         </DashboardPanel>
 
         {/* Length-of-stay forecast */}
-        <DashboardPanel
-          title={t('dashboard.lengthOfStay.title')}
-          description={t('dashboard.lengthOfStay.body')}
-          expandLabel={t('dashboard.expandTable')}
-          onExpand={() => setExpandedItem('lengthOfStay')}
-          onContentClick={() => setExpandedItem('lengthOfStay')}
-          contentClassName="cursor-zoom-in overflow-x-auto"
-        >
-          <HospitalStayByConditionTable forecasts={LENGTH_OF_STAY_FORECAST} />
-        </DashboardPanel>
+        {hasWidget('hospitalStayByCondition') && (
+          <DashboardPanel
+            title={t('dashboard.lengthOfStay.title')}
+            description={t('dashboard.lengthOfStay.body')}
+            expandLabel={t('dashboard.expandTable')}
+            onExpand={() => setExpandedItem('lengthOfStay')}
+            onContentClick={() => setExpandedItem('lengthOfStay')}
+            contentClassName="cursor-zoom-in overflow-x-auto"
+          >
+            <HospitalStayByConditionTable forecasts={LENGTH_OF_STAY_FORECAST} />
+          </DashboardPanel>
+        )}
       </section>
 
       <dialog
@@ -387,7 +413,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               </>
             )}
 
-            {expandedItem === 'lengthOfStay' && (
+            {hasWidget('hospitalStayByCondition') && expandedItem === 'lengthOfStay' && (
               <div className="overflow-x-auto">
                 <HospitalStayByConditionTable
                   forecasts={LENGTH_OF_STAY_FORECAST}
@@ -396,7 +422,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               </div>
             )}
 
-            {expandedItem === 'upcomingDischarges' && (
+            {hasWidget('upcomingDischarges') && expandedItem === 'upcomingDischarges' && (
               <div className="overflow-x-auto">
                 <UpcomingDischargesTable
                   discharges={UPCOMING_DISCHARGES}
@@ -409,16 +435,18 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       </dialog>
 
       {/* Upcoming discharges */}
-      <DashboardPanel
-        title={t('dashboard.discharges.title')}
-        description={t('dashboard.discharges.body')}
-        expandLabel={t('dashboard.expandTable')}
-        onExpand={() => setExpandedItem('upcomingDischarges')}
-        onContentClick={() => setExpandedItem('upcomingDischarges')}
-        contentClassName="cursor-zoom-in overflow-x-auto"
-      >
+      {hasWidget('upcomingDischarges') && (
+        <DashboardPanel
+          title={t('dashboard.discharges.title')}
+          description={t('dashboard.discharges.body')}
+          expandLabel={t('dashboard.expandTable')}
+          onExpand={() => setExpandedItem('upcomingDischarges')}
+          onContentClick={() => setExpandedItem('upcomingDischarges')}
+          contentClassName="cursor-zoom-in overflow-x-auto"
+        >
           <UpcomingDischargesTable discharges={UPCOMING_DISCHARGES} />
-      </DashboardPanel>
+        </DashboardPanel>
+      )}
     </div>
   )
 }

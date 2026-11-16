@@ -6,6 +6,7 @@ export interface KeycloakUser {
   username: string
   email: string
   roles: string[]
+  groups: string[]
 }
 
 export interface KeycloakContextType {
@@ -24,6 +25,12 @@ export const extractRolesFromToken = (keycloak: Keycloak): string[] => {
   return Array.from(new Set([...realmRoles]))
 }
 
+export const extractGroupsFromToken = (keycloak: Keycloak): string[] => {
+  const tokenParsed = keycloak.tokenParsed as Record<string, unknown> | undefined
+  const groups = tokenParsed?.groups
+  return Array.isArray(groups) ? groups.filter((group): group is string => typeof group === 'string') : []
+}
+
 
 export const buildKeycloakUser = (keycloak: Keycloak): KeycloakUser | null => {
   if (!keycloak.authenticated || !keycloak.tokenParsed) return null
@@ -35,6 +42,7 @@ export const buildKeycloakUser = (keycloak: Keycloak): KeycloakUser | null => {
     username: token.preferred_username || '',
     email: token.email || '',
     roles: extractRolesFromToken(keycloak),
+    groups: extractGroupsFromToken(keycloak),
   }
 }
 

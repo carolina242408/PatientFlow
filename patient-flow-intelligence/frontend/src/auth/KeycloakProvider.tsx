@@ -1,6 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
-import { extractRolesFromToken, getApplicationUrl, KeycloakContext, type KeycloakUser } from './context'
+import {
+  extractGroupsFromToken,
+  extractRolesFromToken,
+  getApplicationUrl,
+  KeycloakContext,
+  type KeycloakUser,
+} from './context'
 import keycloak, { initKeycloak } from './keycloak'
 
 export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
@@ -21,6 +27,7 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
         username: token.preferred_username,
         email: token.email,
         roles: extractRolesFromToken(keycloak),
+        groups: extractGroupsFromToken(keycloak),
       })
     }
 
