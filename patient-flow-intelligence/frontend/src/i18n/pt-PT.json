@@ -68,11 +68,52 @@
     "notifications": "Notificações",
     "unreadCount_one": "{{count}} por ler",
     "unreadCount_other": "{{count}} por ler",
-    "sampleNotifications": "Notificações de exemplo — liga o serviço de notificações para carregar os teus alertas.",
+    "sampleNotifications": "Notificações em tempo real do teu âmbito hospitalar.",
+    "noNotifications": "Sem notificações no momento",
+    "liveConnected": "Em direto",
+    "liveDisconnected": "A ligar...",
+    "clearAll": "Limpar todas",
+    "justNow": "Agora mesmo",
     "markAllRead": "Marcar todas como lidas",
     "markRead": "Marcar como lida",
     "unread": "Por ler",
     "notificationItems": {
+      "bedStatusChanged": {
+        "title": "Estado da cama alterado",
+        "body": "O estado de uma cama foi atualizado no teu âmbito."
+      },
+      "patientAdmitted": {
+        "title": "Doente admitido",
+        "body": "Um novo doente foi internado numa cama."
+      },
+      "patientDischarged": {
+        "title": "Alta de doente",
+        "body": "Foi registada a alta de um doente."
+      },
+      "patientTransferred": {
+        "title": "Transferência de doente",
+        "body": "Um doente foi transferido para outra cama ou serviço."
+      },
+      "dischargePlanChanged": {
+        "title": "Plano de alta atualizado",
+        "body": "A previsão ou plano de alta de um doente foi atualizado."
+      },
+      "clinicalDischargeRecorded": {
+        "title": "Alta clínica registada",
+        "body": "Foi registada a alta clínica de um doente."
+      },
+      "admissionRequest": {
+        "title": "Pedido de admissão atualizado",
+        "body": "O estado de um pedido de admissão foi atualizado."
+      },
+      "hierarchyChanged": {
+        "title": "Hierarquia atualizada",
+        "body": "Foram aplicadas alterações à estrutura hospitalar."
+      },
+      "accessChanged": {
+        "title": "Permissões atualizadas",
+        "body": "As tuas permissões de acesso foram atualizadas."
+      },
       "occupancy": {
         "title": "Alerta de ocupação elevada",
         "body": "A Cardiologia está com 88% de ocupação das camas ativas.",
