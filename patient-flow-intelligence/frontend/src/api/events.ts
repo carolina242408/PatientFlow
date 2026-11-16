@@ -31,6 +31,12 @@ export interface DomainEventMessage {
   occurredAt: string
   resourceType: string
   resourceId?: string | null
+  patientName?: string
+  serviceName?: string
+  bedCode?: string
+  wardCode?: string
+  roomCode?: string
+  status?: string
 }
 
 export async function requestEventTicket(): Promise<EventTicketResponse> {

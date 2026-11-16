@@ -80,27 +80,42 @@
     "notificationItems": {
       "bedStatusChanged": {
         "title": "Estado da cama alterado",
-        "body": "O estado de uma cama foi atualizado no teu âmbito."
+        "body": "O estado de uma cama foi atualizado no teu âmbito.",
+        "specificTitle": "Cama {{bed}} atualizada",
+        "specificBody": "{{bed}} ({{location}}) passou para {{status}}."
       },
       "patientAdmitted": {
         "title": "Doente admitido",
-        "body": "Um novo doente foi internado numa cama."
+        "body": "Um novo doente foi internado numa cama.",
+        "specificTitle": "Admissão: {{patient}}",
+        "specificTitleGeneric": "Doente admitido",
+        "specificBody": "Internado em {{location}}."
       },
       "patientDischarged": {
         "title": "Alta de doente",
-        "body": "Foi registada a alta de um doente."
+        "body": "Foi registada a alta de um doente.",
+        "specificTitle": "Alta: {{patient}}",
+        "specificTitleGeneric": "Alta de doente",
+        "specificBody": "Alta concluída no Serviço de {{service}}."
       },
       "patientTransferred": {
         "title": "Transferência de doente",
-        "body": "Um doente foi transferido para outra cama ou serviço."
+        "body": "Um doente foi transferido para outra cama ou serviço.",
+        "specificTitle": "Transferência: {{patient}}",
+        "specificTitleGeneric": "Doente transferido",
+        "specificBody": "Transferido para {{location}}."
       },
       "dischargePlanChanged": {
         "title": "Plano de alta atualizado",
-        "body": "A previsão ou plano de alta de um doente foi atualizado."
+        "body": "A previsão ou plano de alta de um doente foi atualizado.",
+        "specificTitle": "Previsão de alta: {{patient}}",
+        "specificBody": "Previsão de alta atualizada no Serviço de {{service}}."
       },
       "clinicalDischargeRecorded": {
         "title": "Alta clínica registada",
-        "body": "Foi registada a alta clínica de um doente."
+        "body": "Foi registada a alta clínica de um doente.",
+        "specificTitle": "Alta clínica: {{patient}}",
+        "specificBody": "Alta clínica emitida no Serviço de {{service}}."
       },
       "admissionRequest": {
         "title": "Pedido de admissão atualizado",

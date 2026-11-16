@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { useQueryClient } from '@tanstack/react-query'
 import { useKeycloak, hasAdminRole } from '../auth/context'
 import { requestEventTicket, type DomainEventMessage, type DomainEventType } from '../api/events'
+import { fetchBed, fetchEncounter } from '../api/operational'
 
 export interface AppNotification {
   id: string
@@ -15,6 +16,15 @@ export interface AppNotification {
   resourceType?: string
   resourceId?: string | null
   iconType: 'bed' | 'patient' | 'discharge' | 'transfer' | 'hierarchy' | 'system'
+  details?: {
+    patientName?: string
+    serviceName?: string
+    bedCode?: string
+    wardCode?: string
+    roomCode?: string
+    status?: string
+    expectedDate?: string
+  }
 }
 
 export interface NotificationContextType {
@@ -221,6 +231,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const config = getEventConfig(type)
       if (config.skipNotification) return
 
+      const initialDetails =
+        message.patientName || message.serviceName || message.bedCode
+          ? {
+              patientName: message.patientName,
+              serviceName: message.serviceName,
+              bedCode: message.bedCode,
+              wardCode: message.wardCode,
+              roomCode: message.roomCode,
+              status: message.status,
+            }
+          : undefined
+
       const notification: AppNotification = {
         id: message.id,
         type,
@@ -233,9 +255,60 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         resourceType: message.resourceType,
         resourceId: message.resourceId,
         iconType: config.iconType,
+        details: initialDetails,
       }
 
       setNotifications((prev) => [notification, ...prev.slice(0, 49)])
+
+      // 3. Asynchronously enrich notification if details are not yet present
+      if (!initialDetails && message.resourceId) {
+        void (async () => {
+          try {
+            let details: AppNotification['details'] = undefined
+
+            if (message.resourceType === 'BED' || message.type === 'BED_STATUS_CHANGED') {
+              const bed = await fetchBed(message.resourceId!)
+              if (bed) {
+                details = {
+                  bedCode: bed.code,
+                  serviceName: bed.serviceName,
+                  wardCode: bed.wardCode,
+                  roomCode: bed.roomCode,
+                  status: bed.status,
+                  patientName: bed.patientName ?? undefined,
+                }
+              }
+            } else if (
+              message.resourceType === 'ENCOUNTER' ||
+              message.type === 'PATIENT_ADMITTED' ||
+              message.type === 'PATIENT_TRANSFERRED' ||
+              message.type === 'PATIENT_DISCHARGED' ||
+              message.type === 'DISCHARGE_PLAN_CHANGED' ||
+              message.type === 'CLINICAL_DISCHARGE_RECORDED'
+            ) {
+              const enc = await fetchEncounter(message.resourceId!)
+              if (enc) {
+                details = {
+                  patientName: enc.patientName,
+                  serviceName: enc.serviceName,
+                  bedCode: enc.bedCode ?? undefined,
+                  wardCode: enc.wardCode ?? undefined,
+                  status: enc.status,
+                  expectedDate: enc.expectedDischargeAt ?? undefined,
+                }
+              }
+            }
+
+            if (details) {
+              setNotifications((prev) =>
+                prev.map((n) => (n.id === message.id ? { ...n, details } : n)),
+              )
+            }
+          } catch {
+            // Fallback gracefully to default generic notification
+          }
+        })()
+      }
     },
     [queryClient],
   )

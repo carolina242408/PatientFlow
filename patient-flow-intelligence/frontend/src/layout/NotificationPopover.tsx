@@ -47,6 +47,143 @@ function formatRelativeTime(
   }).format(date)
 }
 
+function getNotificationContent(
+  notif: AppNotification,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): { title: string; body: string } {
+  const { details } = notif
+  if (details) {
+    const locParts = [
+      details.serviceName,
+      details.wardCode,
+      details.bedCode ? `Cama ${details.bedCode}` : details.roomCode,
+    ].filter(Boolean)
+    const locationStr = locParts.join(' · ') || details.serviceName || details.bedCode || '—'
+
+    switch (notif.type) {
+      case 'BED_STATUS_CHANGED': {
+        const bedLabel = details.bedCode || '—'
+        const loc = [details.serviceName, details.wardCode, details.roomCode]
+          .filter(Boolean)
+          .join(' · ')
+        const statusLabel = details.status
+          ? t(`space.status.${details.status.toLowerCase()}`, {
+              defaultValue: details.status,
+            })
+          : ''
+        return {
+          title: t('topbar.notificationItems.bedStatusChanged.specificTitle', {
+            bed: bedLabel,
+            defaultValue: `Cama ${bedLabel} atualizada`,
+          }),
+          body: t('topbar.notificationItems.bedStatusChanged.specificBody', {
+            bed: bedLabel,
+            location: loc || '—',
+            status: statusLabel,
+            defaultValue: `${bedLabel}${loc ? ` (${loc})` : ''} passou para ${statusLabel || 'atualizada'}.`,
+          }),
+        }
+      }
+      case 'PATIENT_TRANSFERRED': {
+        const patientName = details.patientName
+        return {
+          title: patientName
+            ? t('topbar.notificationItems.patientTransferred.specificTitle', {
+                patient: patientName,
+                defaultValue: `Transferência: ${patientName}`,
+              })
+            : t('topbar.notificationItems.patientTransferred.specificTitleGeneric', {
+                defaultValue: 'Doente transferido',
+              }),
+          body: t('topbar.notificationItems.patientTransferred.specificBody', {
+            location: locationStr,
+            service: details.serviceName || '—',
+            bed: details.bedCode || '—',
+            defaultValue: `Transferido para ${locationStr}.`,
+          }),
+        }
+      }
+      case 'PATIENT_ADMITTED': {
+        const patientName = details.patientName
+        return {
+          title: patientName
+            ? t('topbar.notificationItems.patientAdmitted.specificTitle', {
+                patient: patientName,
+                defaultValue: `Admissão: ${patientName}`,
+              })
+            : t('topbar.notificationItems.patientAdmitted.specificTitleGeneric', {
+                defaultValue: 'Doente admitido',
+              }),
+          body: t('topbar.notificationItems.patientAdmitted.specificBody', {
+            location: locationStr,
+            defaultValue: `Internado em ${locationStr}.`,
+          }),
+        }
+      }
+      case 'PATIENT_DISCHARGED': {
+        const patientName = details.patientName
+        return {
+          title: patientName
+            ? t('topbar.notificationItems.patientDischarged.specificTitle', {
+                patient: patientName,
+                defaultValue: `Alta: ${patientName}`,
+              })
+            : t('topbar.notificationItems.patientDischarged.specificTitleGeneric', {
+                defaultValue: 'Alta de doente',
+              }),
+          body: t('topbar.notificationItems.patientDischarged.specificBody', {
+            service: details.serviceName || '—',
+            defaultValue: `Alta concluída no Serviço de ${details.serviceName || '—'}.`,
+          }),
+        }
+      }
+      case 'CLINICAL_DISCHARGE_RECORDED': {
+        const patientName = details.patientName
+        return {
+          title: patientName
+            ? t('topbar.notificationItems.clinicalDischargeRecorded.specificTitle', {
+                patient: patientName,
+                defaultValue: `Alta clínica: ${patientName}`,
+              })
+            : t('topbar.notificationItems.clinicalDischargeRecorded.title', {
+                defaultValue: 'Alta clínica registada',
+              }),
+          body: t('topbar.notificationItems.clinicalDischargeRecorded.specificBody', {
+            service: details.serviceName || '—',
+            defaultValue: `Alta clínica emitida no Serviço de ${details.serviceName || '—'}.`,
+          }),
+        }
+      }
+      case 'DISCHARGE_PLAN_CHANGED': {
+        const patientName = details.patientName
+        return {
+          title: patientName
+            ? t('topbar.notificationItems.dischargePlanChanged.specificTitle', {
+                patient: patientName,
+                defaultValue: `Previsão de alta: ${patientName}`,
+              })
+            : t('topbar.notificationItems.dischargePlanChanged.title', {
+                defaultValue: 'Plano de alta atualizado',
+              }),
+          body: t('topbar.notificationItems.dischargePlanChanged.specificBody', {
+            service: details.serviceName || '—',
+            defaultValue: `Previsão de alta atualizada no Serviço de ${details.serviceName || '—'}.`,
+          }),
+        }
+      }
+    }
+  }
+
+  return {
+    title: notif.titleKey
+      ? t(notif.titleKey, { defaultValue: notif.defaultTitle })
+      : notif.defaultTitle,
+    body: notif.bodyKey
+      ? t(notif.bodyKey, { defaultValue: notif.defaultBody })
+      : notif.defaultBody,
+  }
+}
+
 const NotificationPopover = () => {
   const { t, i18n } = useTranslation()
   const {
@@ -181,12 +318,7 @@ const NotificationPopover = () => {
             ) : (
               notifications.map((notif) => {
                 const Icon = ICON_MAP[notif.iconType] ?? CircleAlert
-                const title = notif.titleKey
-                  ? t(notif.titleKey, notif.defaultTitle)
-                  : notif.defaultTitle
-                const body = notif.bodyKey
-                  ? t(notif.bodyKey, notif.defaultBody)
-                  : notif.defaultBody
+                const { title, body } = getNotificationContent(notif, t)
                 const time = formatRelativeTime(
                   notif.time,
                   t('topbar.justNow', 'Just now'),
