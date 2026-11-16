@@ -24,7 +24,17 @@
       "admin": "Admin Workspace",
       "manager": "Manager Workspace"
     },
-    "lhuHierarchy": "LHU Hierarchy"
+    "lhuHierarchy": "LHU Hierarchy",
+    "noScope": "No scope assigned",
+    "scopeLevels": {
+      "ULS": "LHU",
+      "UNIT": "Unit",
+      "BUILDING": "Building",
+      "FLOOR": "Floor",
+      "SERVICE": "Service",
+      "WING": "Wing",
+      "WARD": "Ward"
+    }
   },
   "pages": {
     "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },
@@ -32,6 +42,20 @@
     "unit": { "title": "Units", "description": "Manage unit capacity, resource allocation, and patient flow." },
     "admin": { "title": "Admin Console", "description": "Manage application administration" },
     "lhu": { "title": "Local Health Unit", "description": "Manage Local Health Unit patient flow" },
+    "hierarchy": {
+      "title": "Organizational Hierarchy",
+      "description": "Explore your assigned organizational scope",
+      "scopes": {
+        "ULS": { "title": "LHU Hierarchy", "description": "Explore the assigned Local Health Unit and its spaces." },
+        "UNIT": { "title": "Unit Hierarchy", "description": "Explore the assigned unit and its spaces." },
+        "BUILDING": { "title": "Building Hierarchy", "description": "Explore the assigned building and its spaces." },
+        "FLOOR": { "title": "Floor Hierarchy", "description": "Explore the assigned floor and its spaces." },
+        "SERVICE": { "title": "Service Hierarchy", "description": "Explore the assigned service and its spaces." },
+        "WING": { "title": "Wing Hierarchy", "description": "Explore the assigned wing and its spaces." },
+        "WARD": { "title": "Ward Hierarchy", "description": "Explore the assigned ward and its spaces." },
+        "unassigned": { "title": "Organizational Hierarchy", "description": "No organizational scope is assigned to your account." }
+      }
+    },
     "settings": { "title": "Settings", "description": "Manage your application preferences and settings" },
     "account": { "title": "Account Settings", "description": "Manage your profile and account details" },
     "lhu-hierarchy": { "title": "LHU Hierarchy", "description": "Organizational structure of the Local Health Unit" },
@@ -314,14 +338,26 @@
       "lhu": "LHU Manager",
       "unit": "Unit Manager",
       "service": "Service Manager",
-      "default": "User"
+      "manager": "Manager",
+      "default": "User",
+      "none": "—"
     },
     "scopes": {
       "admin": "Platform",
       "lhu": "Local Health Unit",
       "unit": "Hospital Unit",
       "service": "Service",
+      "manager": "Assigned organizational scope",
       "default": "—"
+    },
+    "scopeLevels": {
+      "ULS": "Local Health Unit",
+      "UNIT": "Hospital Unit",
+      "BUILDING": "Building",
+      "FLOOR": "Floor",
+      "SERVICE": "Service",
+      "WING": "Wing",
+      "WARD": "Ward"
     },
     "languages": { "en": "English", "pt": "Português" },
     "access": {
@@ -330,7 +366,11 @@
       "lhu": "Your LHU Manager profile provides access to LHU-wide KPIs and the healthcare-space hierarchy starting at your assigned LHU.",
       "unit": "Your Unit Manager profile provides access to unit-wide KPIs and the healthcare-space hierarchy starting at your assigned Unit.",
       "service": "Your Service Manager profile provides access to service KPIs and the healthcare-space hierarchy starting at your assigned Service.",
-      "default": "Your profile provides basic access to the platform."
+      "manager": "Your access is limited to the most specific organizational groups assigned to you.",
+      "default": "Your profile provides basic access to the platform.",
+      "missingRoleDescription": "Your account has no administrator or manager role. Contact an administrator to request access.",
+      "missingScopeDescription": "Your Manager account has no organizational group assigned. Contact an administrator to request access.",
+      "missingRoleAndScope": "Your account has no application role or organizational scope. Contact an administrator to request access."
     }
   },
   "lhu": {
@@ -420,10 +460,19 @@
     }
   },
   "notFound": { "title": "Page not found", "back": "Back to dashboard" },
+  "managerHierarchy": {
+    "currentContext": "Current management context",
+    "switchContext": "Switch managed space",
+    "selectContext": "Select management context",
+    "contextUpdates": "Dashboard and hierarchy data will update.",
+    "active": "Active",
+    "loading": "Loading assigned spaces..."
+  },
   "lhuHierarchy": {
     "title": "Organization hierarchy",
     "description": "Spaces and resources ordered by their organizational parent",
     "error": "Could not load the hierarchy.",
+    "noData": "There isn't spaces or resources in this hierarchy yet.",
     "root": "Organization root",
     "modes": { "structure": "Structure overview", "add": "Add premise or resource" },
     "admin": {

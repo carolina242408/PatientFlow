@@ -99,22 +99,17 @@ de desenvolvimento injeta estas credenciais; o Compose MVP não as injeta.
 O backend não carrega automaticamente o `.env` do Docker Compose. Para alterar
 os valores acima, exportar as variáveis no processo que inicia o backend ou
 usar configuração Spring. `ddl-auto=validate`: apenas o Flyway gere o esquema.
-`V2__hospital_domain.sql` contém a hierarquia atual, incluindo serviços sob
-pisos e alas sob serviços. Essa migração foi alterada no histórico do projeto;
-uma base que tenha aplicado uma versão anterior pode falhar a validação dos
-checksums Flyway. Não existe uma migração incremental que converta a hierarquia
-antiga para a atual, pelo que o arranque não garante a atualização dessas bases.
-
-`V3__operational_management.sql` acrescenta a gestão operacional, insere um
-serviço `GENERAL` por piso existente e associa episódios aos serviços
-encontrados pelas suas alocações. A migração exige no máximo um internamento
-ativo por doente. `V4__organizational_access.sql` cria a vista de âmbito e a
-tabela de grants mantida por compatibilidade,
-mas a autorização atual resolve os âmbitos diretamente do claim `groups` do
-JWT. Ao criar uma ULS, unidade ou serviço, o backend cria o grupo Keycloak
-correspondente e os grupos ficam aninhados. O nome inclui o UUID para permitir
-resolução inequívoca, por exemplo
-`/ULS_Norte__UUID/UNIT_Hospital_A__UUID/SERVICE_Cardiologia__UUID`.
+`V1__init.sql` e `V2__hospital_domain.sql` foram preservadas.
+`V3__operational_management.sql` acrescenta a gestão operacional e associa as
+enfermarias existentes a um serviço `GENERAL` da respetiva unidade, preservando
+os internamentos. A migração exige no máximo um internamento ativo por doente;
+dados antigos que violem essa regra devem ser reconciliados antes da atualização.
+`V4__organizational_access.sql` preserva a tabela de grants por compatibilidade,
+mas a autorização atual usa o papel `MANAGER_ROLE` e os grupos do claim `groups` do
+JWT. Ao criar elementos, o backend cria grupos Keycloak aninhados segundo a
+relação pai-filho até à enfermaria. Quartos e camas não têm grupos. O nome
+inclui o UUID para permitir resolução inequívoca. Se houver grupos em vários
+níveis, só se aplica o mais específico, de enfermaria até ULS.
 `V5__analytics_indexes.sql` acrescenta índices para consultas analíticas.
 
 ## Arquitetura e persistência

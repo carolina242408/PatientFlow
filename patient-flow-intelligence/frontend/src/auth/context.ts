@@ -1,12 +1,20 @@
 import type Keycloak from 'keycloak-js'
 import { createContext, use } from 'react'
 
+export type AccessScopeType = 'ULS' | 'UNIT' | 'BUILDING' | 'FLOOR' | 'SERVICE' | 'WING' | 'WARD'
+
+export interface AccessScope {
+  type: AccessScopeType
+  scopeId: string
+}
+
 export interface KeycloakUser {
   name: string
   username: string
   email: string
   roles: string[]
-  groups: string[]
+  scopeType: AccessScopeType | null
+  scopes: AccessScope[]
 }
 
 export interface KeycloakContextType {
@@ -16,40 +24,10 @@ export interface KeycloakContextType {
 
 export const KeycloakContext = createContext<KeycloakContextType | null>(null)
 
-export const extractRolesFromToken = (keycloak: Keycloak): string[] => {
-  const tokenParsed = keycloak.tokenParsed
-  if (!tokenParsed) return []
-
-  const realmRoles: string[] = tokenParsed.realm_access?.roles || []
-
-  return Array.from(new Set([...realmRoles]))
-}
-
-export const extractGroupsFromToken = (keycloak: Keycloak): string[] => {
-  const tokenParsed = keycloak.tokenParsed as Record<string, unknown> | undefined
-  const groups = tokenParsed?.groups
-  return Array.isArray(groups) ? groups.filter((group): group is string => typeof group === 'string') : []
-}
-
-
-export const buildKeycloakUser = (keycloak: Keycloak): KeycloakUser | null => {
-  if (!keycloak.authenticated || !keycloak.tokenParsed) return null
-
-  const token = keycloak.tokenParsed
-
-  return {
-    name: token.name || token.preferred_username || '',
-    username: token.preferred_username || '',
-    email: token.email || '',
-    roles: extractRolesFromToken(keycloak),
-    groups: extractGroupsFromToken(keycloak),
-  }
-}
-
 export const hasAdminRole = (roles: string[] = []) =>
   roles.some((role) => {
-    const r = role.toLowerCase()
-    return r === 'admin' || r === 'role_admin'
+    const normalizedRole = role.toLowerCase()
+    return normalizedRole === 'admin' || normalizedRole === 'admin_role'
   })
 
 export const getApplicationUrl = () =>

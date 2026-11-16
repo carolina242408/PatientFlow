@@ -4,34 +4,27 @@ import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
+import { useOutletContext } from 'react-router'
+import type { AppOutletContext } from '@/layout/ManagerScopeContext'
+import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
 import UpcomingDischargesTable, {
   type UpcomingDischarge,
-} from './dashboard_components/UpcomingDischargesTable'
-import HospitalStayByConditionTable from './dashboard_components/HospitalStayByConditionTable'
-import OccupancyBarChart from './dashboard_components/OccupancyBarChart'
-import DashboardPanel from './dashboard_components/DashboardPanel'
+} from '@/components/dashboard_components/UpcomingDischargesTable'
+import HospitalStayByConditionTable from '@/components/dashboard_components/HospitalStayByConditionTable'
+import OccupancyBarChart from '@/components/dashboard_components/OccupancyBarChart'
+import DashboardPanel from '@/components/dashboard_components/DashboardPanel'
 import ForecastCard, {
   type ForecastCardData,
-} from './dashboard_components/ForecastCard'
+} from '@/components/dashboard_components/ForecastCard'
 import {
   DASHBOARD_WIDGETS_BY_GROUP,
   getDashboardGroupType,
-  type DashboardGroupType,
   type DashboardWidgetId,
-} from './dashboard_widgets/widgetConfig'
+} from '../dashboard_widgets/widgetConfig'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
-
-const GROUP_TYPE_BY_SCOPE: Record<Scope, DashboardGroupType> = {
-  LHU: 'ULS',
-  Unit: 'UNIT',
-  Service: 'SERVICE',
-}
-
-const scopeForGroupType = (groupType: DashboardGroupType): Scope =>
-  groupType === 'ULS' ? 'LHU' : groupType === 'UNIT' ? 'Unit' : 'Service'
 
 // Dados de exemplo: substitui por dados do backend
 const CRITICAL_THRESHOLD = 82
@@ -81,11 +74,18 @@ const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
 
 type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
 
-const getProfileScope = (roles: string[] = []): Scope | undefined => {
-  if (roles.includes('ROLE_ADMIN') || roles.includes('LHU_MANAGER')) return 'LHU'
-  if (roles.includes('UNIT_MANAGER')) return 'Unit'
-  if (roles.includes('SERVICE_MANAGER')) return 'Service'
-  return undefined
+const getProfileScope = (roles: string[] = [], scopeType: string | null = null): Scope | undefined => {
+  if (roles.includes('ADMIN_ROLE')) return 'LHU'
+  switch (scopeType) {
+    case 'ULS': return 'LHU'
+    case 'UNIT':
+    case 'BUILDING':
+    case 'FLOOR': return 'Unit'
+    case 'SERVICE':
+    case 'WING':
+    case 'WARD': return 'Service'
+    default: return undefined
+  }
 }
 
 interface DashboardProps {
@@ -95,19 +95,20 @@ interface DashboardProps {
 const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { t, i18n } = useTranslation()
   const { user } = useKeycloak()
+  const { managerScope } = useOutletContext<AppOutletContext>()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
-  const roleScope = getProfileScope(user?.roles)
-  const roleGroupType = roleScope ? GROUP_TYPE_BY_SCOPE[roleScope] : undefined
-  const groupType =
-    getDashboardGroupType(user?.groups ?? []) ?? roleGroupType ?? GROUP_TYPE_BY_SCOPE[scope]
-  const profileScope = scopeForGroupType(groupType)
-  const dashboardWidgets = DASHBOARD_WIDGETS_BY_GROUP[groupType]
+  const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
+  const groupType = managerScope.root?.type
+  const dashboardWidgets: readonly DashboardWidgetId[] = getDashboardGroupType(groupType)
+    ? DASHBOARD_WIDGETS_BY_GROUP[groupType]
+    : []
   const hasWidget = (widgetId: DashboardWidgetId) => dashboardWidgets.includes(widgetId)
   const metrics = SCOPE_METRICS[profileScope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
-    queryKey: ['dashboard-occupancy'],
-    queryFn: () => fetchOccupancy(),
+    queryKey: ['dashboard-occupancy', managerScope.root?.id],
+    queryFn: () => fetchOccupancy(managerScope.scope),
+    enabled: user?.roles.includes('MANAGER_ROLE') === true && Boolean(managerScope.root),
   })
 
   useEffect(() => {
@@ -142,6 +143,16 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const criticalThreshold = occupancy?.criticalOccupancyPercent ?? CRITICAL_THRESHOLD
   const occupancyGap = occupancyPercent === null ? null : criticalThreshold - occupancyPercent
 
+  if (managerScope.isPending) {
+    return <div className="p-6">{t('managerHierarchy.loading')}</div>
+  }
+  if (managerScope.isError) {
+    return <div className="p-6 text-red-600">{t('lhuHierarchy.error')}</div>
+  }
+  if (!managerScope.root) {
+    return <div className="p-6">{t('lhuHierarchy.noData')}</div>
+  }
+
   const forecasts: ForecastCardData[] = [
     {
       id: 'today',
@@ -168,6 +179,13 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
+      {managerScope.hasMultipleScopes && managerScope.root && (
+        <ManagerScopeSelector
+          scopes={managerScope.scopes}
+          selectedScope={managerScope.root}
+          onSelect={managerScope.selectScope}
+        />
+      )}
       {/* Header */}
       <section className="flex flex-col items-start justify-between gap-4 xl:flex-row xl:items-end">
         <div>

@@ -19,24 +19,24 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * Transforms FHIR R4 Bundles (from live HL7-to-FHIR conversion, hospital-locations.json,
- * patient bundles, or future HAPI FHIR batch queries) into the flat/normalized JSONB
- * structure consumed by the PostgreSQL stored procedure {@code sp_ingest_fhir_payload(jsonb)}.
+ * Transforms FHIR R4 Bundles (from live HL7-to-FHIR conversion,
+ * hospital-locations.json,
+ * patient bundles, or future HAPI FHIR batch queries) into the flat/normalized
+ * JSONB
+ * structure consumed by the PostgreSQL stored procedure
+ * {@code sp_ingest_fhir_payload(jsonb)}.
  */
 @Component
 public class FhirToPostgresTransformer {
 
     private static final Pattern DISPLAY_PATTERN = Pattern.compile(
             "^(Ward\\s+[^,]+),\\s*(Room\\s+[^,]+),\\s*(Bed\\s+[^,]+)$",
-            Pattern.CASE_INSENSITIVE
-    );
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern FLOOR_IN_DESC_PATTERN = Pattern.compile(
             "piso\\s+(\\d+)",
-            Pattern.CASE_INSENSITIVE
-    );
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern HL7_LOC_DESC_PATTERN = Pattern.compile(
-            "^(\\d+)\\s*-\\s*(.+)$"
-    );
+            "^(\\d+)\\s*-\\s*(.+)$");
     private static final DateTimeFormatter HL7_TS_14 = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final DateTimeFormatter HL7_TS_12 = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
@@ -55,20 +55,54 @@ public class FhirToPostgresTransformer {
             String wardName,
             String roomCode,
             String bedCode,
-            String operationalStatus
-    ) {
+            String operationalStatus) {
+    }
+
+    private static String resolveServiceName(String serviceCode) {
+        if (serviceCode == null)
+            return "Serviço Geral";
+        return switch (serviceCode.trim()) {
+            case "30004" -> "MEDICINA INTERNA A";
+            case "30006" -> "CIRURGIA GERAL";
+            case "30020" -> "MEDICINA INTENSIVA";
+            default -> "Serviço " + serviceCode;
+        };
+    }
+
+    private static String resolveWardName(String wardCode, String fallbackCode) {
+        String code = wardCode != null ? wardCode : fallbackCode;
+        if (code == null)
+            return "Enfermaria Principal";
+        String cleanCode = code.replaceFirst("(?i)^Ward\\s+", "").trim();
+        return switch (cleanCode) {
+            case "30004" -> "MEDICINA INTERNA A";
+            case "30006" -> "CIRURGIA GERAL";
+            case "30020" -> "MEDICINA INTENSIVA";
+            default -> "Enfermaria " + cleanCode;
+        };
+    }
+
+    private static String ensureDistinctWardName(String wardName, String serviceName, String wardCode) {
+        String candidate = wardName == null ? "" : wardName.trim();
+        if (candidate.isEmpty() || candidate.equalsIgnoreCase(serviceName)) {
+            return "Enfermaria " + (candidate.isEmpty() ? wardCode : candidate);
+        }
+        return candidate;
     }
 
     /**
-     * Transforms a FHIR Bundle into the JSONB payload expected by {@code sp_ingest_fhir_payload(jsonb)}.
+     * Transforms a FHIR Bundle into the JSONB payload expected by
+     * {@code sp_ingest_fhir_payload(jsonb)}.
      */
     public ObjectNode transformBundle(JsonNode bundle, String source, Instant eventTimestamp) {
         return transformBundle(bundle, source, eventTimestamp, null);
     }
 
     /**
-     * Transforms a FHIR Bundle into the JSONB payload expected by {@code sp_ingest_fhir_payload(jsonb)},
-     * including an optional HL7 trigger code ({@code A01}, {@code A02}, {@code A03}).
+     * Transforms a FHIR Bundle into the JSONB payload expected by
+     * {@code sp_ingest_fhir_payload(jsonb)},
+     * including an optional HL7 trigger code ({@code A01}, {@code A02},
+     * {@code A03}).
      */
     public ObjectNode transformBundle(JsonNode bundle, String source, Instant eventTimestamp, String trigger) {
         ObjectNode payload = json.createObjectNode();
@@ -165,10 +199,10 @@ public class FhirToPostgresTransformer {
                 roomNodes,
                 bedNodes,
                 resolvedByRef,
-                locationsArray
-        );
+                locationsArray);
 
-        // Pass 3: Transform Encounter resources (skipping sub-encounters that have `partOf`)
+        // Pass 3: Transform Encounter resources (skipping sub-encounters that have
+        // `partOf`)
         for (JsonNode entry : entries) {
             JsonNode res = entry.path("resource");
             if (!res.isObject() || !"Encounter".equals(res.path("resourceType").asString(""))) {
@@ -185,8 +219,7 @@ public class FhirToPostgresTransformer {
                     resolvedByRef,
                     singleBundleLocation,
                     eventTimestamp,
-                    trigger
-            );
+                    trigger);
             if (encNode != null) {
                 encountersArray.add(encNode);
             }
@@ -202,8 +235,7 @@ public class FhirToPostgresTransformer {
             List<JsonNode> roomNodes,
             List<JsonNode> bedNodes,
             Map<String, ResolvedLocation> resolvedByRef,
-            ArrayNode locationsArray
-    ) {
+            ArrayNode locationsArray) {
         ResolvedLocation lastResolved = null;
 
         for (JsonNode bedRes : bedNodes) {
@@ -213,8 +245,7 @@ public class FhirToPostgresTransformer {
                     organizationName,
                     locationResourcesByRef,
                     wardNodes,
-                    roomNodes
-            );
+                    roomNodes);
             if (resolved != null) {
                 lastResolved = resolved;
                 if (!bedId.isEmpty()) {
@@ -232,8 +263,7 @@ public class FhirToPostgresTransformer {
             String organizationName,
             Map<String, JsonNode> locationResourcesByRef,
             List<JsonNode> wardNodes,
-            List<JsonNode> roomNodes
-    ) {
+            List<JsonNode> roomNodes) {
         String rawVal = firstIdentifierValue(bedRes);
         String name = bedRes.path("name").asString("").trim();
         String desc = bedRes.path("description").asString("").trim();
@@ -245,14 +275,22 @@ public class FhirToPostgresTransformer {
             default -> "AVAILABLE";
         };
 
-        // Case 1: Combined display string "Ward X, Room Y, Bed Z" (e.g. from Hl7ToFhirConverter)
+        // Case 1: Combined display string "Ward X, Room Y, Bed Z" (e.g. from
+        // Hl7ToFhirConverter)
         String candidateDisplay = rawVal != null ? rawVal : name;
         Matcher displayMatcher = DISPLAY_PATTERN.matcher(candidateDisplay);
         if (displayMatcher.matches()) {
-            String wardCode = displayMatcher.group(1).trim();
+            String wardCodeFull = displayMatcher.group(1).trim();
             String roomCode = displayMatcher.group(2).trim();
             String bedCode = displayMatcher.group(3).trim();
-            String rawWard = wardCode.replaceFirst("(?i)^Ward\\s+", "").trim();
+            String rawWard = wardCodeFull.replaceFirst("(?i)^Ward\\s+", "").trim();
+
+            String serviceName = resolveServiceName(rawWard);
+            String wardName = ensureDistinctWardName(
+                    resolveWardName(rawWard, rawWard),
+                    serviceName,
+                    rawWard);
+
             String floorName = "Piso 1";
             if (!desc.isEmpty()) {
                 Matcher m = HL7_LOC_DESC_PATTERN.matcher(desc);
@@ -264,20 +302,22 @@ public class FhirToPostgresTransformer {
                     organizationName,
                     floorName,
                     rawWard,
-                    wardCode,
-                    wardCode,
-                    wardCode,
+                    serviceName,
+                    rawWard,
+                    wardName,
                     roomCode,
                     bedCode,
-                    opStatus
-            );
+                    opStatus);
         }
 
-        // Case 2: Caret-delimited identifier "30004^7001^001" or partOf references (from hospital-locations.json)
+        // Case 2: Caret-delimited identifier "30004^7001^001" or partOf references
+        // (from hospital-locations.json)
         String roomRef = bedRes.path("partOf").path("reference").asString("");
-        JsonNode roomRes = !roomRef.isEmpty() ? locationResourcesByRef.get(roomRef) : (roomNodes.size() == 1 ? roomNodes.getFirst() : null);
+        JsonNode roomRes = !roomRef.isEmpty() ? locationResourcesByRef.get(roomRef)
+                : (roomNodes.size() == 1 ? roomNodes.getFirst() : null);
         String wardRef = roomRes != null ? roomRes.path("partOf").path("reference").asString("") : "";
-        JsonNode wardRes = !wardRef.isEmpty() ? locationResourcesByRef.get(wardRef) : (wardNodes.size() == 1 ? wardNodes.getFirst() : null);
+        JsonNode wardRes = !wardRef.isEmpty() ? locationResourcesByRef.get(wardRef)
+                : (wardNodes.size() == 1 ? wardNodes.getFirst() : null);
 
         if (rawVal != null && rawVal.contains("^")) {
             String[] parts = rawVal.split("\\^");
@@ -285,19 +325,24 @@ public class FhirToPostgresTransformer {
                 String rawWard = parts[0].trim();
                 String rawRoom = parts[1].trim();
                 String rawBed = parts[2].trim();
-                String wardName = wardRes != null ? wardRes.path("name").asString("Ward " + rawWard).trim() : "Ward " + rawWard;
+
+                String serviceName = resolveServiceName(rawWard);
+                String wardName = ensureDistinctWardName(
+                        wardRes != null ? wardRes.path("name").asString("") : "",
+                        serviceName,
+                        rawWard);
                 String floorName = extractFloorFromWard(wardRes);
+
                 return new ResolvedLocation(
                         organizationName,
                         floorName,
                         rawWard,
-                        wardName,
-                        "Ward " + rawWard,
+                        serviceName,
+                        rawWard,
                         wardName,
                         "Room " + rawRoom,
                         "Bed " + rawBed,
-                        opStatus
-                );
+                        opStatus);
             }
         }
 
@@ -307,19 +352,24 @@ public class FhirToPostgresTransformer {
             String rVal = firstIdentifierValueOrName(roomRes);
             String bVal = firstIdentifierValueOrName(bedRes);
             if (wVal != null && rVal != null && bVal != null) {
-                String wName = wardRes.path("name").asString(wVal).trim();
+                String rawService = wVal.replaceFirst("(?i)^Ward\\s+", "").trim();
+                String serviceName = resolveServiceName(rawService);
+                String wName = ensureDistinctWardName(
+                        wardRes.path("name").asString(""),
+                        serviceName,
+                        rawService);
                 String floorName = extractFloorFromWard(wardRes);
+
                 return new ResolvedLocation(
                         organizationName,
                         floorName,
-                        wVal.replaceFirst("(?i)^Ward\\s+", "").trim(),
-                        wName,
-                        wVal,
+                        rawService,
+                        serviceName,
+                        rawService,
                         wName,
                         rVal,
                         bVal,
-                        opStatus
-                );
+                        opStatus);
             }
         }
 
@@ -373,9 +423,11 @@ public class FhirToPostgresTransformer {
                 String typeText = idNode.path("type").path("text").asString("").toUpperCase();
                 String typeCode = idNode.path("type").path("coding").path(0).path("code").asString("").toUpperCase();
 
-                if ("SNS".equals(typeText) || "SB".equals(typeCode) || system.contains("HAS") || system.contains("SNS")) {
+                if ("SNS".equals(typeText) || "SB".equals(typeCode) || system.contains("HAS")
+                        || system.contains("SNS")) {
                     sns = val;
-                } else if ("NS".equals(typeText) || "MR".equals(typeCode) || system.contains("HOS") || system.contains("PROCESS")) {
+                } else if ("NS".equals(typeText) || "MR".equals(typeCode) || system.contains("HOS")
+                        || system.contains("PROCESS")) {
                     if (hospNumber == null) {
                         hospNumber = val;
                     }
@@ -452,8 +504,7 @@ public class FhirToPostgresTransformer {
             Map<String, ResolvedLocation> resolvedByRef,
             ResolvedLocation singleBundleLocation,
             Instant eventTimestamp,
-            String trigger
-    ) {
+            String trigger) {
         String visitNumber = extractVisitNumber(encRes);
         if (visitNumber == null || visitNumber.isEmpty()) {
             return null;
@@ -492,21 +543,24 @@ public class FhirToPostgresTransformer {
                 } else if (!locDisplay.isEmpty()) {
                     Matcher m = DISPLAY_PATTERN.matcher(locDisplay);
                     if (m.matches()) {
-                        String wCode = m.group(1).trim();
+                        String wCodeFull = m.group(1).trim();
                         String rCode = m.group(2).trim();
                         String bCode = m.group(3).trim();
-                        String rawW = wCode.replaceFirst("(?i)^Ward\\s+", "").trim();
+                        String rawW = wCodeFull.replaceFirst("(?i)^Ward\\s+", "").trim();
+
+                        String sName = resolveServiceName(rawW);
+                        String wName = resolveWardName(rawW, rawW);
+
                         resolved = new ResolvedLocation(
                                 organizationName,
                                 singleBundleLocation != null ? singleBundleLocation.floorName() : "Piso 1",
                                 rawW,
-                                wCode,
-                                wCode,
-                                wCode,
+                                sName,
+                                rawW,
+                                wName,
                                 rCode,
                                 bCode,
-                                "AVAILABLE"
-                        );
+                                "AVAILABLE");
                     }
                 }
 
@@ -554,7 +608,8 @@ public class FhirToPostgresTransformer {
 
         String effectiveEventTime = eventTimestamp != null
                 ? eventTimestamp.toString()
-                : (lastMovementStart != null ? lastMovementStart : ("FINISHED".equals(status) && endPeriod != null ? endPeriod : startPeriod));
+                : (lastMovementStart != null ? lastMovementStart
+                        : ("FINISHED".equals(status) && endPeriod != null ? endPeriod : startPeriod));
         if (effectiveEventTime != null) {
             encNode.put("eventTime", effectiveEventTime);
         }
@@ -633,8 +688,10 @@ public class FhirToPostgresTransformer {
     }
 
     /**
-     * Extracts the clinical event timestamp from a raw HL7 v2 message (`EVN-6` occurred,
-     * `EVN-2` recorded, or `MSH-7` message datetime) so transfers (`A02`) and discharges (`A03`)
+     * Extracts the clinical event timestamp from a raw HL7 v2 message (`EVN-6`
+     * occurred,
+     * `EVN-2` recorded, or `MSH-7` message datetime) so transfers (`A02`) and
+     * discharges (`A03`)
      * carry their exact movement time even when sent as plain HL7 text.
      */
     public static Instant extractEventTimestampFromHl7(String hl7Message) {
@@ -669,7 +726,8 @@ public class FhirToPostgresTransformer {
     }
 
     /**
-     * Extracts the ADT trigger code ({@code A01}, {@code A02}, {@code A03}) from a raw HL7 v2 message.
+     * Extracts the ADT trigger code ({@code A01}, {@code A02}, {@code A03}) from a
+     * raw HL7 v2 message.
      */
     public static String extractTriggerFromHl7(String hl7Message) {
         if (hl7Message == null || hl7Message.isBlank()) {
@@ -712,4 +770,3 @@ public class FhirToPostgresTransformer {
         return null;
     }
 }
-

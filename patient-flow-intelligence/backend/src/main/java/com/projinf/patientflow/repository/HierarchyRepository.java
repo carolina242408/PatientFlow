@@ -30,6 +30,12 @@ public class HierarchyRepository {
             this.table = table; this.nameColumn = nameColumn; this.parentColumn = parentColumn;
             this.parentType = parentType; this.hasCode = hasCode;
         }
+        public boolean supportsKeycloakGroup() {
+            return switch (this) {
+                case ULS, UNIT, BUILDING, FLOOR, SERVICE, WING, WARD -> true;
+                default -> false;
+            };
+        }
         public static Type parse(String value) { return valueOf(value.toUpperCase(Locale.ROOT)); }
     }
 

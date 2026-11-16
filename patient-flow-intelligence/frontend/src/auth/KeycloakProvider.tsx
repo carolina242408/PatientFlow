@@ -1,8 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
+import { fetchMyAccess } from '@/api/access'
 import {
-  extractGroupsFromToken,
-  extractRolesFromToken,
   getApplicationUrl,
   KeycloakContext,
   type KeycloakUser,
@@ -14,47 +13,76 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<KeycloakUser | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const updateUserState = () => {
-      if (!keycloak.tokenParsed) return
+  const loadUser = useCallback(async () => {
+    if (!keycloak.tokenParsed) return
 
-      const token = keycloak.tokenParsed as Record<string, any>
-      setUser({
-        name:
-          token.name ||
-          `${token.given_name || ''} ${token.family_name || ''}`.trim() ||
-          token.preferred_username,
-        username: token.preferred_username,
-        email: token.email,
-        roles: extractRolesFromToken(keycloak),
-        groups: extractGroupsFromToken(keycloak),
-      })
+    const token = keycloak.tokenParsed as Record<string, any>
+    const access = await fetchMyAccess()
+    setUser({
+      name:
+        token.name ||
+        `${token.given_name || ''} ${token.family_name || ''}`.trim() ||
+        token.preferred_username ||
+        '',
+      username: token.preferred_username || '',
+      email: token.email || '',
+      roles: access.roles,
+      scopeType: access.scopes[0]?.type ?? null,
+      scopes: access.scopes,
+    })
+    setError(null)
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    const loadCurrentUser = async () => {
+    try {
+      await loadUser()
+    } catch (err) {
+      console.error('Failed to load user access from backend', err)
+      if (active) setError('Unable to load your roles and organizational scope from the backend.')
+    }
     }
 
     initKeycloak()
-      .then((auth) => {
-        setInitialized(true)
-        if (!auth || !keycloak.tokenParsed) {
+    .then(async (auth) => {
+      if (!auth || !keycloak.tokenParsed) {
+        if (active) {
+          setInitialized(true)
           setError('Keycloak did not authenticate the current session.')
-          void keycloak.login({ redirectUri: getApplicationUrl() })
-          return
         }
+        void keycloak.login({ redirectUri: getApplicationUrl() })
+        return
+      }
 
-        updateUserState()
+      await loadCurrentUser()
+      if (active) setInitialized(true)
 
-        keycloak.onTokenExpired = () => {
-          keycloak
-            .updateToken(30)
-            .then(() => updateUserState())
-            .catch(() => void keycloak.login({ redirectUri: getApplicationUrl() }))
-        }
-      })
-      .catch((err) => {
-        console.error('Keycloak init failed', err)
+      keycloak.onTokenExpired = () => {
+        keycloak
+          .updateToken(30)
+          .then(() =>
+            loadUser().catch((err) => {
+              console.error('Failed to refresh user access from backend', err)
+              if (active) {
+                setError('Unable to refresh your roles and organizational scope from the backend.')
+              }
+            }),
+          )
+          .catch(() => void keycloak.login({ redirectUri: getApplicationUrl() }))
+      }
+    })
+    .catch((err) => {
+      console.error('Keycloak init failed', err)
+      if (active) {
         setInitialized(true)
         setError('Unable to connect to Keycloak. Check that it is running on http://localhost:9080.')
-      })
-  }, [])
+      }
+    })
+    return () => {
+    active = false
+    }
+  }, [loadUser])
 
   if (!initialized) {
     return <div className="flex h-screen items-center justify-center font-sans">Loading...</div>
@@ -68,9 +96,14 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
         <Button
           type="button"
           className="rounded bg-primary px-4 py-2 text-white hover:bg-primary-dark"
-          onClick={() => void keycloak.login({ redirectUri: getApplicationUrl() })}
+          onClick={() =>
+            void loadUser().catch((err) => {
+              console.error('Failed to retry loading user access', err)
+              setError('Unable to load your roles and organizational scope from the backend.')
+            })
+          }
         >
-          Try Keycloak login again
+          Retry
         </Button>
       </div>
     )
