@@ -8,7 +8,7 @@ import { useOutletContext } from 'react-router'
 import type { AppOutletContext } from '@/layout/ManagerScopeContext'
 import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
 import { useKeycloak } from '../auth/context'
-import { fetchOccupancy } from '../api/operational'
+import { fetchBeds, fetchOccupancy, type BedView } from '../api/operational'
 import UpcomingDischargesTable, {
   type UpcomingDischarge,
 } from './dashboard_components/UpcomingDischargesTable'
@@ -59,13 +59,35 @@ const LENGTH_OF_STAY_FORECAST = [
   { condition: 'cardiacObservation', minimumDays: 1, maximumDays: 2 },
 ] as const
 
-const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
-  { patient: 'Emily Rose Parker', room: '301', bed: '1', service: 'Cardiology', day: 'today', time: '11:30', destination: 'home', status: 'ready' },
-  { patient: 'Daniel Brooks', room: '301', bed: '2', service: 'Cardiology', day: 'today', time: '15:00', destination: 'rehabilitation', status: 'pendingTransport' },
-  { patient: 'Cody James Fisher', room: '302', bed: '2', service: 'Cardiology', day: 'tomorrow', time: '10:00', destination: 'home', status: 'medicationReview' },
-  { patient: 'Marta Correia', room: '301', bed: '5', service: 'Cardiology', day: 'tomorrow', time: '14:30', destination: 'primaryCare', status: 'ready' },
-  { patient: 'Nuno Costa', room: '305', bed: '2', service: 'Cardiology', day: '26 Jun', time: '09:30', destination: 'home', status: 'clinicalReview' },
-]
+const UPCOMING_WINDOW_MS = 72 * 60 * 60 * 1000 // 72h
+
+// Altas previstas (modelo ou plano manual) até às próximas 72h, incluindo as já em atraso.
+const toUpcomingDischarges = (beds: BedView[], language?: string): UpcomingDischarge[] => {
+  const startOfToday = new Date().setHours(0, 0, 0, 0)
+
+  return beds
+    .filter((bed) => bed.expectedDischargeAt && Date.parse(bed.expectedDischargeAt) <= Date.now() + UPCOMING_WINDOW_MS)
+    .sort((a, b) => Date.parse(a.expectedDischargeAt!) - Date.parse(b.expectedDischargeAt!))
+    .map((bed) => {
+      const at = new Date(bed.expectedDischargeAt!)
+
+      const DAY_MS = 86_400_000 // 24h in ms
+      const days = Math.round((new Date(at).setHours(0, 0, 0, 0) - startOfToday) / DAY_MS)
+
+      return {
+        patient: bed.patientName ?? '—',
+        room: bed.roomCode,
+        bed: bed.code,
+        service: bed.serviceName,
+        day:
+          // TODO: utilizar dayjs ou date-fns para internacionalização de datas, em vez de Intl.DateTimeFormat.
+          days === 0 ? 'today'
+          : days === 1 ? 'tomorrow'
+          : new Intl.DateTimeFormat(language, { day: 'numeric', month: 'short' }).format(at),
+        time: new Intl.DateTimeFormat(language, { hour: '2-digit', minute: '2-digit' }).format(at),
+      }
+    })
+}
 
 type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
 
@@ -90,6 +112,7 @@ interface DashboardProps {
 const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const { t, i18n } = useTranslation()
   const { user } = useKeycloak()
+  const [lastUpdatedAt] = useState(() => new Date())
   const { managerScope } = useOutletContext<AppOutletContext>()
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
@@ -99,6 +122,14 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     queryKey: ['dashboard-occupancy', managerScope.root?.id],
     queryFn: () => fetchOccupancy(managerScope.scope),
     enabled: user?.roles.includes('MANAGER_ROLE') === true && Boolean(managerScope.root),
+  })
+  const { data: upcomingDischarges = [] } = useQuery({
+    queryKey: ['beds', 'upcoming-discharges', i18n.resolvedLanguage],
+    // O backend limita size a 100: só as primeiras 100 camas ocupadas do âmbito entram na tabela.
+    queryFn: () => fetchBeds({}, 'OCCUPIED', 0, 100),
+    select: (page) => toUpcomingDischarges(page.content, i18n.resolvedLanguage),
+    // Sem cliente WebSocket no frontend: polling para a previsão aparecer sem refresh.
+    refetchInterval: 10_000, // 10s
   })
 
   useEffect(() => {
@@ -188,7 +219,12 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
-          {t('dashboard.lastUpdated', { time: '09:40' })}
+          {t('dashboard.lastUpdated', {
+            time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(lastUpdatedAt),
+          })}
         </div>
       </section>
 
@@ -428,7 +464,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {expandedItem === 'upcomingDischarges' && (
               <div className="overflow-x-auto">
                 <UpcomingDischargesTable
-                  discharges={UPCOMING_DISCHARGES}
+                  discharges={upcomingDischarges}
                   expanded
                 />
               </div>
@@ -446,7 +482,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
         onContentClick={() => setExpandedItem('upcomingDischarges')}
         contentClassName="cursor-zoom-in overflow-x-auto"
       >
-          <UpcomingDischargesTable discharges={UPCOMING_DISCHARGES} />
+          <UpcomingDischargesTable discharges={upcomingDischarges} />
       </DashboardPanel>
     </div>
   )
