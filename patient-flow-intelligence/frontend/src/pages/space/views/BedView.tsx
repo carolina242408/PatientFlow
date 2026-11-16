@@ -10,7 +10,6 @@ const BedView = ({ node }: ViewProps) => {
   const patient = resource?.occupant
 
   const bedCharacteristics = {
-    id: resource?.id ?? '—',
     code: resource?.code ?? '—',
     type: resource?.type ? t(`space.resourceLabel.${resource.type}`, resource.type) : '—',
     location: node.name || '—',
@@ -52,15 +51,6 @@ const BedView = ({ node }: ViewProps) => {
         </header>
 
         <div className="mt-6 grid grid-cols-2 gap-y-6 gap-x-8 md:grid-cols-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t('space.bedView.resourceId', 'Resource ID')}
-            </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">
-              {bedCharacteristics.id}
-            </p>
-          </div>
-
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
               {t('space.bedView.bedType', 'Bed Type')}
@@ -126,15 +116,6 @@ const BedView = ({ node }: ViewProps) => {
               </h3>
 
               <div className="mt-5 grid grid-cols-1 gap-y-6 gap-x-12 md:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {t('space.bedView.patientId', 'Patient ID')}
-                  </p>
-                  <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {patient?.id ?? '—'}
-                  </p>
-                </div>
-
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                     {t('space.bedView.ageAndGender', 'Age and gender')}
