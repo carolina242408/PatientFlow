@@ -117,7 +117,7 @@ const SpaceExplorer = ({
   const occupiedBeds = useMemo(
     () =>
       (bedsData?.content ?? []).filter(
-        (bed) => bed.status === 'OCCUPIED' && bed.patientId && bed.encounterId,
+        (bed) => bed.status === 'OCCUPIED' && bed.patientId,
       ),
     [bedsData],
   )
@@ -135,10 +135,10 @@ const SpaceExplorer = ({
     queryFn: async () => {
       const details = await Promise.all(
         occupiedBeds.map(async (bed) => {
-          const [patient, encounter] = await Promise.all([
-            fetchPatient(bed.patientId as string),
-            fetchEncounter(bed.encounterId as string),
-          ])
+          const patient = await fetchPatient(bed.patientId as string)
+          const encounter = bed.encounterId
+            ? await fetchEncounter(bed.encounterId)
+            : undefined
           return { bedId: bed.id, patient, encounter }
         }),
       )
@@ -166,17 +166,27 @@ const SpaceExplorer = ({
       const encounter = details?.encounter
       const resource: Resource = {
         id: bed.id,
+        code: bed.code,
         type: 'bed',
         number: 0, // Será atribuído abaixo após ordenação
         status: uiStatus,
+        location: [bed.wardCode, bed.roomCode].filter(Boolean).join(' · ') || undefined,
         occupant:
-          uiStatus === 'occupied' && bed.patientName
+          uiStatus === 'occupied' && (bed.patientId || bed.patientName)
             ? {
-                name: patient?.fullName ?? bed.patientName,
+                name: patient?.fullName ?? bed.patientName ?? 'Unknown',
                 id: bed.patientId ?? undefined,
+                snsNumber: patient?.snsNumber,
+                hospitalNumber: patient?.hospitalNumber ?? undefined,
+                birthDate: patient?.birthDate ?? bed.patientBirthDate ?? undefined,
+                gender: patient?.gender,
                 age: calculateAge(patient?.birthDate ?? bed.patientBirthDate),
                 diagnosis: '',
                 admitted: encounter?.admittedAt ?? bed.admittedAt ?? undefined,
+                expectedDischargeAt:
+                  encounter?.expectedDischargeAt ?? bed.expectedDischargeAt ?? undefined,
+                serviceName: encounter?.serviceName ?? bed.serviceName,
+                wardCode: bed.wardCode,
               }
             : undefined,
       }
