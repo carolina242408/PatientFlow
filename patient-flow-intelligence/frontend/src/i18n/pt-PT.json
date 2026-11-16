@@ -27,7 +27,7 @@
     "lhuHierarchy": "Hierarquia LHU",
     "noScope": "Sem âmbito atribuído",
     "scopeLevels": {
-      "ULS": "ULS",
+      "LHU": "ULS",
       "UNIT": "Unidade",
       "BUILDING": "Edifício",
       "FLOOR": "Piso",
@@ -46,7 +46,7 @@
       "title": "Hierarquia da organização",
       "description": "Explorar o âmbito organizacional atribuído",
       "scopes": {
-        "ULS": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
+        "LHU": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
         "UNIT": { "title": "Hierarquia da unidade", "description": "Explorar a unidade atribuída e os seus espaços." },
         "BUILDING": { "title": "Hierarquia do edifício", "description": "Explorar o edifício atribuído e os seus espaços." },
         "FLOOR": { "title": "Hierarquia do piso", "description": "Explorar o piso atribuído e os seus espaços." },
@@ -351,7 +351,7 @@
       "default": "—"
     },
     "scopeLevels": {
-      "ULS": "Unidade Local de Saúde",
+      "LHU": "Unidade Local de Saúde",
       "UNIT": "Unidade Hospitalar",
       "BUILDING": "Edifício",
       "FLOOR": "Piso",

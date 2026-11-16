@@ -27,7 +27,7 @@
     "lhuHierarchy": "LHU Hierarchy",
     "noScope": "No scope assigned",
     "scopeLevels": {
-      "ULS": "LHU",
+      "LHU": "LHU",
       "UNIT": "Unit",
       "BUILDING": "Building",
       "FLOOR": "Floor",
@@ -46,7 +46,7 @@
       "title": "Organizational Hierarchy",
       "description": "Explore your assigned organizational scope",
       "scopes": {
-        "ULS": { "title": "LHU Hierarchy", "description": "Explore the assigned Local Health Unit and its spaces." },
+        "LHU": { "title": "LHU Hierarchy", "description": "Explore the assigned Local Health Unit and its spaces." },
         "UNIT": { "title": "Unit Hierarchy", "description": "Explore the assigned unit and its spaces." },
         "BUILDING": { "title": "Building Hierarchy", "description": "Explore the assigned building and its spaces." },
         "FLOOR": { "title": "Floor Hierarchy", "description": "Explore the assigned floor and its spaces." },
@@ -351,7 +351,7 @@
       "default": "—"
     },
     "scopeLevels": {
-      "ULS": "Local Health Unit",
+      "LHU": "Local Health Unit",
       "UNIT": "Hospital Unit",
       "BUILDING": "Building",
       "FLOOR": "Floor",

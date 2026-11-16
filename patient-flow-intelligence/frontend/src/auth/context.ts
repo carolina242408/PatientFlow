@@ -1,7 +1,7 @@
 import type Keycloak from 'keycloak-js'
 import { createContext, use } from 'react'
 
-export type AccessScopeType = 'ULS' | 'UNIT' | 'BUILDING' | 'FLOOR' | 'SERVICE' | 'WING' | 'WARD'
+export type AccessScopeType = 'LHU' | 'UNIT' | 'BUILDING' | 'FLOOR' | 'SERVICE' | 'WING' | 'WARD'
 
 export interface AccessScope {
   type: AccessScopeType
