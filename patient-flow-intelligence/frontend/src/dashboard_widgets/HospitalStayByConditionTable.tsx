@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import DashboardTable, { type DashboardTableColumn } from './DashboardTable'
+import DashboardTable, { type DashboardTableColumn } from '../DashboardTable'
 
 export interface HospitalStayForecast {
   condition: string
