@@ -1,21 +1,43 @@
-import type { OrgType } from '@/features/lhu-hierarchy/types/tree'
+import type { AccessScopeType } from '@/auth/context'
 
 export type DashboardWidgetId =
   | 'hospitalStayByCondition'
   | 'occupancy'
   | 'upcomingDischarges'
   | 'forecast'
+  | 'dischargeForecast'
 
 export const DASHBOARD_WIDGETS_BY_GROUP = {
-  lhu: ['hospitalStayByCondition', 'occupancy', 'upcomingDischarges', 'forecast'],
-  unit: ['hospitalStayByCondition', 'occupancy', 'upcomingDischarges', 'forecast'],
-  service: ['hospitalStayByCondition', 'occupancy', 'upcomingDischarges', 'forecast'],
-} as const satisfies Partial<Record<OrgType, readonly DashboardWidgetId[]>>
+  LHU: [
+    'hospitalStayByCondition',
+    'occupancy',
+    'upcomingDischarges',
+    'forecast',
+    'dischargeForecast',
+  ],
+  UNIT: [
+    'hospitalStayByCondition',
+    'occupancy',
+    'upcomingDischarges',
+    'forecast',
+    'dischargeForecast',
+  ],
+  SERVICE: [
+    'hospitalStayByCondition',
+    'occupancy',
+    'upcomingDischarges',
+    'forecast',
+    'dischargeForecast',
+  ],
+} as const satisfies Partial<Record<AccessScopeType, readonly DashboardWidgetId[]>>
 
 export type DashboardGroupType = keyof typeof DASHBOARD_WIDGETS_BY_GROUP
 
-export function getDashboardGroupType(
-  groupType: OrgType | undefined,
-): groupType is DashboardGroupType {
-  return groupType !== undefined && Object.hasOwn(DASHBOARD_WIDGETS_BY_GROUP, groupType)
+export function getDashboardWidgets(
+  groupType: AccessScopeType | null | undefined,
+): readonly DashboardWidgetId[] {
+  if (groupType === 'LHU' || groupType === 'UNIT' || groupType === 'SERVICE') {
+    return DASHBOARD_WIDGETS_BY_GROUP[groupType]
+  }
+  return []
 }

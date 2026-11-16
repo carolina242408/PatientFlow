@@ -9,18 +9,18 @@ import type { AppOutletContext } from '@/layout/ManagerScopeContext'
 import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
 import { useKeycloak } from '../auth/context'
 import { fetchOccupancy } from '../api/operational'
+import DischargeForecastBarChart from '../dashboard_widgets/DischargeForecastBarChart'
 import UpcomingDischargesTable, {
   type UpcomingDischarge,
-} from '@/components/dashboard_components/UpcomingDischargesTable'
-import HospitalStayByConditionTable from '@/components/dashboard_components/HospitalStayByConditionTable'
-import OccupancyBarChart from '@/components/dashboard_components/OccupancyBarChart'
-import DashboardPanel from '@/components/dashboard_components/DashboardPanel'
+} from '../dashboard_widgets/UpcomingDischargesTable'
+import HospitalStayByConditionTable from '../dashboard_widgets/HospitalStayByConditionTable'
+import OccupancyBarChart from '../dashboard_widgets/OccupancyBarChart'
+import DashboardPanel from '@/components/DashboardPanel'
 import ForecastCard, {
   type ForecastCardData,
-} from '@/components/dashboard_components/ForecastCard'
+} from '../dashboard_widgets/ForecastCard'
 import {
-  DASHBOARD_WIDGETS_BY_GROUP,
-  getDashboardGroupType,
+  getDashboardWidgets,
   type DashboardWidgetId,
 } from '../dashboard_widgets/widgetConfig'
 
@@ -72,12 +72,17 @@ const UPCOMING_DISCHARGES: UpcomingDischarge[] = [
   { patient: 'Nuno Costa', room: '305', bed: '2', service: 'Cardiology', day: '26 Jun', time: '09:30', destination: 'home', status: 'clinicalReview' },
 ]
 
-type DashboardItem = 'service' | 'unit' | 'discharges' | 'lengthOfStay' | 'upcomingDischarges'
+type DashboardItem =
+  | 'service'
+  | 'unit'
+  | 'discharges'
+  | 'lengthOfStay'
+  | 'upcomingDischarges'
 
 const getProfileScope = (roles: string[] = [], scopeType: string | null = null): Scope | undefined => {
   if (roles.includes('ADMIN_ROLE')) return 'LHU'
   switch (scopeType) {
-    case 'ULS': return 'LHU'
+    case 'LHU': return 'LHU'
     case 'UNIT':
     case 'BUILDING':
     case 'FLOOR': return 'Unit'
@@ -99,10 +104,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
   const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
-  const groupType = managerScope.root?.type
-  const dashboardWidgets: readonly DashboardWidgetId[] = getDashboardGroupType(groupType)
-    ? DASHBOARD_WIDGETS_BY_GROUP[groupType]
-    : []
+  const dashboardWidgets: readonly DashboardWidgetId[] = getDashboardWidgets(user?.scopeType)
   const hasWidget = (widgetId: DashboardWidgetId) => dashboardWidgets.includes(widgetId)
   const metrics = SCOPE_METRICS[profileScope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
@@ -122,8 +124,6 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     month: 'long',
   }).format(new Date())
 
-  const weekTotal = DISCHARGE_FORECAST.reduce((sum, item) => sum + item.count, 0)
-  const maxForecast = Math.max(...DISCHARGE_FORECAST.map((item) => item.count))
   const serviceOccupancy = occupancy?.services ?? []
   const wingOccupancy = occupancy?.wings ?? []
   const unitOccupancy = occupancy?.units ?? []
@@ -286,61 +286,35 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
       )}
 
       {/* Forecasts */}
-      <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
+      {hasWidget('dischargeForecast') || hasWidget('hospitalStayByCondition') ? (
+        <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
+          {hasWidget('dischargeForecast') && (
+            <DashboardPanel
+              title={t('dashboard.forecastChart.title')}
+              description={t('dashboard.forecastChart.body')}
+              expandLabel={t('dashboard.expandChart')}
+              onExpand={() => setExpandedItem('discharges')}
+              onClick={() => setExpandedItem('discharges')}
+              contentClassName="p-6"
+            >
+              <DischargeForecastBarChart forecast={DISCHARGE_FORECAST} />
+            </DashboardPanel>
+          )}
 
-        {/* Discharge Forecast */}
-        <DashboardPanel
-          title={t('dashboard.forecastChart.title')}
-          description={t('dashboard.forecastChart.body')}
-          expandLabel={t('dashboard.expandChart')}
-          onExpand={() => setExpandedItem('discharges')}
-          onClick={() => setExpandedItem('discharges')}
-          contentClassName="p-6"
-        >
-          <div className="mt-6 flex h-48 items-end gap-2 border-b border-gray-200 pt-6">
-            {DISCHARGE_FORECAST.map((item) => (
-              <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
-                <div
-                  className="relative w-full max-w-32 rounded-t-md bg-blue-300"
-                  style={{ height: `${(item.count / maxForecast) * 100}%` }}
-                >
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
-                    {item.count}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2 pt-2">
-            {DISCHARGE_FORECAST.map((item) => (
-              <span key={item.day} className="flex-1 text-center text-xs font-medium text-gray-500">
-                {t(`dashboard.weekdays.${item.day}`)}
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-4 flex items-center justify-between rounded-lg bg-blue-50/60 px-3 py-2">
-            <span className="text-sm text-gray-500">{t('dashboard.forecastChart.total')}</span>
-            <span className="text-sm font-semibold text-blue-600">
-              {t('dashboard.forecastChart.patients', { count: weekTotal })}
-            </span>
-          </div>
-        </DashboardPanel>
-
-        {/* Length-of-stay forecast */}
-        {hasWidget('hospitalStayByCondition') && (
-          <DashboardPanel
-            title={t('dashboard.lengthOfStay.title')}
-            description={t('dashboard.lengthOfStay.body')}
-            expandLabel={t('dashboard.expandTable')}
-            onExpand={() => setExpandedItem('lengthOfStay')}
-            onContentClick={() => setExpandedItem('lengthOfStay')}
-            contentClassName="cursor-zoom-in overflow-x-auto"
-          >
-            <HospitalStayByConditionTable forecasts={LENGTH_OF_STAY_FORECAST} />
-          </DashboardPanel>
-        )}
-      </section>
+          {hasWidget('hospitalStayByCondition') && (
+            <DashboardPanel
+              title={t('dashboard.lengthOfStay.title')}
+              description={t('dashboard.lengthOfStay.body')}
+              expandLabel={t('dashboard.expandTable')}
+              onExpand={() => setExpandedItem('lengthOfStay')}
+              onContentClick={() => setExpandedItem('lengthOfStay')}
+              contentClassName="cursor-zoom-in overflow-x-auto"
+            >
+              <HospitalStayByConditionTable forecasts={LENGTH_OF_STAY_FORECAST} />
+            </DashboardPanel>
+          )}
+        </section>
+      ) : null}
 
       <dialog
         ref={dashboardDialogRef}
@@ -399,36 +373,8 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
               <OccupancyBarChart rows={unitOccupancy} expanded />
             )}
 
-            {expandedItem === 'discharges' && (
-              <>
-                <div className="flex h-[min(55vh,480px)] items-end gap-4 border-b border-gray-200 px-4 pt-12 sm:gap-8">
-                  {DISCHARGE_FORECAST.map((item) => (
-                    <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
-                      <div
-                        className="relative w-full max-w-32 rounded-t-md bg-blue-300"
-                        style={{ height: `${(item.count / maxForecast) * 100}%` }}
-                      >
-                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
-                          {item.count}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-4 px-4 pt-3 sm:gap-8">
-                  {DISCHARGE_FORECAST.map((item) => (
-                    <span key={item.day} className="flex-1 text-center text-sm font-medium text-gray-500">
-                      {t(`dashboard.weekdays.${item.day}`)}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-6 flex items-center justify-between rounded-lg bg-blue-50/60 px-4 py-3">
-                  <span className="text-sm text-gray-500">{t('dashboard.forecastChart.total')}</span>
-                  <span className="text-sm font-semibold text-blue-600">
-                    {t('dashboard.forecastChart.patients', { count: weekTotal })}
-                  </span>
-                </div>
-              </>
+            {hasWidget('dischargeForecast') && expandedItem === 'discharges' && (
+              <DischargeForecastBarChart forecast={DISCHARGE_FORECAST} expanded />
             )}
 
             {hasWidget('hospitalStayByCondition') && expandedItem === 'lengthOfStay' && (
