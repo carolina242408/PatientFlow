@@ -1,6 +1,7 @@
+from datetime import date, timedelta
 from uuid import UUID
 from fastapi import FastAPI
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 from decision_rules import rank_beds, forecast_occupancy
 
 app = FastAPI(title="PatientFlow Algorithms")
@@ -69,6 +70,23 @@ def bed_ranking(data: RankInput):
 @app.post("/v1/occupancy-forecast")
 def occupancy_forecast(data: ForecastBatch):
     return forecast_occupancy(data.model_dump(mode="json"))
+
+
+class DischargeInput(Contract):
+    gender: str | None = Field(default=None, max_length=32)
+    birthDate: date | None = None
+    diagnosisCode: str = Field(min_length=1, max_length=64)
+    admittedAt: AwareDatetime
+
+
+def predict_discharge(data: DischargeInput) -> dict:
+    # stub, admissão + 3 dias. O modelo real entra aqui (mesma entrada/saída).
+    return {"expectedDischargeAt": data.admittedAt + timedelta(days=3), "modelVersion": "stub-v0"}
+
+
+@app.post("/v1/discharge-prediction")
+def discharge_prediction(data: DischargeInput):
+    return predict_discharge(data)
 
 
 @app.get("/health")

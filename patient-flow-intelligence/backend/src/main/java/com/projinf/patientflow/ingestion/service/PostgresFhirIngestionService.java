@@ -3,8 +3,10 @@ package com.projinf.patientflow.ingestion.service;
 import com.projinf.patientflow.event.ChangePublisher;
 import com.projinf.patientflow.repository.HierarchyRepository.Type;
 import com.projinf.patientflow.security.KeycloakGroupService;
+import com.projinf.patientflow.service.AlgorithmsClient;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -69,18 +72,24 @@ public class PostgresFhirIngestionService {
     private final JsonMapper json;
     private final ChangePublisher changes;
     private final KeycloakGroupService keycloakGroups;
+    private final AlgorithmsClient algorithms;
+    private final TransactionTemplate transactions;
 
     public PostgresFhirIngestionService(
             FhirToPostgresTransformer transformer,
             JdbcTemplate jdbc,
             JsonMapper json,
             ChangePublisher changes,
-            KeycloakGroupService keycloakGroups) {
+            KeycloakGroupService keycloakGroups,
+            AlgorithmsClient algorithms,
+            TransactionTemplate transactions) {
         this.transformer = transformer;
         this.jdbc = jdbc;
         this.json = json;
         this.changes = changes;
         this.keycloakGroups = keycloakGroups;
+        this.algorithms = algorithms;
+        this.transactions = transactions;
     }
 
     /**
@@ -291,6 +300,61 @@ public class PostgresFhirIngestionService {
         } catch (Exception ex) {
             log.warn("Failed to sync Keycloak group for {}/{} ({}): {}", type, id, name, ex.getMessage());
         }
+    }
+
+    /**
+     * Trigger da previsão de alta: quando um bundle admite um paciente e traz um diagnóstico
+     * ({@code Condition}), pede a previsão ao serviço algorithms e grava-a em
+     * {@code encounters.expected_discharge_at}. Não sobrescreve um plano já definido.
+     */
+    public void predictDischarge(JsonNode fhirBundle, PostgresIngestionResult result) {
+        UUID encounterId = result.events().stream()
+                .filter(e -> "PATIENT_ADMITTED".equals(e.type()) && "ENCOUNTER".equals(e.resource()))
+                .map(EmittedEvent::id).findFirst().orElse(null);
+        if (encounterId == null) {
+            return;
+        }
+
+        String diagnosisCode = "", gender = null, birthDate = null, admitted = null;
+        for (JsonNode entry : fhirBundle.path("entry").values()) {
+            JsonNode res = entry.path("resource");
+            switch (res.path("resourceType").asString("")) {
+                case "Condition" -> {
+                    if (diagnosisCode.isEmpty()) {
+                        diagnosisCode = res.path("code").path("coding").path(0).path("code").asString("").trim();
+                    }
+                }
+                case "Patient" -> {
+                    gender = res.path("gender").asString(null);
+                    birthDate = res.path("birthDate").asString(null);
+                }
+                case "Encounter" -> {
+                    JsonNode period = res.has("period") ? res.path("period") : res.path("actualPeriod");
+                    admitted = FhirToPostgresTransformer.normalizeIsoTimestamp(period.path("start").asString(""));
+                }
+                default -> { }
+            }
+        }
+        if (diagnosisCode.isEmpty() || admitted == null) {
+            return;
+        }
+
+        // chamada síncrona na thread de ingestão (timeout 1s); passar a @Async/RabbitMQ se o modelo real for lento.
+        Instant predicted = algorithms.predictDischarge(gender, birthDate, diagnosisCode, Instant.parse(admitted)).orElse(null);
+        if (predicted == null) {
+            return;
+        }
+        OffsetDateTime at = predicted.atOffset(ZoneOffset.UTC);
+        // HTTP fica fora da transação; só o UPDATE + evento WebSocket correm dentro dela.
+        transactions.executeWithoutResult(tx -> {
+            int updated = jdbc.update(
+                    "UPDATE encounters SET expected_discharge_at = ?, version = version + 1 "
+                            + "WHERE id = ? AND expected_discharge_at IS NULL AND (start_period IS NULL OR start_period <= ?)",
+                    at, encounterId, at);
+            if (updated == 1) {
+                changes.changed("DISCHARGE_PLAN_CHANGED", "ENCOUNTER", encounterId);
+            }
+        });
     }
 
     /**
