@@ -5,3 +5,8 @@ __pycache__/
 **/.venv/
 model/artifacts/
 .env
+datasetgenerator/
+models/
+venv/
+model/
+*.ipynb

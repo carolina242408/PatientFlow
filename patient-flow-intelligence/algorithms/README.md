@@ -1,132 +1,156 @@
 # algorithms
 
-Serviço Python (FastAPI) para os algoritmos do PatientFlow. No Compose de
-desenvolvimento, está disponível em `http://localhost:8000` e na rede Docker em
-`http://algorithms:8000`.
+Serviço FastAPI local, consumido pelo backend do PatientFlow:
 
-Expõe regras operacionais determinísticas `rules-v1`, sem treino de modelos:
+- `GET /health`: disponível após carregar o modelo e preparar o contexto.
+- `POST /v1/bed-ranking`: regras determinísticas `rules-v1`.
+- `POST /v1/occupancy-forecast`: regras determinísticas `rules-v1`.
+- `POST /v1/discharge-prediction`: NVIDIA Kumo-Tabular Small, regressão local.
 
-- `GET /health` — estado do serviço.
-- `POST /v1/bed-ranking` — ordenação de camas candidatas, com pontuação e razões.
-- `POST /v1/occupancy-forecast` — cenários de ocupação a 24/48 horas por serviço.
+## Previsão de alta
 
-Os contratos e fórmulas estão em [ANALYTICS.md](../backend/ANALYTICS.md).
-Este serviço não acede à base de dados, não autoriza utilizadores e não recebe
-dados identificativos do doente. É consumido pelo backend, que filtra os dados
-pelo âmbito Keycloak, valida os resultados e mantém uma alternativa local.
+O modelo usa os pesos pré-treinados Small, um estimador e a mediana `q500` de
+`los_days`. `fit()` prepara uma única vez o contexto e a cache em memória;
+não atualiza os pesos nem executa otimização. A previsão soma os dias, sem
+arredondamento, à data de admissão. Resultados negativos ou não finitos são
+rejeitados; não existe fallback para a antiga previsão fixa de três dias.
 
-Local sem Docker, a partir da pasta `algorithms` (Python 3.11+; a imagem usa 3.12).
-Usar o ambiente Python existente do projeto, ativando-o antes destes comandos.
-Para usar Kumo na GPU, instalar primeiro o PyTorch CUDA conforme a secção abaixo.
+O contexto vem de `datasetgenerator/ml_hospital_consumption_87k.csv` (87.468
+linhas). Por defeito usa uma amostra reprodutível de 4.096 linhas, seed 8228,
+para limitar a memória. `KUMO_CONTEXT_ROWS=0` usa todas as linhas; um inteiro
+maior ou igual a 2 escolhe outro limite. Não existe redução automática do
+contexto nem fallback silencioso entre CUDA e CPU. A configuração de contexto
+e o hash do CSV fazem parte de `modelVersion`.
 
-```bash
-python -m pip install -r requirements.txt
-python -m uvicorn main:app --reload
+Contrato de entrada (valores ilustrativos, sem dados reais):
+
+```json
+{
+  "gender": "F",
+  "age": 70,
+  "diagnosisCode": "K80.20",
+  "admittedAt": "2026-11-17T10:00:00+00:00",
+  "month": 11,
+  "admission_weekday": "Tuesday",
+  "time_period": "Morning",
+  "season": "Autumn",
+  "specialty": "CIR"
+}
 ```
 
-No PowerShell:
+O nome é `specialty`, como no CSV. `birthDate` deixou de fazer parte da API
+de algoritmos; a data de nascimento continua na base de dados clínica.
+O backend deriva as features segundo `datasetgenerator/data_analysis .ipynb`:
+
+- Idade: dias entre nascimento e admissão divididos por 365,25, truncados.
+- Género FHIR: `female` → `F`, `male` → `M`.
+- Mês e dia da semana: calendário da admissão, nomes ingleses.
+- Período: Night 00–05h, Morning 06–11h, Afternoon 12–17h, Evening 18–23h.
+- Estações: Winter começa em 21/12, Spring em 20/03, Summer em 21/06,
+  Autumn em 23/09, tal como no notebook.
+- Serviço: `30004` → `MED`, `30006` → `CIR`, `30020` → `UCI`, conforme
+  `tools/data-generation/config/hospital.yaml`. Outros serviços não são
+  convertidos por aproximação.
+
+O offset explícito da admissão é preservado para calcular o calendário.
+Datas FHIR sem offset mantêm a convenção UTC existente no transformador.
+O diagnóstico ICD-10 é associado ao encontro, com preferência por `rank=1`;
+sem prioridade explícita exige-se um único código associado. Dados incompletos
+ou ambíguos não geram previsão. O resultado só é gravado se o encontro continuar
+ativo, com a mesma admissão e sem um plano de alta já definido.
+
+O timeout de alta é separado das regras: `ALGORITHMS_DISCHARGE_TIMEOUT=30s`
+por defeito. A chamada permanece síncrona na ingestão, fora da transação SQL.
+O serviço devolve 503 se o modelo estiver ocupado ou falhar e 422 se os
+parâmetros forem inválidos. A admissão já persistida é preservada nesses casos.
+
+## Execução local
+
+Python 3.11+; usar o ambiente existente. As dependências já estão fixadas em
+`requirements.txt`. A partir de `algorithms`, no PowerShell:
 
 ```powershell
-python -m pip install -r requirements.txt
-python -m uvicorn main:app --reload
+# Preparação: acesso à Internet apenas para artefactos públicos, sem ler o CSV.
+.\.venv\Scripts\python.exe kumo_assets.py
+
+# Serving: ficheiros locais, sem downloads. CUDA é opcional; o default é CPU.
+$env:KUMO_DEVICE = 'cuda'
+$env:KUMO_CONTEXT_ROWS = '4096'
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1 --no-access-log
 ```
 
-## NVIDIA Kumo-Tabular: instalação e download
+`kumo_assets.py` guarda pesos, licença e configuração em `models/kumo-small/`,
+excluído do Git. Usa a revisão fixa `3c3e10bbdb590ace29e7026847f92db3c603096d`
+(v1.0.1) e verifica SHA-256 do checkpoint. Para preparar outra máquina sem
+Internet, transferir esta pasta, as dependências e o CSV por um canal autorizado.
+`KUMO_MODEL_DIR` e `KUMO_DATASET` permitem indicar caminhos locais alternativos.
 
-As dependências de inferência estão no `requirements.txt` deste serviço. Não é
-necessário criar outro ambiente. No PowerShell, a partir de `algorithms`, usar
-o Python do ambiente existente (3.11 ou superior) e um driver NVIDIA atualizado.
+## Privacidade e Docker
 
-1. Instalar o PyTorch CUDA 12.6 antes das restantes dependências:
+O processo de inferência força `HF_HUB_OFFLINE`, `TRANSFORMERS_OFFLINE`,
+`HF_HUB_DISABLE_TELEMETRY`, `HF_HUB_DISABLE_IMPLICIT_TOKEN`, `DO_NOT_TRACK` e
+desativa W&B. Carrega diretamente o checkpoint local com `weights_only=True`,
+sem chamar o resolvedor de downloads da biblioteca. Não há chamadas a APIs
+externas no percurso de previsão. Pesos/contexto ausentes ou inválidos impedem
+o arranque. As respostas de validação não devolvem os valores recebidos e os
+erros de inferência não registam o payload.
 
-   ```powershell
-   python -m pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cu126
-   python -m pip install -r requirements.txt
-   ```
+O Dockerfile descarrega apenas artefactos públicos durante a construção.
+O CSV e os notebooks ficam fora do contexto de build; o CSV é montado read-only
+no arranque, nunca incluído na imagem. O container corre sem root, sem
+capabilities, com filesystem read-only e uma pasta temporária em memória.
 
-   Se já estiver instalada uma versão CPU de `torch==2.14.1`, acrescentar
-   `--force-reinstall` ao primeiro comando para a substituir pela versão CUDA.
-   Para execução apenas em CPU, usar o índice
-   `https://download.pytorch.org/whl/cpu` em vez de `cu126`.
+O Compose liga algorithms apenas à rede `internal: true` partilhada com o
+backend, sem porta publicada. Esta rede bloqueia conectividade externa;
+o backend continua com acesso às restantes dependências na rede normal.
+O backend espera pelo healthcheck do modelo antes de arrancar.
+Ao executar Python diretamente, aplicar também uma política de firewall de
+saída no host para obter isolamento de rede equivalente: as variáveis offline
+configuram bibliotecas, não substituem um firewall.
 
-2. Confirmar o dispositivo disponível:
-
-   ```powershell
-   python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA available:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
-   ```
-
-   Para inferência na GPU, `CUDA available` deve apresentar `True`.
-
-3. Descarregar e carregar o modelo Small de regressão:
-
-   ```powershell
-   python -c "import sdm; model = sdm.models.KumoTabular(task='regression', size='small', device='cpu'); print('Kumo-Tabular downloaded and loaded.')"
-   ```
-
-   A biblioteca descarrega automaticamente os pesos do Hugging Face na primeira
-   utilização e reutiliza a cache nas seguintes. Este comando usa RAM para
-   confirmar o download; para carregar posteriormente na GPU, usar `device='cuda'`.
-   O checkpoint Small de regressão ocupa aproximadamente 114 MB; as dependências
-   e a memória de inferência exigem espaço adicional. Para outra variante, usar
-   `size='medium'` ou `size='large'`.
-
-Estes passos instalam a biblioteca e descarregam os pesos; não executam previsões
-sobre o CSV nem integram Kumo nos endpoints. Os pesos não são descarregados ao
-iniciar a API. Como o Docker instala o mesmo `requirements.txt`, a imagem do
-serviço também passa a incluir estas dependências; os comandos acima configuram
-o ambiente local, não o acesso à GPU no Docker.
-
-Referências: [instalação NVIDIA](https://nvidia.github.io/structured-data-models/install.html),
-[API KumoTabular](https://nvidia.github.io/structured-data-models/api/generated/sdm.models.KumoTabular)
-e [versões PyTorch](https://pytorch.org/get-started/previous-versions/).
-
-## Avaliar apenas o Kumo-Tabular
-
-Na pasta `algorithms`, com as dependências instaladas em `.venv`:
+Quando o Docker estiver configurado, a partir de `patient-flow-intelligence`:
 
 ```powershell
-./.venv/Scripts/python.exe -u -m model.evaluate_kumo
+# CPU
+docker compose up -d --build algorithms backend
+
+# CUDA 12.6, com driver NVIDIA e suporte GPU do Docker
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build algorithms backend
 ```
 
-O comando usa `datasetgenerator/ml_hospital_consumption_27k.csv`, Kumo Small,
-CUDA e um estimador. Usa os oito preditores do CSV; `los_days` é exclusivamente
-o alvo. Reserva 20% dos registos para avaliação final e executa cinco folds nos
-restantes 80%, com seed 8228. Cada fold usa todo o seu conjunto de treino como
-contexto, sem atualizar os pesos do modelo. A mediana prevista (`q500`) é avaliada
-em dias, sem arredondamento nem clipping. A preparação interna da biblioteca é
-ajustada apenas ao contexto de treino.
+Ambas as imagens usam as versões existentes de dependências. A variante CPU
+instala a wheel CPU do PyTorch; a variante GPU usa a wheel CUDA 12.6.
+Usar apenas um worker para não duplicar a cache. O consumo de memória e a
+latência dependem do contexto e do dispositivo; não foram medidos nesta integração.
 
-Os resultados incluem MAE, RMSE, R², desvio-padrão entre folds, erro por diagnóstico
-e erro nos internamentos longos (percentil 90 do treino). Não incluem outros
-modelos nem referências por mediana. O CSV não contém identificadores de doente
-nem datas de admissão, pelo que a divisão é por linha, não por doente ou por data.
+## Licença comercial
 
-Cada execução cria uma pasta nova em `model/artifacts/kumo_<timestamp>/`, com
-`summary.md` (tabela), `summary.csv`, `report.json`, `protocol.json`,
-`cv_predictions.csv` e `test_predictions.csv`. Um relatório com `status=failed`
-representa uma execução incompleta. Os resultados anteriores não são substituídos.
+Verificado em 17/11/2026: os pesos usam [OpenMDW 1.1](https://huggingface.co/nvidia/Kumo-Tabular/blob/main/LICENSE),
+que permite utilização comercial, modificação e distribuição. A redistribuição
+deve preservar a licença e os avisos de copyright/origem aplicáveis. Os outputs
+não recebem restrições adicionais desta licença. Existem cláusulas de
+terminação por litígio e exclusão de garantias; direitos sobre dados e outros
+materiais continuam a precisar de autorização própria.
 
-Opções: `--size medium`, `--estimators 8`, `--batch-size 128`, `--device cpu`,
-`--data caminho.csv` e `--output-dir pasta_nova`. Se a memória for insuficiente,
-`--context-rows 2000` limita explicitamente os exemplos de contexto a uma amostra
-reprodutível de cada treino, mantendo todas as linhas de validação; este limite
-fica registado no relatório e altera a experiência. Não existe fallback silencioso
-para CPU nem redução automática do contexto.
+A biblioteca NVIDIA usa [Apache 2.0](https://github.com/NVIDIA/structured-data-models/blob/main/LICENSE),
+também compatível com uso comercial, sujeita às suas condições de redistribuição.
+A licença dos pesos acompanha os artefactos locais e a imagem em
+`/opt/kumo-small/LICENSE`; não é necessária uma API comercial Kumo.
 
-## Docker e desenvolvimento
+## Avaliação offline existente
 
-Atualizar a imagem a partir da pasta `patient-flow-intelligence`:
+O script `model.evaluate_kumo` continua separado da API. Por defeito avalia o
+CSV de 27k, com 20% de holdout e cinco folds, sem treinar os pesos:
 
-```bash
-docker compose up -d --build algorithms
+```powershell
+.\.venv\Scripts\python.exe -u -m model.evaluate_kumo --data datasetgenerator/ml_hospital_consumption_87k.csv --context-rows 4096
 ```
 
-Os testes automatizados e os respetivos fixtures foram removidos nesta fase.
-Com o serviço em execução, consultar `GET /health` para verificar o estado e
-`/docs` para experimentar os endpoints através da documentação interativa.
+Este comando é uma avaliação explícita e usa o resolvedor Hub original; não
+herda o isolamento do serviço. Preparar a cache e configurar `HF_HUB_OFFLINE=1`,
+`HF_HUB_DISABLE_TELEMETRY=1` e isolamento de rede antes de usar dados sensíveis.
+Os resultados ficam em `model/artifacts/kumo_<timestamp>/`. O CSV não tem IDs
+de doente nem datas absolutas para avaliar separação por doente ou temporal.
+Esta integração não executou benchmarks nem validou a qualidade clínica.
 
-O treino offline de modelos de previsão de duração do internamento está em
-[model/README.md](model/README.md): CatBoost, XGBoost, Random Forest e
-FT-Transformer, com Optuna e validação cruzada. Estes comandos não são executados
-ao iniciar a API; a integração das previsões nos endpoints continua a ser trabalho
-futuro descrito no [PLAN.md](../backend/PLAN.md).
+Outros modelos experimentais estão documentados em [model/README.md](model/README.md).

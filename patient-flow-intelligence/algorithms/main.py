@@ -1,10 +1,35 @@
-from datetime import date, timedelta
+from contextlib import asynccontextmanager
+from datetime import timedelta
+import logging
+from typing import Literal
 from uuid import UUID
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.responses import JSONResponse
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 from decision_rules import rank_beds, forecast_occupancy
+from discharge_model import DischargeModel
 
-app = FastAPI(title="PatientFlow Algorithms")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.discharge_model = DischargeModel()
+    try:
+        yield
+    finally:
+        app.state.discharge_model.close()
+
+
+app = FastAPI(title="PatientFlow Algorithms", lifespan=lifespan)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, error: RequestValidationError):
+    if request.url.path != "/v1/discharge-prediction":
+        return await request_validation_exception_handler(request, error)
+    # Pydantic's default error response echoes submitted values, potentially PHI.
+    return JSONResponse(status_code=422, content={"detail": "Invalid request parameters"})
 
 
 class Contract(BaseModel):
@@ -73,22 +98,51 @@ def occupancy_forecast(data: ForecastBatch):
 
 
 class DischargeInput(Contract):
-    gender: str | None = Field(default=None, max_length=32)
-    birthDate: date | None = None
-    diagnosisCode: str = Field(min_length=1, max_length=64)
+    gender: Literal["F", "M"]
+    age: int = Field(ge=0, le=130, strict=True)
+    diagnosisCode: str = Field(min_length=1, max_length=64, pattern=r"^\S+$")
     admittedAt: AwareDatetime
+    month: int = Field(ge=1, le=12, strict=True)
+    admission_weekday: Literal["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    time_period: Literal["Morning", "Afternoon", "Evening", "Night"]
+    season: Literal["Winter", "Spring", "Summer", "Autumn"]
+    specialty: Literal["CIR", "MED", "UCI"]
+
+    @model_validator(mode="after")
+    def consistent_admission_features(self):
+        at = self.admittedAt
+        weekdays = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        period = "Night" if at.hour < 6 else "Morning" if at.hour < 12 else "Afternoon" if at.hour < 18 else "Evening"
+        month_day = at.month * 100 + at.day
+        season = ("Winter" if month_day < 320 or month_day >= 1221 else
+                  "Spring" if month_day < 621 else "Summer" if month_day < 923 else "Autumn")
+        if (self.month != at.month or self.admission_weekday != weekdays[at.weekday()]
+                or self.time_period != period or self.season != season):
+            raise ValueError("Calendar features do not match admission timestamp")
+        return self
 
 
-def predict_discharge(data: DischargeInput) -> dict:
-    # stub, admissão + 3 dias. O modelo real entra aqui (mesma entrada/saída).
-    return {"expectedDischargeAt": data.admittedAt + timedelta(days=3), "modelVersion": "stub-v0"}
+def predict_discharge(data: DischargeInput, model: DischargeModel) -> dict:
+    features = data.model_dump(exclude={"admittedAt", "diagnosisCode"})
+    features["diagnosis_code"] = data.diagnosisCode
+    days = model.predict_days(features)
+    return {"expectedDischargeAt": data.admittedAt + timedelta(days=days), "modelVersion": model.version}
 
 
 @app.post("/v1/discharge-prediction")
-def discharge_prediction(data: DischargeInput):
-    return predict_discharge(data)
+def discharge_prediction(data: DischargeInput, request: Request):
+    try:
+        return predict_discharge(data, request.app.state.discharge_model)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Unsupported prediction features") from None
+    except BlockingIOError:
+        raise HTTPException(status_code=503, detail="Discharge predictor is busy") from None
+    except Exception:
+        logging.getLogger(__name__).error("Discharge prediction failed")
+        raise HTTPException(status_code=503, detail="Discharge prediction unavailable") from None
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+def health(request: Request):
+    model = request.app.state.discharge_model
+    return {"status": "ok", "modelVersion": model.version, "contextRows": model.context_rows}

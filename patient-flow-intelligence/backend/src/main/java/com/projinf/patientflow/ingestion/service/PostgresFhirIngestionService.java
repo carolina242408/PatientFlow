@@ -5,10 +5,20 @@ import com.projinf.patientflow.repository.HierarchyRepository.Type;
 import com.projinf.patientflow.security.KeycloakGroupService;
 import com.projinf.patientflow.service.AlgorithmsClient;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -308,39 +318,116 @@ public class PostgresFhirIngestionService {
      * {@code encounters.expected_discharge_at}. Não sobrescreve um plano já definido.
      */
     public void predictDischarge(JsonNode fhirBundle, PostgresIngestionResult result) {
-        UUID encounterId = result.events().stream()
+        var encounterIds = result.events().stream()
                 .filter(e -> "PATIENT_ADMITTED".equals(e.type()) && "ENCOUNTER".equals(e.resource()))
-                .map(EmittedEvent::id).findFirst().orElse(null);
-        if (encounterId == null) {
-            return;
-        }
-
-        String diagnosisCode = "", gender = null, birthDate = null, admitted = null;
+                .map(EmittedEvent::id).distinct().toList();
+        Map<String, JsonNode> resources = new HashMap<>();
+        Map<String, JsonNode> encounters = new HashMap<>();
         for (JsonNode entry : fhirBundle.path("entry").values()) {
             JsonNode res = entry.path("resource");
-            switch (res.path("resourceType").asString("")) {
-                case "Condition" -> {
-                    if (diagnosisCode.isEmpty()) {
-                        diagnosisCode = res.path("code").path("coding").path(0).path("code").asString("").trim();
-                    }
-                }
-                case "Patient" -> {
-                    gender = res.path("gender").asString(null);
-                    birthDate = res.path("birthDate").asString(null);
-                }
-                case "Encounter" -> {
-                    JsonNode period = res.has("period") ? res.path("period") : res.path("actualPeriod");
-                    admitted = FhirToPostgresTransformer.normalizeIsoTimestamp(period.path("start").asString(""));
-                }
-                default -> { }
+            String fullUrl = entry.path("fullUrl").asString("");
+            if (!fullUrl.isBlank()) resources.put(fullUrl, res);
+            String id = res.path("id").asString("");
+            if (!id.isBlank()) resources.put(res.path("resourceType").asString("") + "/" + id, res);
+            if ("Encounter".equals(res.path("resourceType").asString(""))) {
+                encounters.put(FhirToPostgresTransformer.extractVisitNumber(res), res);
             }
         }
-        if (diagnosisCode.isEmpty() || admitted == null) {
-            return;
+        for (UUID encounterId : encounterIds) {
+            // Read demographics from the persisted encounter's patient, never an
+            // unrelated Patient/Condition elsewhere in a multi-patient bundle.
+            var inputs = jdbc.query("""
+                    SELECT e.visit_number, e.start_period, p.gender, p.birth_date, s.code AS service_code
+                    FROM encounters e JOIN patients p ON p.id = e.patient_id
+                    JOIN clinical_services s ON s.id = e.service_id
+                    WHERE e.id = ? AND e.status = 'IN_PROGRESS' AND e.expected_discharge_at IS NULL
+                    """, (rs, row) -> {
+                JsonNode encounter = encounters.get(rs.getString("visit_number"));
+                LocalDate birth = rs.getObject("birth_date", LocalDate.class);
+                OffsetDateTime storedStart = rs.getObject("start_period", OffsetDateTime.class);
+                if (encounter == null || birth == null || storedStart == null) return null;
+                JsonNode period = encounter.has("period") ? encounter.path("period") : encounter.path("actualPeriod");
+                OffsetDateTime admitted;
+                try {
+                    String raw = period.path("start").asString("");
+                    try {
+                        admitted = OffsetDateTime.parse(raw);
+                    } catch (DateTimeParseException noOffset) {
+                        // Same legacy convention as FhirToPostgresTransformer.
+                        admitted = LocalDateTime.parse(raw).atOffset(ZoneOffset.UTC);
+                    }
+                } catch (DateTimeParseException invalid) {
+                    return null;
+                }
+                if (!admitted.toInstant().equals(storedStart.toInstant()) || birth.isAfter(admitted.toLocalDate())) return null;
+                String gender = switch (String.valueOf(rs.getString("gender"))) {
+                    case "male" -> "M";
+                    case "female" -> "F";
+                    default -> null;
+                };
+                // Mapping defined by tools/data-generation/config/hospital.yaml.
+                String specialty = switch (rs.getString("service_code")) {
+                    case "30004" -> "MED";
+                    case "30006" -> "CIR";
+                    case "30020" -> "UCI";
+                    default -> null;
+                };
+                String diagnosis = dischargeDiagnosis(encounter, resources);
+                if (gender == null || specialty == null || diagnosis == null) return null;
+                // Match the dataset notebook: floor(elapsed calendar days / 365.25).
+                int age = (int) (ChronoUnit.DAYS.between(birth, admitted.toLocalDate()) / 365.25);
+                if (age > 130) return null;
+                int hour = admitted.getHour();
+                String timePeriod = hour < 6 ? "Night" : hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
+                int monthDay = admitted.getMonthValue() * 100 + admitted.getDayOfMonth();
+                String season = monthDay < 320 || monthDay >= 1221 ? "Winter"
+                        : monthDay < 621 ? "Spring" : monthDay < 923 ? "Summer" : "Autumn";
+                return new AlgorithmsClient.DischargeInput(gender, age, diagnosis, admitted, admitted.getMonthValue(),
+                        admitted.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH), timePeriod, season, specialty);
+            }, encounterId);
+            if (inputs.isEmpty() || inputs.getFirst() == null) continue;
+            persistDischargePrediction(encounterId, inputs.getFirst());
         }
+    }
 
-        // chamada síncrona na thread de ingestão (timeout 1s); passar a @Async/RabbitMQ se o modelo real for lento.
-        Instant predicted = algorithms.predictDischarge(gender, birthDate, diagnosisCode, Instant.parse(admitted)).orElse(null);
+    private static String dischargeDiagnosis(JsonNode encounter, Map<String, JsonNode> resources) {
+        Set<String> codes = new HashSet<>();
+        Set<JsonNode> conditions = new HashSet<>();
+        // An explicitly ranked primary diagnosis takes precedence. Otherwise only
+        // use an unambiguous ICD-10 diagnosis associated with this encounter.
+        for (JsonNode diagnosis : encounter.path("diagnosis").values()) {
+            if (diagnosis.path("rank").asInt(0) == 1) {
+                JsonNode condition = resources.get(diagnosis.path("condition").path("reference").asString(""));
+                if (condition != null) conditions.add(condition);
+            }
+        }
+        if (conditions.isEmpty()) {
+            for (JsonNode resource : resources.values()) {
+                if ("Condition".equals(resource.path("resourceType").asString(""))
+                        && encounter.equals(resources.get(resource.path("encounter").path("reference").asString("")))) {
+                    conditions.add(resource);
+                }
+            }
+        }
+        for (JsonNode condition : conditions) {
+            String subject = condition.path("subject").path("reference").asString("");
+            String encounterSubject = encounter.path("subject").path("reference").asString("");
+            if (!subject.equals(encounterSubject)
+                    && (resources.get(subject) == null || !resources.get(subject).equals(resources.get(encounterSubject)))) continue;
+            for (JsonNode coding : condition.path("code").path("coding").values()) {
+                if (Set.of("http://hl7.org/fhir/sid/icd-10", "http://hl7.org/fhir/sid/icd-10-cm")
+                        .contains(coding.path("system").asString(""))) {
+                    String code = coding.path("code").asString("").trim();
+                    if (!code.isEmpty()) codes.add(code);
+                }
+            }
+        }
+        return codes.size() == 1 ? codes.iterator().next() : null;
+    }
+
+    private void persistDischargePrediction(UUID encounterId, AlgorithmsClient.DischargeInput input) {
+        // HTTP stays outside the transaction. Discharge has its own model timeout.
+        Instant predicted = algorithms.predictDischarge(input).orElse(null);
         if (predicted == null) {
             return;
         }
@@ -349,8 +436,9 @@ public class PostgresFhirIngestionService {
         transactions.executeWithoutResult(tx -> {
             int updated = jdbc.update(
                     "UPDATE encounters SET expected_discharge_at = ?, version = version + 1 "
-                            + "WHERE id = ? AND expected_discharge_at IS NULL AND (start_period IS NULL OR start_period <= ?)",
-                    at, encounterId, at);
+                            + "WHERE id = ? AND expected_discharge_at IS NULL AND status = 'IN_PROGRESS' "
+                            + "AND start_period = ? AND start_period <= ?",
+                    at, encounterId, input.admittedAt(), at);
             if (updated == 1) {
                 changes.changed("DISCHARGE_PLAN_CHANGED", "ENCOUNTER", encounterId);
             }
