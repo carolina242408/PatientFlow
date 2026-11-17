@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import timedelta
 import logging
+import sys
 from typing import Literal
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, Request
@@ -11,10 +12,19 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validato
 from decision_rules import rank_beds, forecast_occupancy
 from discharge_model import DischargeModel
 
+# Configuração essencial para forçar o Python a mostrar os logs INFO na consola do Docker
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("algorithms")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.discharge_model = DischargeModel()
+    logger.info(f"Modelo de alta carregado com sucesso. Versão: {app.state.discharge_model.version}")
     try:
         yield
     finally:
@@ -123,10 +133,17 @@ class DischargeInput(Contract):
 
 
 def predict_discharge(data: DischargeInput, model: DischargeModel) -> dict:
+    logger.info(f"A receber pedido de predição | Diagnóstico: {data.diagnosisCode} | Especialidade: {data.specialty}")
     features = data.model_dump(exclude={"admittedAt", "diagnosisCode"})
     features["diagnosis_code"] = data.diagnosisCode
     days = model.predict_days(features)
-    return {"expectedDischargeAt": data.admittedAt + timedelta(days=days), "modelVersion": model.version}
+    
+    expected = data.admittedAt + timedelta(days=days)
+    logger.info(
+        f"Predição concluída com sucesso | Dias previstos: {days} | "
+        f"Data de Alta Prevista: {expected} | Model Version: {model.version}"
+    )
+    return {"expectedDischargeAt": expected, "modelVersion": model.version}
 
 
 @app.post("/v1/discharge-prediction")
@@ -134,11 +151,13 @@ def discharge_prediction(data: DischargeInput, request: Request):
     try:
         return predict_discharge(data, request.app.state.discharge_model)
     except ValueError:
+        logger.warning("Falha de validação nos dados de entrada da predição")
         raise HTTPException(status_code=422, detail="Unsupported prediction features") from None
     except BlockingIOError:
+        logger.error("Discharge predictor is busy")
         raise HTTPException(status_code=503, detail="Discharge predictor is busy") from None
-    except Exception:
-        logging.getLogger(__name__).error("Discharge prediction failed")
+    except Exception as e:
+        logger.error("Discharge prediction failed with error: %s", e)
         raise HTTPException(status_code=503, detail="Discharge prediction unavailable") from None
 
 

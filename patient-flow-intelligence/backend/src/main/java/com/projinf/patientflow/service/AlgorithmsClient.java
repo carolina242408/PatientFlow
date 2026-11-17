@@ -35,7 +35,7 @@ public class AlgorithmsClient {
             throw new IllegalArgumentException("Configuração algorithms inválida");
         this.json=json; this.base=base; this.enabled=enabled; this.timeout=timeout;
         this.dischargeTimeout=dischargeTimeout;
-        this.client=HttpClient.newBuilder().connectTimeout(connect).followRedirects(HttpClient.Redirect.NEVER).build();
+        this.client=HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(connect).followRedirects(HttpClient.Redirect.NEVER).build();
     }
     public Decision<RankOutput> rank(RankInput input) { return call("/v1/bed-ranking",input,DecisionRules.rank(input),RankOutput.class); }
     public Decision<ForecastOutput> forecast(ForecastBatch input) { return call("/v1/occupancy-forecast",input,DecisionRules.forecast(input),ForecastOutput.class); }
