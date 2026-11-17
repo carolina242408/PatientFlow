@@ -99,11 +99,65 @@ export interface Occupancy {
   wings: OccupancyRow[]
 }
 
+export interface Indicators {
+  asOf: string
+  beds: {
+    total: number
+    capacity: number
+    available: number
+    occupied: number
+    blocked: number
+    cleaning: number
+    occupancyPercent: number | null
+  }
+  stays: {
+    expectedDischarges24h: number
+    expectedDischarges48h: number
+    averageLengthOfStayDays: number | null
+  }
+  waiting: { pending: number }
+  thresholds: { occupancyCriticalPercent: number }
+}
+
+export interface ForecastHorizon {
+  hours: number
+  expectedAdmissions: number
+  expectedDischarges: number
+  projectedOccupied: number
+  occupancyPercent: number | null
+  unmetDemand: number
+}
+
+export interface OccupancyForecast {
+  services: PageResult<{
+    serviceName: string
+    input: { capacity: number; occupied: number }
+    horizons: ForecastHorizon[]
+    historyQuality: string
+  }>
+}
+
 // ─── Funções de acesso à API ──────────────────────────────────────────────────
 
 /** Occupancy rows aggregated by service, unit, and wing within the authorized scope. */
 export async function fetchOccupancy(scope: Scope = {}): Promise<Occupancy> {
   const { data } = await api.get<Occupancy>('/analytics/occupancy', { params: scope })
+  return data
+}
+
+export async function fetchIndicators(scope: Scope = {}): Promise<Indicators> {
+  const { data } = await api.get<Indicators>('/analytics/indicators', { params: scope })
+  return data
+}
+
+export async function fetchOccupancyForecast(
+  scope: Scope = {},
+  page = 0,
+  size = 100,
+): Promise<OccupancyForecast> {
+  const { data } = await api.get<OccupancyForecast>('/analytics/occupancy-forecast', {
+    params: { ...scope, page, size },
+  })
   return data
 }
 

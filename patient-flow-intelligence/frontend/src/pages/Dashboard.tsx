@@ -8,7 +8,14 @@ import { useOutletContext } from 'react-router'
 import type { AppOutletContext } from '@/layout/ManagerScopeContext'
 import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
 import { useKeycloak } from '../auth/context'
-import { fetchBeds, fetchOccupancy, type BedView } from '../api/operational'
+import {
+  fetchBeds,
+  fetchIndicators,
+  fetchOccupancy,
+  fetchOccupancyForecast,
+  type BedView,
+  type ForecastHorizon,
+} from '../api/operational'
 import UpcomingDischargesTable, {
   type UpcomingDischarge,
 } from './dashboard_components/UpcomingDischargesTable'
@@ -21,52 +28,21 @@ import ForecastCard, {
 
 type Scope = 'LHU' | 'Unit' | 'Service'
 
-// Dados de exemplo: substitui por dados do backend
 const CRITICAL_THRESHOLD = 82
-const SERVICE_NAME = 'Cardiology'
-
-const SCOPE_METRICS: Record<
-  Scope,
-  {
-    occupancy: number
-    occupiedBeds: number
-    totalBeds: number
-    discharges: number
-    next48Hours: number
-    available: number
-  }
-> = {
-  LHU: { occupancy: 78, occupiedBeds: 187, totalBeds: 240, discharges: 8, next48Hours: 14, available: 67 },
-  Unit: { occupancy: 81, occupiedBeds: 96, totalBeds: 118, discharges: 5, next48Hours: 9, available: 31 },
-  Service: { occupancy: 88, occupiedBeds: 42, totalBeds: 48, discharges: 3, next48Hours: 5, available: 9 },
-}
-
-const DISCHARGE_FORECAST = [
-  { day: 'mon', count: 3 },
-  { day: 'tue', count: 5 },
-  { day: 'wed', count: 4 },
-  { day: 'thu', count: 7 },
-  { day: 'fri', count: 6 },
-  { day: 'sat', count: 2 },
-  { day: 'sun', count: 3 },
-]
-
-const LENGTH_OF_STAY_FORECAST = [
-  { condition: 'pneumonia', minimumDays: 5, maximumDays: 7 },
-  { condition: 'heartFailure', minimumDays: 4, maximumDays: 6 },
-  { condition: 'angina', minimumDays: 2, maximumDays: 4 },
-  { condition: 'arrhythmia', minimumDays: 3, maximumDays: 5 },
-  { condition: 'cardiacObservation', minimumDays: 1, maximumDays: 2 },
-] as const
 
 const UPCOMING_WINDOW_MS = 72 * 60 * 60 * 1000 // 72h
 
-// Altas previstas (modelo ou plano manual) até às próximas 72h, incluindo as já em atraso.
+// Altas previstas (modelo ou plano manual) entre agora e as próximas 72h.
 const toUpcomingDischarges = (beds: BedView[], language?: string): UpcomingDischarge[] => {
   const startOfToday = new Date().setHours(0, 0, 0, 0)
+  const now = Date.now()
 
   return beds
-    .filter((bed) => bed.expectedDischargeAt && Date.parse(bed.expectedDischargeAt) <= Date.now() + UPCOMING_WINDOW_MS)
+    .filter((bed) => {
+      if (!bed.expectedDischargeAt) return false
+      const expectedAt = Date.parse(bed.expectedDischargeAt)
+      return expectedAt >= now && expectedAt <= now + UPCOMING_WINDOW_MS
+    })
     .sort((a, b) => Date.parse(a.expectedDischargeAt!) - Date.parse(b.expectedDischargeAt!))
     .map((bed) => {
       const at = new Date(bed.expectedDischargeAt!)
@@ -117,16 +93,29 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
   const [expandedItem, setExpandedItem] = useState<DashboardItem | null>(null)
   const dashboardDialogRef = useRef<HTMLDialogElement>(null)
   const profileScope = getProfileScope(user?.roles, user?.scopeType) ?? scope
-  const metrics = SCOPE_METRICS[profileScope]
   const { data: occupancy, isPending: occupancyPending, isError: occupancyError } = useQuery({
     queryKey: ['dashboard-occupancy', managerScope.root?.id],
     queryFn: () => fetchOccupancy(managerScope.scope),
-    enabled: user?.roles.includes('MANAGER_ROLE') === true && Boolean(managerScope.root),
+    enabled: Boolean(managerScope.root),
+    refetchInterval: 30_000,
+  })
+  const { data: indicators } = useQuery({
+    queryKey: ['dashboard-indicators', managerScope.root?.id],
+    queryFn: () => fetchIndicators(managerScope.scope),
+    enabled: Boolean(managerScope.root),
+    refetchInterval: 30_000,
+  })
+  const { data: forecast } = useQuery({
+    queryKey: ['dashboard-forecast', managerScope.root?.id],
+    queryFn: () => fetchOccupancyForecast(managerScope.scope),
+    enabled: Boolean(managerScope.root),
+    refetchInterval: 60_000,
   })
   const { data: upcomingDischarges = [] } = useQuery({
-    queryKey: ['beds', 'upcoming-discharges', i18n.resolvedLanguage],
+    queryKey: ['beds', 'upcoming-discharges', managerScope.root?.id, i18n.resolvedLanguage],
     // O backend limita size a 100: só as primeiras 100 camas ocupadas do âmbito entram na tabela.
-    queryFn: () => fetchBeds({}, 'OCCUPIED', 0, 100),
+    queryFn: () => fetchBeds(managerScope.scope, 'OCCUPIED', 0, 100),
+    enabled: Boolean(managerScope.root),
     select: (page) => toUpcomingDischarges(page.content, i18n.resolvedLanguage),
     // Sem cliente WebSocket no frontend: polling para a previsão aparecer sem refresh.
     refetchInterval: 10_000, // 10s
@@ -143,9 +132,36 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     month: 'long',
   }).format(new Date())
 
-  const weekTotal = DISCHARGE_FORECAST.reduce((sum, item) => sum + item.count, 0)
-  const maxForecast = Math.max(...DISCHARGE_FORECAST.map((item) => item.count))
-  const serviceOccupancy = occupancy?.services ?? []
+  const forecastHorizons = forecast?.services.content
+    .flatMap((service) => service.horizons)
+    .reduce<Record<number, ForecastHorizon>>((summary, horizon) => {
+      const current = summary[horizon.hours]
+      summary[horizon.hours] = current
+        ? { ...current, expectedDischarges: current.expectedDischarges + horizon.expectedDischarges }
+        : { ...horizon }
+      return summary
+    }, {})
+  const dischargeForecast = Object.values(forecastHorizons ?? {}).length > 0
+    ? Object.values(forecastHorizons ?? {}).sort((a, b) => a.hours - b.hours)
+    : indicators
+      ? [
+          { hours: 24, expectedAdmissions: 0, expectedDischarges: indicators.stays.expectedDischarges24h, projectedOccupied: 0, occupancyPercent: null, unmetDemand: 0 },
+          { hours: 48, expectedAdmissions: 0, expectedDischarges: indicators.stays.expectedDischarges48h, projectedOccupied: 0, occupancyPercent: null, unmetDemand: 0 },
+        ]
+      : []
+  const weekTotal = dischargeForecast.reduce((sum, item) => sum + item.expectedDischarges, 0)
+  const maxForecast = Math.max(...dischargeForecast.map((item) => item.expectedDischarges), 1)
+  const serviceOccupancy = occupancy?.services.length
+    ? occupancy.services
+    : indicators
+      ? [{
+          id: managerScope.root?.id ?? 'scope',
+          name: managerScope.root?.name ?? '—',
+          occupied: indicators.beds.occupied,
+          capacity: indicators.beds.capacity,
+          occupancyPercent: indicators.beds.occupancyPercent,
+        }]
+      : []
   const wingOccupancy = occupancy?.wings ?? []
   const unitOccupancy = occupancy?.units ?? []
   const occupancyChartRows = profileScope === 'Service' ? wingOccupancy : serviceOccupancy
@@ -157,11 +173,13 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     }),
     { occupiedBeds: 0, totalBeds: 0 },
   )
-  const occupancyPercent =
-    occupancySummary.totalBeds > 0
+  const occupancyPercent = indicators?.beds.occupancyPercent
+    ?? (occupancySummary.totalBeds > 0
       ? Math.round((occupancySummary.occupiedBeds / occupancySummary.totalBeds) * 10000) / 100
-      : null
-  const criticalThreshold = occupancy?.criticalOccupancyPercent ?? CRITICAL_THRESHOLD
+      : null)
+  const criticalThreshold = indicators?.thresholds.occupancyCriticalPercent
+    ?? occupancy?.criticalOccupancyPercent
+    ?? CRITICAL_THRESHOLD
   const occupancyGap = occupancyPercent === null ? null : criticalThreshold - occupancyPercent
 
   if (managerScope.isPending) {
@@ -178,25 +196,36 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     {
       id: 'today',
       label: t('dashboard.forecast.todayLabel'),
-      value: metrics.discharges,
-      detail: t('dashboard.forecast.todayDetail', { confirmed: 6, pending: 2 }),
+      value: indicators?.stays.expectedDischarges24h ?? null,
+      detail: t('dashboard.forecast.todayDetail', {
+        confirmed: indicators?.stays.expectedDischarges24h ?? 0,
+        pending: indicators?.waiting.pending ?? 0,
+      }),
       tone: 'bg-emerald-50 text-emerald-700',
     },
     {
       id: 'next48Hours',
       label: t('dashboard.forecast.next48Label'),
-      value: metrics.next48Hours,
-      detail: t('dashboard.forecast.next48Detail', { count: 5 }),
+      value: indicators?.stays.expectedDischarges48h ?? null,
+      detail: t('dashboard.forecast.next48Detail', { count: forecast?.services.totalElements ?? 0 }),
       tone: 'bg-purple-50 text-purple-700',
     },
     {
       id: 'available',
       label: t('dashboard.forecast.availableLabel'),
-      value: metrics.available,
-      detail: t('dashboard.forecast.availableDetail', { time: '18:00' }),
+      value: indicators ? indicators.beds.available + indicators.stays.expectedDischarges48h : null,
+      detail: t('dashboard.forecast.availableDetail', { time: '—' }),
       tone: 'bg-amber-50 text-amber-700',
     },
   ]
+  const lengthOfStayForecast = indicators?.stays.averageLengthOfStayDays == null
+    ? []
+    : [{
+        condition: 'all',
+        minimumDays: indicators.stays.averageLengthOfStayDays,
+        maximumDays: indicators.stays.averageLengthOfStayDays,
+      }]
+  const serviceName = managerScope.root?.name ?? '—'
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
@@ -215,7 +244,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {t(`dashboard.scopes.${profileScope}.title`)}
           </h1>
           <p className="mt-1.5 text-sm text-gray-500">
-            {t(`dashboard.scopes.${profileScope}.description`, { service: SERVICE_NAME })}
+            {t(`dashboard.scopes.${profileScope}.description`, { service: serviceName })}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
@@ -321,23 +350,23 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           contentClassName="p-6"
         >
           <div className="mt-6 flex h-48 items-end gap-2 border-b border-gray-200 pt-6">
-            {DISCHARGE_FORECAST.map((item) => (
-              <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
+            {dischargeForecast.map((item) => (
+              <div key={item.hours} className="flex h-full min-w-0 flex-1 items-end justify-center">
                 <div
                   className="relative w-full max-w-32 rounded-t-md bg-blue-300"
-                  style={{ height: `${(item.count / maxForecast) * 100}%` }}
+                  style={{ height: `${(item.expectedDischarges / maxForecast) * 100}%` }}
                 >
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-700">
-                    {item.count}
+                    {item.expectedDischarges.toFixed(1)}
                   </span>
                 </div>
               </div>
             ))}
           </div>
           <div className="flex gap-2 pt-2">
-            {DISCHARGE_FORECAST.map((item) => (
-              <span key={item.day} className="flex-1 text-center text-xs font-medium text-gray-500">
-                {t(`dashboard.weekdays.${item.day}`)}
+            {dischargeForecast.map((item) => (
+              <span key={item.hours} className="flex-1 text-center text-xs font-medium text-gray-500">
+                {item.hours}h
               </span>
             ))}
           </div>
@@ -359,7 +388,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           onContentClick={() => setExpandedItem('lengthOfStay')}
           contentClassName="cursor-zoom-in overflow-x-auto"
         >
-          <HospitalStayByConditionTable forecasts={LENGTH_OF_STAY_FORECAST} />
+          <HospitalStayByConditionTable forecasts={lengthOfStayForecast} />
         </DashboardPanel>
       </section>
 
@@ -423,23 +452,23 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {expandedItem === 'discharges' && (
               <>
                 <div className="flex h-[min(55vh,480px)] items-end gap-4 border-b border-gray-200 px-4 pt-12 sm:gap-8">
-                  {DISCHARGE_FORECAST.map((item) => (
-                    <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                  {dischargeForecast.map((item) => (
+                    <div key={item.hours} className="flex h-full min-w-0 flex-1 items-end justify-center">
                       <div
                         className="relative w-full max-w-32 rounded-t-md bg-blue-300"
-                        style={{ height: `${(item.count / maxForecast) * 100}%` }}
+                        style={{ height: `${(item.expectedDischarges / maxForecast) * 100}%` }}
                       >
                         <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">
-                          {item.count}
+                          {item.expectedDischarges.toFixed(1)}
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-4 px-4 pt-3 sm:gap-8">
-                  {DISCHARGE_FORECAST.map((item) => (
-                    <span key={item.day} className="flex-1 text-center text-sm font-medium text-gray-500">
-                      {t(`dashboard.weekdays.${item.day}`)}
+                  {dischargeForecast.map((item) => (
+                    <span key={item.hours} className="flex-1 text-center text-sm font-medium text-gray-500">
+                      {item.hours}h
                     </span>
                   ))}
                 </div>
@@ -455,7 +484,7 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {expandedItem === 'lengthOfStay' && (
               <div className="overflow-x-auto">
                 <HospitalStayByConditionTable
-                  forecasts={LENGTH_OF_STAY_FORECAST}
+                  forecasts={lengthOfStayForecast}
                   expanded
                 />
               </div>

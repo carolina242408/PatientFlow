@@ -81,7 +81,7 @@ class DischargeInput(Contract):
 
 def predict_discharge(data: DischargeInput) -> dict:
     # stub, admissão + 3 dias. O modelo real entra aqui (mesma entrada/saída).
-    return {"expectedDischargeAt": data.admittedAt + timedelta(days=3), "modelVersion": "stub-v0"}
+    return {"expectedDischargeAt": data.admittedAt + timedelta(days=1), "modelVersion": "stub-v0"}
 
 
 @app.post("/v1/discharge-prediction")

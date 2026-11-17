@@ -23,7 +23,9 @@ function HospitalStayByConditionTable({
       key: 'condition',
       header: t('dashboard.lengthOfStay.condition'),
       rowHeader: true,
-      renderCell: ({ condition }) => t(`dashboard.lengthOfStay.conditions.${condition}`),
+      renderCell: ({ condition }) => condition === 'all'
+        ? t('dashboard.lengthOfStay.all')
+        : t(`dashboard.lengthOfStay.conditions.${condition}`),
     },
     {
       key: 'estimatedStay',
