@@ -20,6 +20,10 @@ public class AnalyticsController {
     public Alerts alerts(@ModelAttribute Scope scope) { return analytics.alerts(scope); }
     @GetMapping("/analytics/occupancy")
     public Occupancy occupancy(@ModelAttribute Scope scope) { return analytics.occupancy(scope); }
+    @GetMapping("/analytics/discharge-forecast")
+    public java.util.List<DischargeForecastDay> dischargeForecast(@ModelAttribute Scope scope) {
+        return analytics.dischargeForecast(scope);
+    }
     @GetMapping("/analytics/occupancy-forecast")
     public Forecast forecast(@ModelAttribute Scope scope,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size) {
         return analytics.forecast(scope,page,size);

@@ -10,11 +10,11 @@ import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
 import { useKeycloak } from '../auth/context'
 import {
   fetchBeds,
+  fetchDischargeForecast,
   fetchIndicators,
   fetchOccupancy,
   fetchOccupancyForecast,
   type BedView,
-  type ForecastHorizon,
 } from '../api/operational'
 import UpcomingDischargesTable, {
   type UpcomingDischarge,
@@ -31,6 +31,7 @@ type Scope = 'LHU' | 'Unit' | 'Service'
 const CRITICAL_THRESHOLD = 82
 
 const UPCOMING_WINDOW_MS = 72 * 60 * 60 * 1000 // 72h
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 
 // Altas previstas (modelo ou plano manual) entre agora e as próximas 72h.
 const toUpcomingDischarges = (beds: BedView[], language?: string): UpcomingDischarge[] => {
@@ -111,6 +112,12 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     enabled: Boolean(managerScope.root),
     refetchInterval: 60_000,
   })
+  const { data: dischargeByDay = [] } = useQuery({
+    queryKey: ['dashboard-discharge-forecast', managerScope.root?.id],
+    queryFn: () => fetchDischargeForecast(managerScope.scope),
+    enabled: Boolean(managerScope.root),
+    refetchInterval: 60_000,
+  })
   const { data: upcomingDischarges = [] } = useQuery({
     queryKey: ['beds', 'upcoming-discharges', managerScope.root?.id, i18n.resolvedLanguage],
     // O backend limita size a 100: só as primeiras 100 camas ocupadas do âmbito entram na tabela.
@@ -132,25 +139,8 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
     month: 'long',
   }).format(new Date())
 
-  const forecastHorizons = forecast?.services.content
-    .flatMap((service) => service.horizons)
-    .reduce<Record<number, ForecastHorizon>>((summary, horizon) => {
-      const current = summary[horizon.hours]
-      summary[horizon.hours] = current
-        ? { ...current, expectedDischarges: current.expectedDischarges + horizon.expectedDischarges }
-        : { ...horizon }
-      return summary
-    }, {})
-  const dischargeForecast = Object.values(forecastHorizons ?? {}).length > 0
-    ? Object.values(forecastHorizons ?? {}).sort((a, b) => a.hours - b.hours)
-    : indicators
-      ? [
-          { hours: 24, expectedAdmissions: 0, expectedDischarges: indicators.stays.expectedDischarges24h, projectedOccupied: 0, occupancyPercent: null, unmetDemand: 0 },
-          { hours: 48, expectedAdmissions: 0, expectedDischarges: indicators.stays.expectedDischarges48h, projectedOccupied: 0, occupancyPercent: null, unmetDemand: 0 },
-        ]
-      : []
-  const weekTotal = dischargeForecast.reduce((sum, item) => sum + item.expectedDischarges, 0)
-  const maxForecast = Math.max(...dischargeForecast.map((item) => item.expectedDischarges), 1)
+  const weekTotal = dischargeByDay.reduce((sum, item) => sum + item.expectedDischarges, 0)
+  const maxForecast = Math.max(...dischargeByDay.map((item) => item.expectedDischarges), 1)
   const serviceOccupancy = occupancy?.services.length
     ? occupancy.services
     : indicators
@@ -350,8 +340,8 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
           contentClassName="p-6"
         >
           <div className="mt-6 flex h-48 items-end gap-2 border-b border-gray-200 pt-6">
-            {dischargeForecast.map((item) => (
-              <div key={item.hours} className="flex h-full min-w-0 flex-1 items-end justify-center">
+            {dischargeByDay.map((item) => (
+              <div key={item.date} className="flex h-full min-w-0 flex-1 items-end justify-center">
                 <div
                   className="relative w-full max-w-32 rounded-t-md bg-blue-300"
                   style={{ height: `${(item.expectedDischarges / maxForecast) * 100}%` }}
@@ -364,9 +354,9 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             ))}
           </div>
           <div className="flex gap-2 pt-2">
-            {dischargeForecast.map((item) => (
-              <span key={item.hours} className="flex-1 text-center text-xs font-medium text-gray-500">
-                {item.hours}h
+            {dischargeByDay.map((item) => (
+              <span key={item.date} className="flex-1 text-center text-xs font-medium text-gray-500">
+                {t(`dashboard.weekdays.${WEEKDAY_KEYS[item.dayOfWeek - 1]}`)}
               </span>
             ))}
           </div>
@@ -452,8 +442,8 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
             {expandedItem === 'discharges' && (
               <>
                 <div className="flex h-[min(55vh,480px)] items-end gap-4 border-b border-gray-200 px-4 pt-12 sm:gap-8">
-                  {dischargeForecast.map((item) => (
-                    <div key={item.hours} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                  {dischargeByDay.map((item) => (
+                    <div key={item.date} className="flex h-full min-w-0 flex-1 items-end justify-center">
                       <div
                         className="relative w-full max-w-32 rounded-t-md bg-blue-300"
                         style={{ height: `${(item.expectedDischarges / maxForecast) * 100}%` }}
@@ -466,9 +456,9 @@ const Dashboard = ({ scope = 'LHU' }: DashboardProps) => {
                   ))}
                 </div>
                 <div className="flex gap-4 px-4 pt-3 sm:gap-8">
-                  {dischargeForecast.map((item) => (
-                    <span key={item.hours} className="flex-1 text-center text-sm font-medium text-gray-500">
-                      {item.hours}h
+                  {dischargeByDay.map((item) => (
+                    <span key={item.date} className="flex-1 text-center text-sm font-medium text-gray-500">
+                      {t(`dashboard.weekdays.${WEEKDAY_KEYS[item.dayOfWeek - 1]}`)}
                     </span>
                   ))}
                 </div>

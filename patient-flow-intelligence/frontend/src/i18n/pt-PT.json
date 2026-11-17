@@ -316,8 +316,8 @@
     },
     "forecastChart": {
       "title": "Previsão de altas",
-      "body": "Altas esperadas nos próximos horizontes de 24 e 48 horas",
-      "total": "Total nos horizontes apresentados",
+      "body": "Altas previstas por dia nos próximos sete dias",
+      "total": "Total previsto nos próximos sete dias",
       "patients_one": "{{count}} doente",
       "patients_other": "{{count}} doentes"
     },

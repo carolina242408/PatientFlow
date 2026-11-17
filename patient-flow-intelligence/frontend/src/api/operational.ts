@@ -137,6 +137,12 @@ export interface OccupancyForecast {
   }>
 }
 
+export interface DischargeForecastDay {
+  date: string
+  dayOfWeek: number
+  expectedDischarges: number
+}
+
 // ─── Funções de acesso à API ──────────────────────────────────────────────────
 
 /** Occupancy rows aggregated by service, unit, and wing within the authorized scope. */
@@ -157,6 +163,13 @@ export async function fetchOccupancyForecast(
 ): Promise<OccupancyForecast> {
   const { data } = await api.get<OccupancyForecast>('/analytics/occupancy-forecast', {
     params: { ...scope, page, size },
+  })
+  return data
+}
+
+export async function fetchDischargeForecast(scope: Scope = {}): Promise<DischargeForecastDay[]> {
+  const { data } = await api.get<DischargeForecastDay[]>('/analytics/discharge-forecast', {
+    params: scope,
   })
   return data
 }

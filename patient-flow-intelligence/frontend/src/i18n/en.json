@@ -316,8 +316,8 @@
     },
     "forecastChart": {
       "title": "Discharge patient prediction",
-      "body": "Expected discharges over the 24- and 48-hour horizons",
-      "total": "Total across displayed horizons",
+      "body": "Predicted discharges by day over the next seven days",
+      "total": "Predicted total over the next seven days",
       "patients_one": "{{count}} patient",
       "patients_other": "{{count}} patients"
     },
