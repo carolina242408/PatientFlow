@@ -23,22 +23,27 @@ logger = logging.getLogger("pfgen.publisher")
 
 
 def build_dataset_csv(episodes: list[Episode]) -> str:
-    """Generate CSV string containing: gender, diagnosis code, birthdate, admission date, discharge date."""
+    """Generate CSV string containing: gender, specialty, diagnosis code, birthdate, admission date, discharge date."""
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["gender", "diagnosis code", "birthdate", "admission date", "discharge date"])
+    # Adicionamos "specialty" ao cabeçalho
+    writer.writerow(["gender", "specialty", "diagnosis code", "birthdate", "admission date", "discharge date"])
 
     for ep in episodes:
         if ep.admit_time is None and ep.planned_discharge is None:
             continue
         gender = ep.patient.sex
+        # Recolhe a especialidade do episódio (por exemplo, ward.specialty ou specialty)
+        specialty = ep.specialty if hasattr(ep, "specialty") else ""
         diag_code = ep.diagnosis.code if ep.diagnosis else ""
         birthdate = ep.patient.birth_date.isoformat() if ep.patient.birth_date else ""
         admit_val = ep.admit_time or ep.arrival
         admit_dt = admit_val.isoformat(timespec="seconds")
         discharge_val = ep.discharge_time or ep.planned_discharge or admit_val
         discharge_dt = discharge_val.isoformat(timespec="seconds")
-        writer.writerow([gender, diag_code, birthdate, admit_dt, discharge_dt])
+        
+        # Escreve a linha incluindo a especialidade
+        writer.writerow([gender, specialty, diag_code, birthdate, admit_dt, discharge_dt])
 
     return output.getvalue()
 
