@@ -15,6 +15,7 @@ recebem apenas dados dos seus âmbitos. Filtros nunca ampliam esse acesso.
 | `GET /api/analytics/indicators` | `ulsId`, `unitId`, `serviceId`, `from`, `to` |
 | `GET /api/analytics/alerts` | `ulsId`, `unitId`, `serviceId` |
 | `GET /api/analytics/occupancy-forecast` | `ulsId`, `unitId`, `serviceId`, `page`, `size` |
+| `GET /api/analytics/discharge-forecast` | `ulsId`, `unitId`, `serviceId` |
 | `GET /api/admission-requests/{id}/bed-suggestions` | `preferredWardId`, `limit` |
 
 A análise agrega ULS, unidade ou serviço. `wardId` é rejeitado para evitar
@@ -171,6 +172,12 @@ com duas casas decimais, percentagem `null` com capacidade zero e `unmetDemand`
 quando há excesso de procura. `NO_OBSERVED_HISTORY` sinaliza ausência de eventos
 históricos usados; `OBSERVED_COUNTS_ONLY` não garante cobertura completa da
 janela. A falta de dados ou dados sintéticos limitam a interpretação.
+
+`GET /api/analytics/discharge-forecast` devolve os sete dias de calendário a
+partir do dia atual, incluindo zero nos dias sem altas planeadas. A contagem
+inclui apenas episódios `IN_PROGRESS` com `expected_discharge_at` entre o
+instante atual e o fim do sétimo dia; o agrupamento é feito no PostgreSQL e
+respeita o âmbito autorizado.
 
 ## Integração com algorithms e degradação
 
