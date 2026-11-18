@@ -47,6 +47,7 @@ patientflow:
     url: ${ALGORITHMS_URL:http://localhost:8000}
     connect-timeout: 500ms
     request-timeout: 1s
+    discharge-timeout: ${ALGORITHMS_DISCHARGE_TIMEOUT:30s}
   ingestion:
     enabled: ${INGESTION_ENABLED:false}
     hapi-fhir-url: ${HAPI_FHIR_URL:http://localhost:8081/fhir}

@@ -158,8 +158,59 @@ public class AnalyticsRepository {
                     case SERVICE, WING, WARD -> false;
                     default -> true;
                 }
+
             ? jdbc.query(unitSql,p,mapper) : List.<OccupancyRow>of();
         return new Occupancy(asOf,scope,0,jdbc.query(serviceSql,p,mapper),units,jdbc.query(wingSql,p,mapper));
+    }
+
+    public List<DischargeForecastDay> dischargeForecast(Scope scope, Instant now) {
+        validateScope(scope);
+        var p = access.parameters();
+        if (scope.ulsId() != null) p.put("uls", scope.ulsId());
+        if (scope.unitId() != null) p.put("unit", scope.unitId());
+        if (scope.serviceId() != null) p.put("service", scope.serviceId());
+        p.put("now", Timestamp.from(now));
+        String filter = where(scope, true);
+        return jdbc.query("""
+            WITH days AS (
+                SELECT generate_series(
+                    date_trunc('day', CAST(:now AS timestamptz)),
+                    date_trunc('day', CAST(:now AS timestamptz)) + interval '6 days',
+                    interval '1 day') AS day
+            ),
+            planned AS (
+                SELECT e.expected_discharge_at
+                FROM encounters e
+                LEFT JOIN LATERAL (
+                    SELECT bed_id FROM location_allocations la
+                    WHERE la.encounter_id=e.id
+                    ORDER BY la.assigned_at DESC,la.id DESC LIMIT 1
+                ) a ON true
+                LEFT JOIN beds b ON b.id=a.bed_id
+                LEFT JOIN rooms r ON r.id=b.room_id
+                LEFT JOIN wards w ON w.id=r.ward_id
+                LEFT JOIN wings wi ON wi.id=w.wing_id
+                LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,wi.service_id)
+                LEFT JOIN floors f ON f.id=s.floor_id
+                LEFT JOIN buildings bu ON bu.id=f.building_id
+                LEFT JOIN healthcare_units u ON u.id=bu.unit_id
+                """ + filter + """
+                AND e.status='IN_PROGRESS'
+                AND e.expected_discharge_at >= :now
+                AND e.expected_discharge_at < date_trunc('day', CAST(:now AS timestamptz)) + interval '7 days'
+            )
+            SELECT days.day::date AS discharge_day,
+                   EXTRACT(ISODOW FROM days.day)::int AS day_of_week,
+                   count(planned.expected_discharge_at) AS expected_discharges
+            FROM days
+            LEFT JOIN planned ON planned.expected_discharge_at >= days.day
+                AND planned.expected_discharge_at < days.day + interval '1 day'
+            GROUP BY days.day
+            ORDER BY days.day
+            """, p, (r, n) -> new DischargeForecastDay(
+                r.getDate("discharge_day").toLocalDate().toString(),
+                r.getInt("day_of_week"),
+                r.getLong("expected_discharges")));
     }
 
     public PageResult<ServiceInput> forecastInputs(Scope scope,Instant from,Instant now,int page,int size,AnalyticsSettings settings) {

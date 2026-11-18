@@ -205,7 +205,7 @@ public class IngestionPipelineService {
                     try {
                         postgresIngestion.predictDischarge(bundle, pgRes);
                     } catch (Exception ex) {
-                        log.warn("Discharge prediction failed (source={}): {}", source, ex.getMessage());
+                        log.warn("Discharge prediction failed; admission preserved");
                     }
                 }
             } catch (Exception ex) {
