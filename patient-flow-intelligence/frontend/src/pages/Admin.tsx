@@ -328,7 +328,7 @@ const Admin = () => {
         )
       case 'LOGOUT':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-600">
             <LogOut className="h-3 w-3" />
             {t('admin.events.LOGOUT')}
           </span>
