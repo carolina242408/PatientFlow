@@ -279,7 +279,7 @@
     },
     "forecast": {
       "badge": "Previsão",
-      "todayLabel": "Altas previstas hoje",
+      "todayLabel": "Altas previstas nas próximas 24 horas",
       "todayDetail": "{{confirmed}} confirmadas · {{pending}} pendentes",
       "next48Label": "Previsão para as próximas 48 horas",
       "next48Detail_one": "Em {{count}} serviço clínico",
@@ -301,7 +301,8 @@
     },
     "lengthOfStay": {
       "title": "Tempo de internamento estimado por condição",
-      "body": "Valores meramente ilustrativos; esta tabela será preenchida pelo modelo de previsão.",
+      "body": "Média observada das altas administrativas no período selecionado.",
+      "all": "Todos os serviços",
       "condition": "Condição",
       "estimatedStay": "Tempo de internamento estimado",
       "daysRange": "{{minimum}}-{{maximum}} dias",
@@ -315,8 +316,8 @@
     },
     "forecastChart": {
       "title": "Previsão de altas",
-      "body": "Altas esperadas nos próximos sete dias",
-      "total": "Total em sete dias",
+      "body": "Altas previstas por dia nos próximos sete dias",
+      "total": "Total previsto nos próximos sete dias",
       "patients_one": "{{count}} doente",
       "patients_other": "{{count}} doentes"
     },

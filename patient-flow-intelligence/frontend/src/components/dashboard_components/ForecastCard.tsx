@@ -2,7 +2,7 @@ import { Badge } from '@/components/Badge'
 
 export interface ForecastCardData {
   id: string
-  value: number
+  value: number | null
   label: string
   detail: string
   tone: string
@@ -21,7 +21,7 @@ function ForecastCard({ forecast, badgeLabel }: ForecastCardProps) {
       >
         {badgeLabel}
       </Badge>
-      <p className="mt-auto pt-2 text-3xl font-semibold text-slate-900">{forecast.value}</p>
+      <p className="mt-auto pt-2 text-3xl font-semibold text-slate-900">{forecast.value ?? '—'}</p>
       <p className="mt-1 text-sm font-medium text-gray-600">{forecast.label}</p>
       <p className="mt-1 text-xs text-gray-400">{forecast.detail}</p>
     </article>

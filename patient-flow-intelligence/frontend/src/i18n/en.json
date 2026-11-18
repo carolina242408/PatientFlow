@@ -279,7 +279,7 @@
     },
     "forecast": {
       "badge": "Forecast",
-      "todayLabel": "Predicted discharges today",
+      "todayLabel": "Predicted discharges in the next 24 hours",
       "todayDetail": "{{confirmed}} confirmed · {{pending}} pending",
       "next48Label": "Predicted next 48 hours",
       "next48Detail_one": "Across {{count}} clinical service",
@@ -301,7 +301,8 @@
     },
     "lengthOfStay": {
       "title": "Estimated hospital stay by condition",
-      "body": "Illustrative estimates only; this table will be populated by the forecast model.",
+      "body": "Observed average of administrative discharges in the selected period.",
+      "all": "All services",
       "condition": "Condition",
       "estimatedStay": "Estimated length of stay",
       "daysRange": "{{minimum}}-{{maximum}} days",
@@ -315,8 +316,8 @@
     },
     "forecastChart": {
       "title": "Discharge patient prediction",
-      "body": "Expected discharges over the next seven days",
-      "total": "Seven-day total",
+      "body": "Predicted discharges by day over the next seven days",
+      "total": "Predicted total over the next seven days",
       "patients_one": "{{count}} patient",
       "patients_other": "{{count}} patients"
     },
