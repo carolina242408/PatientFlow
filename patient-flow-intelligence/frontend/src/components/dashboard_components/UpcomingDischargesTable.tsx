@@ -12,8 +12,9 @@ export interface UpcomingDischarge {
   service: string
   day: string
   time: string
-  destination: Destination
-  status: DischargeStatus
+  // Sem dados no backend por agora: a tabela mostra "—".
+  destination?: Destination
+  status?: DischargeStatus
 }
 
 interface UpcomingDischargesTableProps {
@@ -63,12 +64,12 @@ function UpcomingDischargesTable({
     {
       key: 'destination',
       header: t('dashboard.discharges.columns.destination'),
-      renderCell: ({ destination }) => t(`dashboard.destinations.${destination}`),
+      renderCell: ({ destination }) => (destination ? t(`dashboard.destinations.${destination}`) : '—'),
     },
     {
       key: 'readiness',
       header: t('dashboard.discharges.columns.readiness'),
-      renderCell: ({ status }) => (
+      renderCell: ({ status }) => !status ? '—' : (
         <Badge
           className={`whitespace-nowrap rounded-full border-0 ${
             expanded ? 'px-3 py-1 text-sm' : 'px-2.5 py-1 text-xs'
@@ -84,7 +85,7 @@ function UpcomingDischargesTable({
     <DashboardTable
       columns={columns}
       rows={discharges}
-      getRowKey={({ patient }) => patient}
+      getRowKey={({ patient, room, bed }) => `${patient}-${room}-${bed}`}
       tableClassName={`${
         expanded ? 'min-w-[900px] border-collapse text-base text-left' : 'min-w-[720px] border-collapse text-left'
       }`}

@@ -202,6 +202,11 @@ public class IngestionPipelineService {
                     log.info("Ingested event [trigger={}] from {}: HAPI={} (HTTP {}), Postgres={}",
                             trigger != null ? trigger : "BUNDLE", source, hapiRes.stored(), hapiRes.statusCode(),
                             pgRes.detail());
+                    try {
+                        postgresIngestion.predictDischarge(bundle, pgRes);
+                    } catch (Exception ex) {
+                        log.warn("Discharge prediction failed; admission preserved");
+                    }
                 }
             } catch (Exception ex) {
                 log.warn("Failed to persist FHIR bundle into PostgreSQL via stored procedure (source={}): {}",

@@ -68,11 +68,67 @@
     "notifications": "Notifications",
     "unreadCount_one": "{{count}} unread",
     "unreadCount_other": "{{count}} unread",
-    "sampleNotifications": "Sample notifications — connect the notification service to load your alerts.",
+    "sampleNotifications": "Live notifications for your assigned hospital scope.",
+    "noNotifications": "No notifications yet",
+    "liveConnected": "Live",
+    "liveDisconnected": "Connecting...",
+    "clearAll": "Clear all",
+    "justNow": "Just now",
     "markAllRead": "Mark all as read",
     "markRead": "Mark as read",
     "unread": "Unread",
     "notificationItems": {
+      "bedStatusChanged": {
+        "title": "Bed status updated",
+        "body": "A bed status changed in your assigned scope.",
+        "specificTitle": "Bed {{bed}} updated",
+        "specificBody": "{{bed}} ({{location}}) is now {{status}}."
+      },
+      "patientAdmitted": {
+        "title": "Patient admitted",
+        "body": "A new patient has been admitted to a bed.",
+        "specificTitle": "Admission: {{patient}}",
+        "specificTitleGeneric": "Patient admitted",
+        "specificBody": "Admitted to {{location}}."
+      },
+      "patientDischarged": {
+        "title": "Patient discharged",
+        "body": "A patient discharge was completed.",
+        "specificTitle": "Discharge: {{patient}}",
+        "specificTitleGeneric": "Patient discharged",
+        "specificBody": "Discharge completed in {{service}}."
+      },
+      "patientTransferred": {
+        "title": "Patient transferred",
+        "body": "A patient was transferred to a new bed or service.",
+        "specificTitle": "Transfer: {{patient}}",
+        "specificTitleGeneric": "Patient transferred",
+        "specificBody": "Transferred to {{location}}."
+      },
+      "dischargePlanChanged": {
+        "title": "Discharge plan updated",
+        "body": "The expected discharge date or plan was updated.",
+        "specificTitle": "Discharge forecast: {{patient}}",
+        "specificBody": "Discharge forecast updated for {{service}}."
+      },
+      "clinicalDischargeRecorded": {
+        "title": "Clinical discharge recorded",
+        "body": "A clinical discharge was recorded for a patient.",
+        "specificTitle": "Clinical discharge: {{patient}}",
+        "specificBody": "Clinical discharge recorded in {{service}}."
+      },
+      "admissionRequest": {
+        "title": "Admission request updated",
+        "body": "An admission request status was updated."
+      },
+      "hierarchyChanged": {
+        "title": "Hierarchy updated",
+        "body": "Hospital structure changes were applied."
+      },
+      "accessChanged": {
+        "title": "Permissions updated",
+        "body": "Your access permissions were updated."
+      },
       "occupancy": {
         "title": "High occupancy alert",
         "body": "Cardiology is at 88% staffed-bed occupancy.",
