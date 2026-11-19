@@ -29,8 +29,8 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                 .requestMatchers("/ws/events").permitAll() // The handshake requires a one-use authenticated ticket.
                 .requestMatchers("/api/ingestion/**").permitAll() // Webhook do gerador de dados / HL7 ingestion
-                .requestMatchers("/api/account", "/api/access/me").authenticated()
-                .requestMatchers("/api/access/grants", "/api/access/grants/**", "/actuator/info").hasAuthority("ADMIN_ROLE")
+                .requestMatchers("/api/account", "/api/access/me", "/api/audit/events").authenticated()
+                .requestMatchers("/api/access/grants", "/api/access/grants/**", "/api/audit/**", "/actuator/info").hasAuthority("ADMIN_ROLE")
                 .requestMatchers("/api/**").hasAnyAuthority("ADMIN_ROLE", "MANAGER_ROLE")
                 .requestMatchers("/error").permitAll()
                 .anyRequest().denyAll())

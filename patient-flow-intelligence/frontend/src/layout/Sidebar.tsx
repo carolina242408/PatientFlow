@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { NavLink } from 'react-router'
+import { NavLink, useLocation } from 'react-router'
 import { useKeycloak, type AccessScopeType } from '../auth/context'
+import { recordAuditEvent } from '@/api/audit'
 import { Button } from '@/components/Button'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
@@ -17,7 +18,8 @@ import {
   ChevronLeft,
   LogOut,
   Info,
-  Network
+  Network,
+  ShieldCheck
 } from 'lucide-react'
 
 interface SidebarItem {
@@ -31,7 +33,10 @@ const getManagementSidebarItems = (
   scopeType: AccessScopeType | null = null,
 ): SidebarItem[] => {
   if (roles.includes('ADMIN_ROLE')) {
-    return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
+    return [
+      { labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network },
+      { labelKey: 'nav.auditLogs', path: '/admin', icon: ShieldCheck },
+    ]
   }
   if (roles.includes('MANAGER_ROLE') && scopeType) {
     return [
@@ -55,6 +60,7 @@ const getWorkspaceLabel = (roles: string[] = []): string => {
 
 const Sidebar = () => {
   const { keycloak, user } = useKeycloak()
+  const { pathname } = useLocation()
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
@@ -190,7 +196,15 @@ const Sidebar = () => {
         cancelLabel={t('nav.logoutConfirmation.cancel')}
         confirmLabel={t('nav.logout')}
         onClose={() => setLogoutConfirmationOpen(false)}
-        onConfirm={() => void keycloak.logout()}
+        onConfirm={() => {
+          void recordAuditEvent({
+            eventType: 'LOGOUT',
+            pagePath: pathname || '/',
+            pageTitle: 'User Logout',
+          }).finally(() => {
+            void keycloak.logout()
+          })
+        }}
       />
     </aside>
   )

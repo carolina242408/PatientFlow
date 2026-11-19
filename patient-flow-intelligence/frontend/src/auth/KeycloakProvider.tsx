@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
 import { fetchMyAccess } from '@/api/access'
+<<<<<<< HEAD
 import {
   getApplicationUrl,
   KeycloakContext,
   type KeycloakUser,
 } from './context'
+=======
+import { recordAuditEvent } from '@/api/audit'
+import { getApplicationUrl, KeycloakContext, type KeycloakUser } from './context'
+>>>>>>> origin/main
 import keycloak, { initKeycloak } from './keycloak'
 
 export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
@@ -31,6 +36,25 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
       scopes: access.scopes,
     })
     setError(null)
+
+    const sessionId =
+      (typeof token.sid === 'string' && token.sid) ||
+      (typeof token.session_state === 'string' && token.session_state) ||
+      token.sub ||
+      'session'
+    const storageKey = `pfi_audit_login_${sessionId}`
+    if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(storageKey)) {
+      sessionStorage.setItem(storageKey, new Date().toISOString())
+      void recordAuditEvent({
+        eventType: 'LOGIN',
+        pagePath: window.location.pathname || '/',
+        pageTitle: 'User Login',
+        details: {
+          authMethod: 'Keycloak OIDC',
+          roles: access.roles,
+        },
+      })
+    }
   }, [])
 
   useEffect(() => {

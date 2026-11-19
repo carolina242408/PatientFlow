@@ -7,10 +7,10 @@ name: patient-flow-intelligence
 
 services:
   # ------------------------------------------------------------
-  # Base de dados principal (backend + Keycloak)
+  # Base de dados principal (backend + Keycloak + TimescaleDB)
   # ------------------------------------------------------------
   postgresql:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: postgresql
     env_file: .env
     ports:
@@ -130,6 +130,8 @@ services:
       HAPI_FHIR_URL: ${HAPI_FHIR_URL:-http://hapi-fhir:8081/fhir}
       INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
       INGESTION_SOURCES: ${INGESTION_SOURCES:-http://data-generator:8001/api/hl7/live?delay_ms=500&loop=true}
+      AUDIT_LOG_TTL_DAYS: ${AUDIT_LOG_TTL_DAYS:-30}
+      AUDIT_CLEANUP_CRON: ${AUDIT_CLEANUP_CRON:-0 0 * * * *}
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
     networks:
