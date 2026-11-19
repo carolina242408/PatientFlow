@@ -143,6 +143,13 @@ export interface DischargeForecastDay {
   expectedDischarges: number
 }
 
+export interface ConditionStayMean {
+  code: string
+  name: string | null
+  meanDays: number
+  sampleCount: number
+}
+
 // ─── Funções de acesso à API ──────────────────────────────────────────────────
 
 /** Occupancy rows aggregated by service, unit, and wing within the authorized scope. */
@@ -170,6 +177,17 @@ export async function fetchOccupancyForecast(
 export async function fetchDischargeForecast(scope: Scope = {}): Promise<DischargeForecastDay[]> {
   const { data } = await api.get<DischargeForecastDay[]>('/analytics/discharge-forecast', {
     params: scope,
+  })
+  return data
+}
+
+export async function fetchStayByCondition(
+  scope: Scope = {},
+  from?: string,
+  to?: string,
+): Promise<ConditionStayMean[]> {
+  const { data } = await api.get<ConditionStayMean[]>('/analytics/stay-by-condition', {
+    params: { ...scope, ...(from ? { from } : {}), ...(to ? { to } : {}) },
   })
   return data
 }

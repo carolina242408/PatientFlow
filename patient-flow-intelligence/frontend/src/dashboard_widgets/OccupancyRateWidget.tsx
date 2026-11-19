@@ -3,19 +3,19 @@ import { Badge } from '@/components/Badge'
 
 type OccupancyScope = 'LHU' | 'Unit' | 'Service'
 
-interface OccupancySummaryWidgetProps {
+interface OccupancyRateWidgetProps {
   scope: OccupancyScope
   occupiedBeds: number
   totalBeds: number
   criticalThreshold: number
 }
 
-function OccupancySummaryWidget({
+function OccupancyRateWidget({
   scope,
   occupiedBeds,
   totalBeds,
   criticalThreshold,
-}: OccupancySummaryWidgetProps) {
+}: OccupancyRateWidgetProps) {
   const { t } = useTranslation()
   const occupancyPercent =
     totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 10000) / 100 : null
@@ -55,4 +55,4 @@ function OccupancySummaryWidget({
   )
 }
 
-export default OccupancySummaryWidget
+export default OccupancyRateWidget

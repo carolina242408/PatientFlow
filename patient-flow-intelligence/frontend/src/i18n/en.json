@@ -302,17 +302,9 @@
     "lengthOfStay": {
       "title": "Estimated hospital stay by condition",
       "body": "Observed average of administrative discharges in the selected period.",
-      "all": "All services",
       "condition": "Condition",
-      "estimatedStay": "Estimated length of stay",
-      "daysRange": "{{minimum}}-{{maximum}} days",
-      "conditions": {
-        "pneumonia": "Pneumonia",
-        "heartFailure": "Heart failure",
-        "angina": "Angina",
-        "arrhythmia": "Arrhythmia",
-        "cardiacObservation": "Cardiac observation"
-      }
+      "code": "Code",
+      "estimatedStay": "Estimated length of stay"
     },
     "forecastChart": {
       "title": "Discharge patient prediction",
@@ -351,7 +343,7 @@
       "medicationReview": "Medication review",
       "clinicalReview": "Clinical review"
     }
-  },
+},
   "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },
   "settings": {
     "title": "Interface preferences",

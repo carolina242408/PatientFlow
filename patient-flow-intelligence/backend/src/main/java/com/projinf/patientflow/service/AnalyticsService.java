@@ -73,6 +73,13 @@ public class AnalyticsService {
         return repository.dischargeForecast(scope, clock.instant());
     }
 
+    public List<ConditionStayMean> stayByCondition(Scope scope, Instant from, Instant to) {
+        Instant now = clock.instant();
+        if (to == null) to = now;
+        if (from == null) from = to.minus(Duration.ofDays(90));
+        return repository.stayByCondition(scope, from, to);
+    }
+
     public BedSuggestions suggestions(UUID requestId,UUID preferredWard,int limit) {
         if(limit<1 || limit>20) throw new IllegalArgumentException("limit entre 1 e 20");
         var request=queries.request(requestId); // Authorizes the request before exposing any candidates.

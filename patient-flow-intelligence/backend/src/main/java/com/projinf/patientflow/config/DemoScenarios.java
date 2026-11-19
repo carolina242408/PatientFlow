@@ -59,13 +59,14 @@ public class DemoScenarios implements CommandLineRunner {
             UUID bed=bed("stable-"+i,stableRoom,i==0?"OCCUPIED":i==1?"CLEANING":"AVAILABLE");
             if(i==0) stay("stable-0",stable,bed,now.minus(Duration.ofDays(1)),null,null,now.plus(Duration.ofHours(30)));
         }
+        String[] demoDiagnoses = {"J18.9", "I50.9", "K80.20", "I63.9", "N39.0"};
         for(int day=1;day<=14;day++) {
             Instant end=now.minus(Duration.ofDays(day)).minus(Duration.ofHours(2));
             stay("history-pressure-"+day,pressure,id("bed-pressure-7"),end.minus(Duration.ofHours(12)),end,
-                end.minus(Duration.ofHours(2+day%3)),null);
+                end.minus(Duration.ofHours(2+day%3)),null,demoDiagnoses[day % demoDiagnoses.length]);
             stay("history-recovery-"+day,recovery,id("bed-recovery-"+(5+day%3)),end.minus(Duration.ofDays(2)),end,
-                end.minus(Duration.ofHours(1)),null);
-            stay("history-stable-"+day,stable,id("bed-stable-"+(2+day%4)),end.minus(Duration.ofDays(1)),end,null,null);
+                end.minus(Duration.ofHours(1)),null,demoDiagnoses[(day + 1) % demoDiagnoses.length]);
+            stay("history-stable-"+day,stable,id("bed-stable-"+(2+day%4)),end.minus(Duration.ofDays(1)),end,null,null,demoDiagnoses[(day + 2) % demoDiagnoses.length]);
         }
         for(int i=0;i<5;i++) request("pressure-"+i,pressure,"EMERGENCY",1+i%3,
             now.minus(Duration.ofHours(6+i*2)),null);
@@ -99,9 +100,12 @@ public class DemoScenarios implements CommandLineRunner {
         jdbc.update("INSERT INTO patients(id,sns_number,full_name,gender) VALUES(?,?,?,?)",value,"DEMO-SNS-"+key,"Doente sintético "+key,"unknown"); return value;
     }
     private void stay(String key,UUID service,UUID bed,Instant start,Instant end,Instant clinical,Instant expected) {
+        stay(key,service,bed,start,end,clinical,expected,null);
+    }
+    private void stay(String key,UUID service,UUID bed,Instant start,Instant end,Instant clinical,Instant expected,String diagnosis) {
         UUID encounter=id("encounter-"+key);
-        jdbc.update("INSERT INTO encounters(id,visit_number,patient_id,status,start_period,end_period,clinical_discharge_at,expected_discharge_at,service_id)"
-            +" VALUES(?,?,?,?,?,?,?,?,?)",encounter,"DEMO-VISIT-"+key,patient(key),end==null?"IN_PROGRESS":"FINISHED",at(start),at(end),at(clinical),at(expected),service);
+        jdbc.update("INSERT INTO encounters(id,visit_number,patient_id,status,start_period,end_period,clinical_discharge_at,expected_discharge_at,service_id,diagnosis_code)"
+            +" VALUES(?,?,?,?,?,?,?,?,?,?)",encounter,"DEMO-VISIT-"+key,patient(key),end==null?"IN_PROGRESS":"FINISHED",at(start),at(end),at(clinical),at(expected),service,diagnosis);
         jdbc.update("INSERT INTO location_allocations(id,encounter_id,bed_id,assigned_at,discharged_at) VALUES(?,?,?,?,?)",
             id("allocation-"+key),encounter,bed,at(start),at(end));
     }

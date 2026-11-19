@@ -319,7 +319,7 @@ public class PostgresFhirIngestionService {
      */
     public void predictDischarge(JsonNode fhirBundle, PostgresIngestionResult result) {
         var encounterIds = result.events().stream()
-                .filter(e -> "PATIENT_ADMITTED".equals(e.type()) && "ENCOUNTER".equals(e.resource()))
+                .filter(e -> ("PATIENT_ADMITTED".equals(e.type()) || "PATIENT_DISCHARGED".equals(e.type())) && "ENCOUNTER".equals(e.resource()))
                 .map(EmittedEvent::id).distinct().toList();
         Map<String, JsonNode> resources = new HashMap<>();
         Map<String, JsonNode> encounters = new HashMap<>();
@@ -333,7 +333,25 @@ public class PostgresFhirIngestionService {
                 encounters.put(FhirToPostgresTransformer.extractVisitNumber(res), res);
             }
         }
+        // Persist all ICD-10 code→name mappings found in this bundle's Condition resources.
+        persistConditionMappings(resources);
+
         for (UUID encounterId : encounterIds) {
+            var visitNumbers = jdbc.queryForList("SELECT visit_number FROM encounters WHERE id = ?", String.class, encounterId);
+            if (!visitNumbers.isEmpty()) {
+                JsonNode enc = encounters.get(visitNumbers.getFirst());
+                if (enc != null) {
+                    String diag = dischargeDiagnosis(enc, resources);
+                    if (diag != null && !diag.isBlank()) {
+                        jdbc.update("UPDATE encounters SET diagnosis_code = ? WHERE id = ? AND diagnosis_code IS NULL", diag, encounterId);
+                    }
+                }
+            }
+        }
+        var admittedIds = result.events().stream()
+                .filter(e -> "PATIENT_ADMITTED".equals(e.type()) && "ENCOUNTER".equals(e.resource()))
+                .map(EmittedEvent::id).distinct().toList();
+        for (UUID encounterId : admittedIds) {
             // Read demographics from the persisted encounter's patient, never an
             // unrelated Patient/Condition elsewhere in a multi-patient bundle.
             var inputs = jdbc.query("""
@@ -423,6 +441,43 @@ public class PostgresFhirIngestionService {
             }
         }
         return codes.size() == 1 ? codes.iterator().next() : null;
+    }
+
+    /**
+     * Extracts all ICD-10 code→display mappings from FHIR Condition resources
+     * in the bundle and upserts them into the {@code conditions} table.
+     */
+    private void persistConditionMappings(Map<String, JsonNode> resources) {
+        Map<String, String[]> mappings = new HashMap<>();
+        for (JsonNode resource : resources.values()) {
+            if (!"Condition".equals(resource.path("resourceType").asString(""))) continue;
+            for (JsonNode coding : resource.path("code").path("coding").values()) {
+                String system = coding.path("system").asString("");
+                if (!Set.of("http://hl7.org/fhir/sid/icd-10", "http://hl7.org/fhir/sid/icd-10-cm").contains(system)) continue;
+                String code = coding.path("code").asString("").trim();
+                String display = coding.path("display").asString("").trim();
+                if (!code.isEmpty() && !display.isEmpty()) {
+                    mappings.putIfAbsent(code, new String[]{"ICD10", display});
+                }
+            }
+            // Also check the top-level code.text as a fallback display
+            String fallbackText = resource.path("code").path("text").asString("").trim();
+            if (!fallbackText.isEmpty()) {
+                for (JsonNode coding : resource.path("code").path("coding").values()) {
+                    String system = coding.path("system").asString("");
+                    if (!Set.of("http://hl7.org/fhir/sid/icd-10", "http://hl7.org/fhir/sid/icd-10-cm").contains(system)) continue;
+                    String code = coding.path("code").asString("").trim();
+                    if (!code.isEmpty() && !mappings.containsKey(code)) {
+                        mappings.put(code, new String[]{"ICD10", fallbackText});
+                    }
+                }
+            }
+        }
+        for (var entry : mappings.entrySet()) {
+            jdbc.update(
+                "INSERT INTO conditions (code, system, name) VALUES (?, ?, ?) ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name",
+                entry.getKey(), entry.getValue()[0], entry.getValue()[1]);
+        }
     }
 
     private void persistDischargePrediction(UUID encounterId, AlgorithmsClient.DischargeInput input) {

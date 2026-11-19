@@ -96,6 +96,12 @@ CREATE UNIQUE INDEX uq_open_allocation_bed ON location_allocations(bed_id)
 CREATE UNIQUE INDEX uq_open_allocation_encounter ON location_allocations(encounter_id)
     WHERE discharged_at IS NULL;
 
+CREATE TABLE conditions (
+    code VARCHAR(32) PRIMARY KEY, 
+    system  VARCHAR(16),
+    name    TEXT NOT NULL
+);
+
 CREATE INDEX ix_units_uls ON healthcare_units(uls_id);
 CREATE INDEX ix_buildings_unit ON buildings(unit_id);
 CREATE INDEX ix_floors_building ON floors(building_id);

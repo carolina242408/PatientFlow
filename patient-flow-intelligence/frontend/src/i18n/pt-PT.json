@@ -302,17 +302,9 @@
     "lengthOfStay": {
       "title": "Tempo de internamento estimado por condição",
       "body": "Média observada das altas administrativas no período selecionado.",
-      "all": "Todos os serviços",
       "condition": "Condição",
-      "estimatedStay": "Tempo de internamento estimado",
-      "daysRange": "{{minimum}}-{{maximum}} dias",
-      "conditions": {
-        "pneumonia": "Pneumonia",
-        "heartFailure": "Insuficiência cardíaca",
-        "angina": "Angina",
-        "arrhythmia": "Arritmia",
-        "cardiacObservation": "Observação cardíaca"
-      }
+      "code": "Código",
+      "estimatedStay": "Tempo de internamento estimado"
     },
     "forecastChart": {
       "title": "Previsão de altas",
@@ -351,7 +343,7 @@
       "medicationReview": "Revisão de medicação",
       "clinicalReview": "Revisão clínica"
     }
-  },
+},
   "admin": { "title": "Consola de administração", "body": "Área reservada a administradores." },
   "settings": {
     "title": "Preferências da interface",

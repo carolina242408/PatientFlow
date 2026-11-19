@@ -10,14 +10,14 @@ import { useKeycloak, type AccessScopeType } from '../auth/context'
 import type { UpcomingDischarge } from '@/components/dashboard_components/UpcomingDischargesTable'
 import type { ForecastCardData } from '@/components/dashboard_components/ForecastCard'
 import DischargeForecastBarChart from '@/components/dashboard_components/DischargeForecastBarChart'
-import HospitalStayByConditionTable from '@/components/dashboard_components/HospitalStayByConditionTable'
+import HospitalStayByConditionTable, { type HospitalStayForecast } from '@/components/dashboard_components/HospitalStayByConditionTable'
 import OccupancyBarChart from '@/components/dashboard_components/OccupancyBarChart'
 import UpcomingDischargesTable from '@/components/dashboard_components/UpcomingDischargesTable'
 import DischargeForecastWidget from '../dashboard_widgets/DischargeForecastWidget'
 import ForecastWidget from '../dashboard_widgets/ForecastWidget'
 import HospitalStayByConditionWidget from '../dashboard_widgets/HospitalStayByConditionWidget'
 import OccupancyWidget from '../dashboard_widgets/OccupancyWidget'
-import OccupancySummaryWidget from '../dashboard_widgets/OccupancySummaryWidget'
+import OccupancyRateWidget from '../dashboard_widgets/OccupancyRateWidget'
 import UpcomingDischargesWidget from '../dashboard_widgets/UpcomingDischargesWidget'
 import {
   getDashboardWidgets,
@@ -29,6 +29,7 @@ import {
   fetchIndicators,
   fetchOccupancy,
   fetchOccupancyForecast,
+  fetchStayByCondition,
   type BedView,
 } from '../api/operational'
 
@@ -37,7 +38,7 @@ type Scope = 'LHU' | 'Unit' | 'Service'
 const CRITICAL_THRESHOLD = 82
 
 const UPCOMING_WINDOW_MS = 72 * 60 * 60 * 1000 // 72h
-const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 // Altas previstas (modelo ou plano manual) entre agora e as próximas 72h.
 const toUpcomingDischarges = (beds: BedView[], language?: string): UpcomingDischarge[] => {
@@ -108,8 +109,9 @@ const Dashboard = () => {
       user?.roles.includes('MANAGER_ROLE') === true &&
       Boolean(managerScope.root),
     refetchInterval: 30_000,
+  })
   
-    const { data: indicators } = useQuery({
+  const { data: indicators } = useQuery({
     queryKey: ['dashboard-indicators', managerScope.root?.id],
     queryFn: () => fetchIndicators(managerScope.scope),
     enabled: Boolean(managerScope.root),
@@ -126,6 +128,13 @@ const Dashboard = () => {
   const { data: dischargeByDay = [] } = useQuery({
     queryKey: ['dashboard-discharge-forecast', managerScope.root?.id],
     queryFn: () => fetchDischargeForecast(managerScope.scope),
+    enabled: Boolean(managerScope.root),
+    refetchInterval: 60_000,
+  })
+
+  const { data: stayByCondition = [] } = useQuery({
+    queryKey: ['dashboard-stay-by-condition', managerScope.root?.id],
+    queryFn: () => fetchStayByCondition(managerScope.scope),
     enabled: Boolean(managerScope.root),
     refetchInterval: 60_000,
   })
@@ -151,8 +160,10 @@ const Dashboard = () => {
     month: 'long',
   }).format(new Date())
 
-  const weekTotal = dischargeByDay.reduce((sum, item) => sum + item.expectedDischarges, 0)
-  const maxForecast = Math.max(...dischargeByDay.map((item) => item.expectedDischarges), 1)
+  const dischargeForecast = dischargeByDay.map((item) => ({
+    day: WEEKDAY_KEYS[item.dayOfWeek - 1] ?? 'mon',
+    count: item.expectedDischarges,
+  }))
   const serviceOccupancy = occupancy?.services.length
     ? occupancy.services
     : indicators
@@ -168,21 +179,17 @@ const Dashboard = () => {
   const unitOccupancy = occupancy?.units ?? []
   const occupancyChartRows = profileScope === 'Service' ? wingOccupancy : serviceOccupancy
   const occupancyChartTranslation = profileScope === 'Service' ? 'dashboard.perWing' : 'dashboard.perService'
-  const occupancySummary = serviceOccupancy.reduce(
+  const occupancyRate = serviceOccupancy.reduce(
     (summary, item) => ({
       occupiedBeds: summary.occupiedBeds + item.occupied,
       totalBeds: summary.totalBeds + item.capacity,
     }),
     { occupiedBeds: 0, totalBeds: 0 },
   )
-  const occupancyPercent = indicators?.beds.occupancyPercent
-    ?? (occupancySummary.totalBeds > 0
-      ? Math.round((occupancySummary.occupiedBeds / occupancySummary.totalBeds) * 10000) / 100
-      : null)
+
   const criticalThreshold = indicators?.thresholds.occupancyCriticalPercent
     ?? occupancy?.criticalOccupancyPercent
     ?? CRITICAL_THRESHOLD
-  const occupancyGap = occupancyPercent === null ? null : criticalThreshold - occupancyPercent
 
   if (managerScope.isPending) {
     return <div className="p-6">{t('managerHierarchy.loading')}</div>
@@ -195,7 +202,7 @@ const Dashboard = () => {
   }
   if (!profileScope) return null
 
-  const metrics = SCOPE_METRICS[profileScope]
+  // const metrics = SCOPE_METRICS[profileScope]
 
   const forecasts: ForecastCardData[] = [
     {
@@ -223,22 +230,14 @@ const Dashboard = () => {
       tone: 'bg-amber-50 text-amber-700',
     },
   ]
-  const lengthOfStayForecast = indicators?.stays.averageLengthOfStayDays == null
-    ? []
-    : [{
-        condition: 'all',
-        minimumDays: indicators.stays.averageLengthOfStayDays,
-        maximumDays: indicators.stays.averageLengthOfStayDays,
-      }]
-  const serviceName = managerScope.root?.name ?? '—'
+  const lengthOfStayForecast: HospitalStayForecast[] = stayByCondition.map((item) => ({
+        code: item.code,
+        name: item.name,
+        minimumDays: Math.ceil(item.meanDays),
+        maximumDays: Math.ceil(item.meanDays),
+      }))
 
-  const occupancySummary = serviceOccupancy.reduce(
-    (summary, item) => ({
-      occupiedBeds: summary.occupiedBeds + item.occupied,
-      totalBeds: summary.totalBeds + item.capacity,
-    }),
-    { occupiedBeds: 0, totalBeds: 0 },
-  )
+  const serviceName = managerScope.root?.name ?? '—'
 
   const widgets: Record<DashboardWidgetId, ReactNode> = {
     occupancy: (
@@ -259,24 +258,24 @@ const Dashboard = () => {
         onExpand={() => setExpandedItem('unit')}
       />
     ),
-    occupancySummary: (
-      <OccupancySummaryWidget
+    occupancyRate: (
+      <OccupancyRateWidget
         scope={profileScope}
-        occupiedBeds={occupancySummary.occupiedBeds}
-        totalBeds={occupancySummary.totalBeds}
+        occupiedBeds={occupancyRate.occupiedBeds}
+        totalBeds={occupancyRate.totalBeds}
         criticalThreshold={criticalThreshold}
       />
     ),
     forecast: <ForecastWidget forecasts={forecasts} />,
     dischargeForecast: (
       <DischargeForecastWidget
-        forecast={DISCHARGE_FORECAST}
+        forecast={dischargeForecast}
         onExpand={() => setExpandedItem('discharges')}
       />
     ),
     hospitalStayByCondition: (
       <HospitalStayByConditionWidget
-        forecasts={LENGTH_OF_STAY_FORECAST}
+        forecasts={lengthOfStayForecast}
         onExpand={() => setExpandedItem('lengthOfStay')}
       />
     ),
@@ -318,10 +317,10 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {(hasWidget('occupancySummary') || hasWidget('forecast')) && (
+      {(hasWidget('occupancyRate') || hasWidget('forecast')) && (
         <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-4">
-          {hasWidget('occupancySummary') && (
-            <div className="2xl:col-span-1">{widgets.occupancySummary}</div>
+          {hasWidget('occupancyRate') && (
+            <div className="2xl:col-span-1">{widgets.occupancyRate}</div>
           )}
           {hasWidget('forecast') && (
             <div className="2xl:col-span-3">{widgets.forecast}</div>
@@ -403,7 +402,7 @@ const Dashboard = () => {
             )}
 
             {hasWidget('dischargeForecast') && expandedItem === 'discharges' && (
-              <DischargeForecastBarChart forecast={dischargeByDay} expanded />
+              <DischargeForecastBarChart forecast={dischargeForecast} expanded />
             )}
 
             {hasWidget('hospitalStayByCondition') && expandedItem === 'lengthOfStay' && (
@@ -427,12 +426,7 @@ const Dashboard = () => {
         )}
       </dialog>
 
-      {hasWidget('upcomingDischarges') && (
-        <UpcomingDischargesWidget
-          discharges={upcomingDischarges}
-          onExpand={() => setExpandedItem('upcomingDischarges')}
-        />
-      )}
+      {hasWidget('upcomingDischarges') && widgets.upcomingDischarges}
     </div>
   )
 }

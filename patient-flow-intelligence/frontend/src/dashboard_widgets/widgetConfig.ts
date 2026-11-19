@@ -4,14 +4,14 @@ export type DashboardWidgetId =
   | 'hospitalStayByCondition'
   | 'occupancy'
   | 'occupancyByUnit'
-  | 'occupancySummary'
+  | 'occupancyRate'
   | 'upcomingDischarges'
   | 'forecast'
   | 'dischargeForecast'
 
 export const DASHBOARD_WIDGETS_BY_GROUP = {
   LHU: [
-    'occupancySummary',
+    'occupancyRate',
     'forecast',
     'occupancy',
     'occupancyByUnit',
@@ -20,7 +20,7 @@ export const DASHBOARD_WIDGETS_BY_GROUP = {
     'upcomingDischarges',
   ],
   UNIT: [
-    'occupancySummary',
+    'occupancyRate',
     'forecast',
     'occupancy',
     'occupancyByUnit',
@@ -29,7 +29,7 @@ export const DASHBOARD_WIDGETS_BY_GROUP = {
     'upcomingDischarges',
   ],
   SERVICE: [
-    'occupancySummary',
+    'occupancyRate',
     'forecast',
     'occupancy',
     'dischargeForecast',
