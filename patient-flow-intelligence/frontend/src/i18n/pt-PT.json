@@ -343,6 +343,16 @@
       "pendingTransport": "Transporte pendente",
       "medicationReview": "Revisão de medicação",
       "clinicalReview": "Revisão clínica"
+    },
+    "exceededStay": {
+      "title": "Pacientes que ultrapassaram a estimativa de permanência",
+      "body": "Estes pacientes ficaram mais tempo do que a média de permanência para a sua condição diagnosticada.",
+      "patient": "Paciente",
+      "code": "Código",
+      "condition": "Condição",
+      "actual": "Permanência real (dias)",
+      "mean": "Média esperada (dias)",
+      "diff": "Excesso (dias)"
     }
   },
   "admin": {

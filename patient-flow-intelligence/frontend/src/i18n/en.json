@@ -343,6 +343,16 @@
       "pendingTransport": "Pending transport",
       "medicationReview": "Medication review",
       "clinicalReview": "Clinical review"
+    },
+    "exceededStay": {
+      "title": "Patients exceeding LOS estimate",
+      "body": "These patients stayed longer than the average length‑of‑stay for their diagnosed condition.",
+      "patient": "Patient",
+      "code": "Code",
+      "condition": "Condition",
+      "actual": "Actual stay (days)",
+      "mean": "Mean stay (days)",
+      "diff": "Overrun (days)"
     }
   },
   "admin": {

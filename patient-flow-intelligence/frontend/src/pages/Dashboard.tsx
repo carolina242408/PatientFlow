@@ -29,9 +29,11 @@ import {
   fetchIndicators,
   fetchOccupancy,
   fetchOccupancyForecast,
+  fetchPatientsExceededStay,
   fetchStayByCondition,
   type BedView,
 } from '../api/operational'
+import PatientsExceededStayWidget from '@/dashboard_widgets/PatientsExceededStayWidget'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
 
@@ -79,6 +81,7 @@ type DashboardItem =
   | 'discharges'
   | 'lengthOfStay'
   | 'upcomingDischarges'
+  | 'exceededStay'
 
 const getProfileScope = (scopeType: AccessScopeType | null): Scope | undefined => {
   switch (scopeType) {
@@ -147,6 +150,13 @@ const Dashboard = () => {
     select: (page) => toUpcomingDischarges(page.content, i18n.resolvedLanguage),
     // Sem cliente WebSocket no frontend: polling para a previsão aparecer sem refresh.
     refetchInterval: 10_000, // 10s
+  })
+
+  const { data: exceededStayPatients = [] } = useQuery({
+    queryKey: ['dashboard-patients-exceeded-stay', managerScope.root?.id],
+    queryFn: () => fetchPatientsExceededStay(managerScope.scope),
+    enabled: Boolean(managerScope.root),
+    refetchInterval: 60_000,
   })
 
   useEffect(() => {
@@ -283,6 +293,12 @@ const Dashboard = () => {
       <UpcomingDischargesWidget
         discharges={upcomingDischarges}
         onExpand={() => setExpandedItem('upcomingDischarges')}
+      />
+    ),
+    exceededStay: (
+      <PatientsExceededStayWidget
+        patients={exceededStayPatients}
+        onExpand={() => setExpandedItem('exceededStay')}
       />
     ),
   }
@@ -427,6 +443,11 @@ const Dashboard = () => {
       </dialog>
 
       {hasWidget('upcomingDischarges') && widgets.upcomingDischarges}
+      {hasWidget('exceededStay') && (
+        <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
+          <div>{widgets.exceededStay}</div>
+        </section>
+      )}
     </div>
   )
 }

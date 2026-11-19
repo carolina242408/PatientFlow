@@ -37,4 +37,8 @@ public class AnalyticsController {
     @GetMapping("/admission-requests/{id}/bed-suggestions")
     public BedSuggestions suggestions(@PathVariable UUID id,@RequestParam(required=false) UUID preferredWardId,
             @RequestParam(defaultValue="5") int limit) { return analytics.suggestions(id,preferredWardId,limit); }
+    @GetMapping("/analytics/patients-exceeded-stay")
+    public java.util.List<ExceededStayPatient> patientsExceededStay(@ModelAttribute Scope scope) {
+        return analytics.patientsExceededStay(scope);
+    }
 }

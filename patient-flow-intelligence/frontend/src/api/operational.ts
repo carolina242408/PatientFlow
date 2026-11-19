@@ -150,6 +150,16 @@ export interface ConditionStayMean {
   sampleCount: number
 }
 
+export interface ExceededStayPatient {
+  patientId: string
+  patientName: string | null
+  conditionCode: string
+  conditionName: string | null
+  actualDays: number
+  meanDays: number
+  diffDays: number
+}
+
 // ─── Funções de acesso à API ──────────────────────────────────────────────────
 
 /** Occupancy rows aggregated by service, unit, and wing within the authorized scope. */
@@ -189,6 +199,16 @@ export async function fetchStayByCondition(
   const { data } = await api.get<ConditionStayMean[]>('/analytics/stay-by-condition', {
     params: { ...scope, ...(from ? { from } : {}), ...(to ? { to } : {}) },
   })
+  return data
+}
+
+export async function fetchPatientsExceededStay(
+  scope: Scope = {}
+): Promise<ExceededStayPatient[]> {
+  const { data } = await api.get<ExceededStayPatient[]>(
+    '/analytics/patients-exceeded-stay',
+    { params: scope }
+  )
   return data
 }
 

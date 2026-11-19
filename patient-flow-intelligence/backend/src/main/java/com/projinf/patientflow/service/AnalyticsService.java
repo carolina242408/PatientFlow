@@ -80,6 +80,10 @@ public class AnalyticsService {
         return repository.stayByCondition(scope, from, to);
     }
 
+    public List<ExceededStayPatient> patientsExceededStay(Scope scope) {
+        return repository.findPatientsExceededStay(scope);
+    }
+
     public BedSuggestions suggestions(UUID requestId,UUID preferredWard,int limit) {
         if(limit<1 || limit>20) throw new IllegalArgumentException("limit entre 1 e 20");
         var request=queries.request(requestId); // Authorizes the request before exposing any candidates.
