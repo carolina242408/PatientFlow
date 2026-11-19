@@ -7,10 +7,10 @@ name: patient-flow-intelligence
 
 services:
   # ------------------------------------------------------------
-  # Base de dados principal (backend + Keycloak)
+  # Base de dados principal (backend + Keycloak + TimescaleDB)
   # ------------------------------------------------------------
   postgresql:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: postgresql
     env_file: .env
     ports:
@@ -60,8 +60,31 @@ services:
   algorithms:
     build: ./algorithms
     container_name: algorithms
-    ports:
-      - "8000:8000"
+    environment:
+      KUMO_DEVICE: cpu
+      KUMO_CONTEXT_ROWS: ${KUMO_CONTEXT_ROWS:-4096}
+    volumes:
+      - type: bind
+        source: ./algorithms/datasetgenerator/ml_hospital_consumption_87k.csv
+        target: /data/context.csv
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - algorithms-private
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" ]
+      interval: 15s
+      timeout: 10s
+      start_period: 10m
+      retries: 5
 
   # ------------------------------------------------------------
   # Gerador de Dados Sintéticos (Python/FastAPI - HL7 v2.5 + FHIR R4)
@@ -102,11 +125,17 @@ services:
       KEYCLOAK_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       ALGORITHMS_URL: http://algorithms:8000
+      ALGORITHMS_DISCHARGE_TIMEOUT: ${ALGORITHMS_DISCHARGE_TIMEOUT:-30s}
       DATA_GENERATOR_URL: http://data-generator:8001
       HAPI_FHIR_URL: ${HAPI_FHIR_URL:-http://hapi-fhir:8081/fhir}
       INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
       INGESTION_SOURCES: ${INGESTION_SOURCES:-http://data-generator:8001/api/hl7/live?delay_ms=500&loop=true}
+      AUDIT_LOG_TTL_DAYS: ${AUDIT_LOG_TTL_DAYS:-30}
+      AUDIT_CLEANUP_CRON: ${AUDIT_CLEANUP_CRON:-0 0 * * * *}
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    networks:
+      - default
+      - algorithms-private
     ports:
       - "8080:8080"
     volumes:
@@ -123,7 +152,7 @@ services:
       keycloak:
         condition: service_started
       algorithms:
-        condition: service_started
+        condition: service_healthy
       hapi-fhir-server:
         condition: service_started
 
@@ -264,6 +293,11 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+
+networks:
+  default:
+  algorithms-private:
+    internal: true
 
 volumes:
   pfi-postgres-data:
