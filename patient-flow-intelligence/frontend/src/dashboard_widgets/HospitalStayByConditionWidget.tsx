@@ -22,7 +22,7 @@ function HospitalStayByConditionWidget({
       expandLabel={t('dashboard.expandTable')}
       onExpand={onExpand}
       onContentClick={onExpand}
-      contentClassName="cursor-zoom-in overflow-x-auto overflow-y-auto"
+      contentClassName="relative min-h-64 flex-1 cursor-zoom-in"
     >
       <HospitalStayByConditionTable forecasts={forecasts} />
     </DashboardPanel>

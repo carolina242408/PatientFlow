@@ -26,11 +26,11 @@ function DashboardPanel({
   return (
     <article
       onClick={onClick}
-      className={`overflow-hidden rounded-2xl border border-gray-200 bg-white ${
+      className={`flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white ${
         onClick ? 'cursor-zoom-in' : ''
       }`}
     >
-      <header className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
+      <header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
           <p className="mt-1 text-sm text-gray-400">{description}</p>

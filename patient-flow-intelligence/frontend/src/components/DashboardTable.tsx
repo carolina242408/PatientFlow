@@ -21,6 +21,7 @@ interface DashboardTableProps<Row> {
   rows: readonly Row[]
   getRowKey: (row: Row) => Key
   tableClassName: string
+  containerClassName?: string
   expanded?: boolean
 }
 
@@ -30,9 +31,10 @@ function DashboardTable<Row>({
   getRowKey,
   tableClassName,
   expanded = false,
+  containerClassName,
 }: DashboardTableProps<Row>) {
   return (
-    <Table className={tableClassName}>
+    <Table className={tableClassName} containerClassName={containerClassName}>
       <TableHeader>
         <TableRow
           className={`bg-gray-50 ${
@@ -43,7 +45,7 @@ function DashboardTable<Row>({
             <TableHead
               key={column.key}
               scope="col"
-              className={`${expanded ? 'px-6 py-5' : `py-3 ${index === 0 ? 'px-6' : 'px-4'}`} ${
+              className={`sticky top-0 z-10 bg-gray-50 ${expanded ? 'px-6 py-5' : ` py-4 ${index === 0 ? 'px-6' : 'px-4'}`} ${
                 column.align === 'center' ? 'text-center' : 'text-left'
               }`}
             >

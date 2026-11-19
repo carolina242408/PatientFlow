@@ -406,7 +406,7 @@ const Dashboard = () => {
             )}
 
             {hasWidget('hospitalStayByCondition') && expandedItem === 'lengthOfStay' && (
-              <div className="overflow-x-auto">
+              <div>
                 <HospitalStayByConditionTable
                   forecasts={lengthOfStayForecast}
                   expanded

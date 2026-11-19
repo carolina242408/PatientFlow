@@ -30,7 +30,7 @@ function HospitalStayByConditionTable({
       key: 'code',
       header: t('dashboard.lengthOfStay.code', { defaultValue: 'Code' }),
       align: 'center',
-      renderCell: ({ code: code }) => code,
+      renderCell: ({ code }) => code,
     },
     {
       key: 'estimatedStay',
@@ -53,8 +53,9 @@ function HospitalStayByConditionTable({
     <DashboardTable
       columns={columns}
       rows={forecasts}
-      getRowKey={({ code: code }) => code}
+      getRowKey={({ code }) => code}
       tableClassName={`min-w-[480px] border-collapse${expanded ? ' text-base' : ''}`}
+      containerClassName={expanded ? 'max-h-[70vh] overflow-y-auto' : 'absolute inset-0 overflow-y-auto'}
       expanded={expanded}
     />
   )
