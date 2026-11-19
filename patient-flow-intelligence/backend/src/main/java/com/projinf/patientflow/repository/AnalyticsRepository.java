@@ -246,7 +246,6 @@ public class AnalyticsRepository {
             AND e.status='FINISHED'
             AND e.start_period IS NOT NULL
             AND e.end_period IS NOT NULL
-            AND e.end_period >= :from AND e.end_period < :to
             AND e.diagnosis_code IS NOT NULL
             GROUP BY e.diagnosis_code, c.name
             ORDER BY count(*) DESC, e.diagnosis_code

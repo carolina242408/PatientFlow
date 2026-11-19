@@ -344,10 +344,6 @@
       "medicationReview": "Revisão de medicação",
       "clinicalReview": "Revisão clínica"
     }
-<<<<<<< HEAD
-},
-  "admin": { "title": "Consola de administração", "body": "Área reservada a administradores." },
-=======
   },
   "admin": {
     "title": "Consola de Auditoria e Retenção",
@@ -504,7 +500,6 @@
       }
     }
   },
->>>>>>> origin/main
   "settings": {
     "title": "Preferências da interface",
     "body": "Escolhe o aspeto da consola de administração e o idioma que usa.",

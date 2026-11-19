@@ -344,10 +344,6 @@
       "medicationReview": "Medication review",
       "clinicalReview": "Clinical review"
     }
-<<<<<<< HEAD
-},
-  "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },
-=======
   },
   "admin": {
     "title": "Audit Logs & Retention Console",
@@ -504,7 +500,6 @@
       }
     }
   },
->>>>>>> origin/main
   "settings": {
     "title": "Interface preferences",
     "body": "Choose how the admin console looks and which language it uses.",

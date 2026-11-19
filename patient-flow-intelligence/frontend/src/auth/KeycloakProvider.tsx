@@ -1,16 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
 import { fetchMyAccess } from '@/api/access'
-<<<<<<< HEAD
-import {
-  getApplicationUrl,
-  KeycloakContext,
-  type KeycloakUser,
-} from './context'
-=======
 import { recordAuditEvent } from '@/api/audit'
 import { getApplicationUrl, KeycloakContext, type KeycloakUser } from './context'
->>>>>>> origin/main
 import keycloak, { initKeycloak } from './keycloak'
 
 export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
