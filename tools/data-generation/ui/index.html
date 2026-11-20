@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PatientFlow Data Generator — Config & Stream UI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f7fa;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      padding: 16px 20px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .api-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 850px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.05rem;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: #fff;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.875rem;
+    }
+
+    .checkbox-group label {
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: #ffffff;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #1f2937;
+      border-color: #d1d5db;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .cmd-box {
+      background: #111827;
+      color: #10b981;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-top: 10px;
+    }
+
+    .output-box {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.8rem;
+      height: 320px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .status-ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-err {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>PatientFlow Data Generator — Control Panel</h1>
+      </div>
+      <div class="api-bar">
+        <label for="baseUrl">Generator URL:</label>
+        <input type="text" id="baseUrl" value="http://localhost:8001" style="width: 210px;"
+          oninput="updateAllCommands()" />
+        <button class="btn-secondary" onclick="checkHealth()">Check Health</button>
+        <span id="healthBadge" class="status-badge">Not checked</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- 1. LIVE STREAM CONFIG (SSE) -->
+      <div class="card">
+        <h2>1. Live HL7 Stream (`GET /api/hl7/live`)</h2>
+        <div class="form-row">
+          <label for="sseDelay">Delay (ms):</label>
+          <input type="number" id="sseDelay" value="1000" min="10" max="10000" oninput="updateSseCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="sseLimit">Limit (messages):</label>
+          <input type="number" id="sseLimit" value="" min="1" max="500" placeholder="Empty = continuous forever"
+            oninput="updateSseCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="sseTrigger">Trigger Event:</label>
+          <select id="sseTrigger" onchange="updateSseCmd()">
+            <option value="">All (A01, A02, A03)</option>
+            <option value="A01">A01 — Admission</option>
+            <option value="A02">A02 — Bed Transfer</option>
+            <option value="A03">A03 — Discharge</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="sseLoop">Loop Mode:</label>
+          <select id="sseLoop" onchange="updateSseCmd()">
+            <option value="true" selected>true — Continuous real-time flow (until stopped)</option>
+            <option value="false">false — Single batch</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="sseAutoGen">Auto Generate:</label>
+          <select id="sseAutoGen" onchange="updateSseCmd()">
+            <option value="true" selected>true — Generate real-time patient flow</option>
+            <option value="false">false — Wait / Manual</option>
+          </select>
+        </div>
+
+        <div class="cmd-box" id="sseCmdPreview"></div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="startLiveStream()">Start Live Stream</button>
+          <button class="btn-danger" onclick="stopLiveStream(true)">Stop Stream</button>
+          <button class="btn-secondary" onclick="copyText('sseCmdPreview')">Copy curl.exe</button>
+        </div>
+      </div>
+
+      <!-- 2. SIMULATION GENERATOR CONFIG -->
+      <div class="card">
+        <h2>2. Generate Data (`POST /api/generate`)</h2>
+        <div class="form-row">
+          <label for="genDays">Simulation Days:</label>
+          <input type="number" id="genDays" value="7" min="1" max="365" oninput="updateGenCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="genWarmup">Warmup Days:</label>
+          <input type="number" id="genWarmup" value="3" min="0" max="60" oninput="updateGenCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="genPopulation">Population:</label>
+          <input type="text" id="genPopulation" value="20" placeholder="20 or auto" oninput="updateGenCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="genSeed">Random Seed:</label>
+          <input type="number" id="genSeed" value="42" oninput="updateGenCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="genNoSynthea">Engine Mode:</label>
+          <select id="genNoSynthea" onchange="updateGenCmd()">
+            <option value="true" selected>Lightweight Python (no_synthea=true)</option>
+            <option value="false">Full Java Synthea (no_synthea=false)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="genWarmupOut">Warmup Output:</label>
+          <select id="genWarmupOut" onchange="updateGenCmd()">
+            <option value="census" selected>census (Active inpatients at T0)</option>
+            <option value="full">full (Include all warmup events)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="genValidate">Validate HL7:</label>
+          <select id="genValidate" onchange="updateGenCmd()">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+          </select>
+        </div>
+
+        <div class="cmd-box" id="genCmdPreview"></div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="runGenerate()">Run Generator</button>
+          <button class="btn-secondary" onclick="copyText('genCmdPreview')">Copy curl.exe</button>
+        </div>
+      </div>
+
+      <!-- 3. WEBHOOK SUBSCRIPTION CONFIG -->
+      <div class="card">
+        <h2>3. Backend Webhook Subscription (`POST /api/subscriptions`)</h2>
+        <div class="form-row">
+          <label for="subUrl">Callback URL:</label>
+          <input type="text" id="subUrl" value="http://backend:8080/api/ingestion/messages" oninput="updateSubCmd()" />
+        </div>
+        <div class="form-row">
+          <label>Triggers:</label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" class="sub-trig" value="A01" checked onchange="updateSubCmd()" /> A01</label>
+            <label><input type="checkbox" class="sub-trig" value="A02" checked onchange="updateSubCmd()" /> A02</label>
+            <label><input type="checkbox" class="sub-trig" value="A03" checked onchange="updateSubCmd()" /> A03</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="subFormat">Payload Format:</label>
+          <select id="subFormat" onchange="updateSubCmd()">
+            <option value="json" selected>json (Metadata + HL7)</option>
+            <option value="hl7">hl7 (Raw HL7 text/plain)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="subAuto">Auto Stream:</label>
+          <select id="subAuto" onchange="updateSubCmd()">
+            <option value="true" selected>true — Stream immediately</option>
+            <option value="false">false — Wait for manual dispatch</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="subDelay">Delay (ms):</label>
+          <input type="number" id="subDelay" value="250" min="0" max="10000" oninput="updateSubCmd()" />
+        </div>
+
+        <div class="cmd-box" id="subCmdPreview"></div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="registerSubscription()">Send Subscription</button>
+          <button class="btn-secondary" onclick="listSubscriptions()">List Subscriptions</button>
+          <button class="btn-secondary" onclick="copyText('subCmdPreview')">Copy curl.exe</button>
+        </div>
+      </div>
+
+      <!-- 4. QUICK QUERY (HL7 & FHIR) -->
+      <div class="card">
+        <h2>4. Query HL7 & FHIR Resources (`GET`)</h2>
+        <div class="form-row">
+          <label for="queryEndpoint">Endpoint:</label>
+          <select id="queryEndpoint" onchange="updateQueryCmd()">
+            <option value="/api/hl7/messages">/api/hl7/messages (Paginated HL7 JSON)</option>
+            <option value="/api/hl7/stream">/api/hl7/stream (Raw stream.hl7)</option>
+            <option value="/api/simulation/summary">/api/simulation/summary (Simulation Stats)</option>
+            <option value="/api/fhir/hospital-locations">/api/fhir/hospital-locations (10 Beds & Wards FHIR)</option>
+            <option value="/api/fhir/patients">/api/fhir/patients (List Patient NS IDs)</option>
+            <option value="/api/csv">/api/csv (CSV Dataset: gender, diagnosis code, birthdate, admission date, discharge
+              date)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="queryLimit">Limit (if messages):</label>
+          <input type="number" id="queryLimit" value="5" min="1" max="1000" oninput="updateQueryCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="queryTrigger">Trigger Filter:</label>
+          <select id="queryTrigger" onchange="updateQueryCmd()">
+            <option value="">All</option>
+            <option value="A01">A01</option>
+            <option value="A02">A02</option>
+            <option value="A03">A03</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="queryPatientNs">Or Patient NS:</label>
+          <input type="text" id="queryPatientNs" placeholder="e.g. 1200001 (fetches /api/fhir/patients/{ns})"
+            oninput="updateQueryCmd()" />
+        </div>
+
+        <div class="cmd-box" id="queryCmdPreview"></div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="runQuery()">Fetch Data</button>
+          <button class="btn-secondary" onclick="copyText('queryCmdPreview')">Copy curl.exe</button>
+        </div>
+      </div>
+
+      <!-- 5. CSV DATASET GENERATOR & EXPORT -->
+      <div class="card">
+        <h2>5. CSV Dataset Generator (`gender, diagnosis code, birthdate, admission date, discharge date`)</h2>
+        <div class="form-row">
+          <label for="csvDays">Sim Days (Volume):</label>
+          <input type="number" id="csvDays" value="180" min="7" max="1000" oninput="updateCsvCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="csvRuns">Execuções (Runs/Loops):</label>
+          <input type="number" id="csvRuns" value="5" min="1" max="50" oninput="updateCsvCmd()" />
+        </div>
+        <div class="form-row">
+          <label for="csvRows">Preview Rows:</label>
+          <input type="number" id="csvRows" value="20" min="1" max="500" oninput="updateCsvCmd()" />
+        </div>
+
+        <div class="cmd-box" id="csvCmdPreview"></div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="generateAndSaveCsvToOutput()">Generate & Save to
+            output/dataset.csv</button>
+          <button class="btn-secondary" onclick="previewCsv()">Preview CSV</button>
+          <button class="btn-secondary" onclick="copyText('csvCmdPreview')">Copy curl.exe</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTPUT CONSOLE -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h2 style="border:none; margin:0; padding:0;">Live Output / Response Console</h2>
+        <button class="btn-secondary" onclick="clearOutput()">Clear Console</button>
+      </div>
+      <div id="outputConsole" class="output-box">Ready. Configure parameters above and click a button to run.</div>
+    </div>
+  </div>
+
+  <script>
+    let activeEventSource = null;
+
+    function getBaseUrl() {
+      return document.getElementById("baseUrl").value.replace(/\/+$/, "");
+    }
+
+    function logOutput(text, append = false) {
+      const box = document.getElementById("outputConsole");
+      if (append) {
+        box.textContent += text + "\n";
+        box.scrollTop = box.scrollHeight;
+      } else {
+        box.textContent = text;
+      }
+    }
+
+    function clearOutput() {
+      logOutput("");
+    }
+
+    function copyText(elementId) {
+      const text = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(text);
+    }
+
+    // 1. SSE URL & curl builder
+    function buildSseUrl() {
+      const base = getBaseUrl();
+      const params = new URLSearchParams();
+      const delay = document.getElementById("sseDelay").value;
+      const limit = document.getElementById("sseLimit").value;
+      const trigger = document.getElementById("sseTrigger").value;
+      const loop = document.getElementById("sseLoop").value;
+      const autoGen = document.getElementById("sseAutoGen").value;
+
+      if (delay) params.set("delay_ms", delay);
+      if (limit) params.set("limit", limit);
+      if (trigger) params.set("trigger", trigger);
+      params.set("loop", loop === "true" ? "true" : "false");
+      if (autoGen === "true") params.set("auto_generate", "true");
+
+      return `${base}/api/hl7/live?${params.toString()}`;
+    }
+
+    function updateSseCmd() {
+      const url = buildSseUrl();
+      document.getElementById("sseCmdPreview").textContent = `curl.exe -N "${url}"`;
+    }
+
+    function startLiveStream() {
+      stopLiveStream(false);
+      const url = buildSseUrl();
+      logOutput(`Connecting to SSE stream: ${url}\n----------------------------------------\n`, false);
+
+      activeEventSource = new EventSource(url);
+      ["hl7_a01", "hl7_a02", "hl7_a03"].forEach((evtName) => {
+        activeEventSource.addEventListener(evtName, (e) => {
+          try {
+            const payload = JSON.parse(e.data);
+            logOutput(
+              `[${payload.msh_time}] ${payload.trigger} | Episode: ${payload.episode} | NS: ${payload.ns}\n${payload.hl7.trim()}\n`,
+              true
+            );
+          } catch (err) {
+            logOutput(e.data, true);
+          }
+        });
+      });
+
+      activeEventSource.onerror = () => {
+        logOutput("\n[Stream finished or closed]", true);
+        stopLiveStream(false);
+      };
+    }
+
+      function stopLiveStream(notifyServer = true) {
+        if (activeEventSource) {
+          activeEventSource.close();
+          activeEventSource = null;
+        }
+        if (notifyServer) {
+          fetch(`${getBaseUrl()}/api/hl7/live/stop`, { method: "POST" }).catch(() => { });
+          logOutput("\n[Stream stopped by user]", true);
+        }
+      }
+
+      // 2. Generate Payload & curl builder
+      function getGenPayload() {
+        return {
+          days: parseInt(document.getElementById("genDays").value || "7", 10),
+          warmup_days: parseInt(document.getElementById("genWarmup").value || "3", 10),
+          population: document.getElementById("genPopulation").value || "20",
+          seed: parseInt(document.getElementById("genSeed").value || "42", 10),
+          no_synthea: document.getElementById("genNoSynthea").value === "true",
+          warmup_output: document.getElementById("genWarmupOut").value,
+          validate: document.getElementById("genValidate").value === "true",
+        };
+      }
+
+      function updateGenCmd() {
+        const url = `${getBaseUrl()}/api/generate`;
+        const jsonStr = JSON.stringify(getGenPayload());
+        document.getElementById("genCmdPreview").textContent =
+          `curl.exe -X POST "${url}" -H "Content-Type: application/json" -d '${jsonStr}'`;
+      }
+
+      async function runGenerate() {
+        const url = `${getBaseUrl()}/api/generate`;
+        const payload = getGenPayload();
+        logOutput(`Running POST ${url} ...`);
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          logOutput(JSON.stringify(data, null, 2));
+          checkHealth();
+        } catch (err) {
+          logOutput(`Error: ${err}`);
+        }
+      }
+
+      // 3. Subscription Payload & curl builder
+      function getSubPayload() {
+        const triggers = Array.from(document.querySelectorAll(".sub-trig:checked")).map((el) => el.value);
+        return {
+          url: document.getElementById("subUrl").value,
+          triggers: triggers.length ? triggers : null,
+          format: document.getElementById("subFormat").value,
+          auto_stream: document.getElementById("subAuto").value === "true",
+          delay_ms: parseInt(document.getElementById("subDelay").value || "250", 10),
+        };
+      }
+
+      function updateSubCmd() {
+        const url = `${getBaseUrl()}/api/subscriptions`;
+        const jsonStr = JSON.stringify(getSubPayload());
+        document.getElementById("subCmdPreview").textContent =
+          `curl.exe -X POST "${url}" -H "Content-Type: application/json" -d '${jsonStr}'`;
+      }
+
+      async function registerSubscription() {
+        const url = `${getBaseUrl()}/api/subscriptions`;
+        const payload = getSubPayload();
+        logOutput(`Registering subscription at ${url} ...`);
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          logOutput(JSON.stringify(data, null, 2));
+          checkHealth();
+        } catch (err) {
+          logOutput(`Error: ${err}`);
+        }
+      }
+
+      async function listSubscriptions() {
+        const url = `${getBaseUrl()}/api/subscriptions`;
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (err) {
+          logOutput(`Error: ${err}`);
+        }
+      }
+
+      // 4. Query Endpoint builder
+      function buildQueryUrl() {
+        const base = getBaseUrl();
+        const ns = document.getElementById("queryPatientNs").value.trim();
+        if (ns) {
+          return `${base}/api/fhir/patients/${encodeURIComponent(ns)}`;
+        }
+        const ep = document.getElementById("queryEndpoint").value;
+        if (ep === "/api/hl7/messages") {
+          const params = new URLSearchParams();
+          const limit = document.getElementById("queryLimit").value;
+          const trig = document.getElementById("queryTrigger").value;
+          if (limit) params.set("limit", limit);
+          if (trig) params.set("trigger", trig);
+          return `${base}${ep}?${params.toString()}`;
+        }
+        return `${base}${ep}`;
+      }
+
+      function updateQueryCmd() {
+        const url = buildQueryUrl();
+        document.getElementById("queryCmdPreview").textContent = `curl.exe "${url}"`;
+      }
+
+      async function runQuery() {
+        const url = buildQueryUrl();
+        logOutput(`Fetching GET ${url} ...`);
+        try {
+          const res = await fetch(url);
+          const contentType = res.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const data = await res.json();
+            logOutput(JSON.stringify(data, null, 2));
+          } else {
+            const text = await res.text();
+            logOutput(text);
+          }
+        } catch (err) {
+          logOutput(`Error: ${err}`);
+        }
+      }
+
+      async function checkHealth() {
+        const badge = document.getElementById("healthBadge");
+        try {
+          const res = await fetch(`${getBaseUrl()}/health`);
+          const data = await res.json();
+          badge.className = "status-badge status-ok";
+          badge.textContent = `Online (${data.messages_in_memory} msgs)`;
+        } catch (e) {
+          badge.className = "status-badge status-err";
+          badge.textContent = "Offline";
+        }
+      }
+
+      // 5. CSV Dataset functions (saves directly to server output/ directory, no browser download)
+      function updateCsvCmd() {
+        const base = getBaseUrl();
+        const days = document.getElementById("csvDays")?.value || "180";
+        const runs = document.getElementById("csvRuns")?.value || "5";
+        document.getElementById("csvCmdPreview").textContent = `curl.exe -X POST "${base}/api/csv/generate?days=${days}&runs=${runs}"`;
+      }
+
+      async function generateAndSaveCsvToOutput() {
+        const base = getBaseUrl();
+        const days = parseInt(document.getElementById("csvDays")?.value || "180", 10);
+        const runs = parseInt(document.getElementById("csvRuns")?.value || "1", 10);
+
+        const url = `${base}/api/csv/generate?days=${days}&runs=${runs}`;
+        logOutput(`Running simulation (${days} days x ${runs} runs) to generate dataset directly to output/dataset.csv ...`);
+
+        try {
+          const res = await fetch(url, { method: "POST" });
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          const data = await res.json();
+          logOutput(`[Success] Dataset generated using simulation engine and saved directly to ${data.relative_path} (${data.rows} total rows in ${data.runs || runs} runs)!
+Location: ${data.file}
+Columns: ${data.columns.join(", ")}
+`);
+          await previewCsv();
+        } catch (err) {
+          logOutput(`Error generating dataset CSV: ${err}`);
+        }
+      }
+
+      async function previewCsv() {
+        const url = `${getBaseUrl()}/api/csv`;
+        const maxRows = parseInt(document.getElementById("csvRows")?.value || "20", 10);
+        logOutput(`Loading preview from output/dataset.csv ...`, true);
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          const text = await res.text();
+          const lines = text.trim().split("\n");
+          const header = lines[0];
+          const rows = lines.slice(1, maxRows + 1);
+          let preview = `\n[Preview] output/dataset.csv (${lines.length - 1} total rows):\n----------------------------------------\n${header}\n`;
+          rows.forEach((r) => {
+            preview += `${r}\n`;
+          });
+          if (lines.length - 1 > maxRows) {
+            preview += `... and ${lines.length - 1 - maxRows} more rows in output/dataset.csv.\n`;
+          }
+          logOutput(preview, true);
+        } catch (err) {
+          logOutput(`Error previewing CSV: ${err}`, true);
+        }
+      }
+
+      function updateAllCommands() {
+        updateSseCmd();
+        updateGenCmd();
+        updateSubCmd();
+        updateQueryCmd();
+        updateCsvCmd();
+      }
+
+      // Initialize default base URL if served from the generator container itself
+      if (window.location.protocol.startsWith("http") && window.location.port === "8001") {
+        document.getElementById("baseUrl").value = window.location.origin;
+      }
+      updateAllCommands();
+      checkHealth();
+  </script>
+</body>
+
+</html>

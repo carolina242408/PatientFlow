@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
-import { useKeycloak } from '../auth/context'
+import { useKeycloak, type AccessScopeType } from '../auth/context'
+import { Button } from '@/components/Button'
+import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
 import logoIcon from '/assets/app-logo.png'
 
@@ -24,24 +26,28 @@ interface SidebarItem {
   icon: LucideIcon
 }
 
-const getManagementSidebarItems = (roles: string[] = []): SidebarItem[] => {
-  if (roles.includes('ROLE_ADMIN')) {
+const getManagementSidebarItems = (
+  roles: string[] = [],
+  scopeType: AccessScopeType | null = null,
+): SidebarItem[] => {
+  if (roles.includes('ADMIN_ROLE')) {
     return [{ labelKey: 'nav.lhuHierarchy', path: '/lhu-hierarchy', icon: Network }]
   }
-  if (roles.includes('LHU_MANAGER')) {
-    return [{ labelKey: 'nav.lhu', path: '/lhu', icon: House }]
-  }
-  if (roles.includes('UNIT_MANAGER')) {
-    return [{ labelKey: 'nav.unit', path: '/unit', icon: House }]
-  }
-  if (roles.includes('SERVICE_MANAGER')) {
-    return [{ labelKey: 'nav.service', path: '/service', icon: House }]
+  if (roles.includes('MANAGER_ROLE') && scopeType) {
+    return [
+      { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
+      {
+        labelKey: scopeType ? `nav.scopeLevels.${scopeType}` : 'nav.noScope',
+        path: '/manager-hierarchy',
+        icon: House,
+      }
+    ]
   }
   return []
 }
 
 const getWorkspaceLabel = (roles: string[] = []): string => {
-  if (roles.includes('ROLE_ADMIN')) return 'nav.workspace.admin'
+  if (roles.includes('ADMIN_ROLE')) return 'nav.workspace.admin'
   else return 'nav.workspace.manager'
 }
 
@@ -52,19 +58,12 @@ const Sidebar = () => {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
-  const logoutDialogRef = useRef<HTMLDialogElement>(null)
-  const managementItems = getManagementSidebarItems(user?.roles)
+  const managementItems = getManagementSidebarItems(user?.roles, user?.scopeType)
   const workspaceLabelKey = getWorkspaceLabel(user?.roles)
   const userRoles = user?.roles ?? []
 
-  useEffect(() => {
-    const dialog = logoutDialogRef.current
-    if (logoutConfirmationOpen && dialog && !dialog.open) dialog.showModal()
-  }, [logoutConfirmationOpen])
-
   const sections : Record<string, SidebarItem[]> = {
     Menu: [
-      { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard},
       ...managementItems,
     ],
     Settings: [
@@ -92,21 +91,22 @@ const Sidebar = () => {
           </div>
         )}
         
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setCollapsed((c) => !c)}
           className="absolute -right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-slate-400 shadow-sm hover:bg-gray-50 hover:text-slate-600 z-10"
           title={t(collapsed ? 'nav.expand' : 'nav.collapse')}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        </Button>
       </div>
 
       {/* Main Menu */}
       <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-5 ${collapsed ? 'px-2' : 'px-3'}`}>
         {Object.entries(sections).map(([section, items]) => {
           const filteredItems = items.filter((item) => {
-            const isAdmin = userRoles.includes('ROLE_ADMIN')
+            const isAdmin = userRoles.includes('ADMIN_ROLE')
             if (isAdmin && item.path === '/dashboard') {
               return false
             }
@@ -147,21 +147,22 @@ const Sidebar = () => {
       {/* Footer */}
       <div className={`border-t border-gray-100 py-4 ${collapsed ? 'px-2' : 'px-3'}`}>
         {/* Logout Button */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setLogoutConfirmationOpen(true)}
-          className={`mb-1 flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[14px] font-semibold text-red-600 transition-colors hover:bg-red-50 ${
+          className={`mb-1 flex w-full items-center justify-start gap-3.5 rounded-xl px-3.5 py-2.5 text-left text-[14px] font-semibold text-red-600 transition-colors hover:bg-red-50 ${
             collapsed ? 'justify-center px-0' : ''
           }`}
           title={collapsed ? t('nav.logout') : undefined}
         >
           <LogOut className="h-4 w-4 shrink-0 object-contain sidebar-icon-danger" />
           {!collapsed && (
-            <span className="overflow-hidden whitespace-nowrap text-ellipsis">
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
               {t('nav.logout')}
             </span>
           )}
-        </button>
+        </Button>
 
         {/* Help Center Link */}
         <NavLink
@@ -181,47 +182,16 @@ const Sidebar = () => {
           )}
         </NavLink>
       </div>
-      <dialog
-        ref={logoutDialogRef}
-        aria-labelledby="logout-confirmation-title"
-        aria-describedby="logout-confirmation-description"
+      <ConfirmationDialog
+        open={logoutConfirmationOpen}
+        title={t('nav.logoutConfirmation.title')}
+        description={t('nav.logoutConfirmation.description')}
+        icon={<LogOut aria-hidden="true" className="h-9 w-9" />}
+        cancelLabel={t('nav.logoutConfirmation.cancel')}
+        confirmLabel={t('nav.logout')}
         onClose={() => setLogoutConfirmationOpen(false)}
-        className="logout-confirmation-dialog w-[calc(100%-2rem)] max-w-[500px] rounded-2xl border-0 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/40"
-      >
-        <div className="p-8 sm:p-10">
-          <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-600">
-            <LogOut aria-hidden="true" className="h-9 w-9" />
-          </div>
-          <h2
-            id="logout-confirmation-title"
-            className="text-center text-2xl font-bold text-slate-900"
-          >
-            {t('nav.logoutConfirmation.title')}
-          </h2>
-          <p
-            id="logout-confirmation-description"
-            className="mt-3 text-center text-base text-slate-500"
-          >
-            {t('nav.logoutConfirmation.description')}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 border-t border-gray-200 pt-7 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => logoutDialogRef.current?.close()}
-              className="h-14 flex-1 rounded-xl border border-gray-200 bg-gray-100 px-5 text-base font-semibold text-slate-700 transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              {t('nav.logoutConfirmation.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => keycloak.logout()}
-              className="h-14 flex-1 rounded-xl bg-red-500 px-5 text-base font-semibold text-white shadow-md transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-            >
-              {t('nav.logout')}
-            </button>
-          </div>
-        </div>
-      </dialog>
+        onConfirm={() => void keycloak.logout()}
+      />
     </aside>
   )
 }

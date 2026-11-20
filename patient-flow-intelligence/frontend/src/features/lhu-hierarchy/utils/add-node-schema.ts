@@ -1,12 +1,7 @@
 import { z } from "zod"
 import type { OrgType } from "../types/tree"
-import {
-  CONNECTIVITY,
-  OPERATIONAL_STATUSES,
-  RESOURCE_SUBTYPES,
-  RESPONSIBLE_SERVICES,
-} from "./form-options"
-import { getAncestors, isResourceType } from "./org-types"
+import { OPERATIONAL_STATUSES, ROOM_TYPES } from "./form-options"
+import { getAncestors } from "./org-types"
 
 // Error messages are keys under lhuHierarchy.form.validation, translated by FieldMessage.
 export function buildAddNodeSchema(type: OrgType) {
@@ -21,17 +16,10 @@ export function buildAddNodeSchema(type: OrgType) {
     name: z.string().trim().min(1, "required"),
     internalCode: z.string().trim(),
     status: z.enum(OPERATIONAL_STATUSES),
-    service: z.enum(RESPONSIBLE_SERVICES),
     notes: z.string(),
   })
 
-  if (!isResourceType(type)) return base
-
-  return base.extend({
-    subtype: z.enum(RESOURCE_SUBTYPES),
-    connectivity: z.enum(CONNECTIVITY),
-    capacity: z.coerce.number().int().min(1, "min"),
-  })
+  return type === "room" ? base.extend({ roomType: z.enum(ROOM_TYPES) }) : base
 }
 
 export type AddNodeValues = {
@@ -39,29 +27,23 @@ export type AddNodeValues = {
   name: string
   internalCode: string
   status: (typeof OPERATIONAL_STATUSES)[number]
-  service: (typeof RESPONSIBLE_SERVICES)[number]
   notes: string
-  subtype?: (typeof RESOURCE_SUBTYPES)[number]
-  connectivity?: (typeof CONNECTIVITY)[number]
-  capacity?: number
+  roomType?: (typeof ROOM_TYPES)[number]
 }
 
-export function getDefaultValues(type: OrgType): AddNodeValues {
+export function getDefaultValues(
+  type: OrgType,
+  parentIds: Partial<Record<OrgType, string>> = {},
+): AddNodeValues {
   const values: AddNodeValues = {
-    parents: Object.fromEntries(getAncestors(type).map((a) => [a, ""])),
+    parents: Object.fromEntries(getAncestors(type).map((a) => [a, parentIds[a] ?? ""])),
     name: "",
     internalCode: "",
     status: "operational",
-    service: "cardiology",
     notes: "",
   }
 
-  if (isResourceType(type))
-    Object.assign(values, {
-      subtype: "standard",
-      connectivity: "connected",
-      capacity: 1,
-    })
+  if (type === "room") values.roomType = "NURSERY_ROOM"
 
   return values
 }

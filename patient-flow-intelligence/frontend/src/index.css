@@ -117,7 +117,7 @@
   color: #b91c1c;
 }
 
-.logout-confirmation-dialog {
+.confirmation-dialog {
   position: fixed;
   inset: 0;
   margin: auto;
@@ -145,33 +145,33 @@
   background-color: #1f2937 !important;
 }
 
-.theme-dark .logout-confirmation-dialog,
-.theme-dark .logout-confirmation-dialog > div {
+.theme-dark .confirmation-dialog,
+.theme-dark .confirmation-dialog > div {
   border-color: #374151 !important;
   background-color: #111827 !important;
   color: #e2e8f0 !important;
 }
 
-.theme-dark .logout-confirmation-dialog h2 {
+.theme-dark .confirmation-dialog h2 {
   color: #f8fafc !important;
 }
 
-.theme-dark .logout-confirmation-dialog p {
+.theme-dark .confirmation-dialog p {
   color: #cbd5e1 !important;
 }
 
-.theme-dark .logout-confirmation-dialog > div > div:first-child {
+.theme-dark .confirmation-dialog > div > div:first-child {
   background-color: #451a1a !important;
   color: #fca5a5 !important;
 }
 
-.theme-dark .logout-confirmation-dialog button:first-child {
+.theme-dark .confirmation-dialog button:first-child {
   border-color: #475569 !important;
   background-color: #1f2937 !important;
   color: #e2e8f0 !important;
 }
 
-.theme-dark .logout-confirmation-dialog button:first-child:hover {
+.theme-dark .confirmation-dialog button:first-child:hover {
   background-color: #374151 !important;
 }
 
@@ -255,6 +255,11 @@
   .bg-violet-100
 ) {
   background-color: #1e293b !important;
+}
+
+.theme-dark .theme-light-swatch {
+  background-color: #fffbeb !important;
+  border-color: #fef3c7 !important;
 }
 
 .theme-dark :is(

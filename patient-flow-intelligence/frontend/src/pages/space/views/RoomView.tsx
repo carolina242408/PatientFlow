@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Armchair, BedSingle, CalendarDays, HeartPulse, RefreshCw, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { Button } from '@/components/Button'
+import { Input } from '@/components/Input'
 import type { ResourceType, ViewProps } from '../types'
 import { STATUS_STYLES, initialsOf } from '../utils'
 
@@ -49,10 +51,13 @@ const RoomView = ({ node, open }: ViewProps) => {
     time: new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(updatedAt),
   })
 
-  const formatAdmitted = (iso: string) =>
-    new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric' }).format(
-      new Date(`${iso}T00:00:00`),
-    )
+  const formatAdmitted = (iso?: string) => {
+    if (!iso) return '—'
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso)
+    return Number.isNaN(date.getTime())
+      ? '—'
+      : new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric' }).format(date)
+  }
 
   // Ex: "6 beds", ou "6 beds, 1 chair" quando a sala possui múltiplos tipos de recursos
   const items = types
@@ -67,21 +72,22 @@ const RoomView = ({ node, open }: ViewProps) => {
             aria-hidden="true"
             className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
           />
-          <input
+          <Input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('space.searchPlaceholder')}
             aria-label={t('space.searchPlaceholder')}
-            className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="h-auto w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 focus-visible:border-blue-600 focus-visible:ring-blue-100"
           />
         </label>
 
         <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
           <CalendarDays aria-hidden="true" className="h-4 w-4 shrink-0" />
           <span>{lastUpdate}</span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             // TODO: refetch the room data here
             onClick={() => setUpdatedAt(new Date())}
             aria-label={t('space.refresh')}
@@ -89,7 +95,7 @@ const RoomView = ({ node, open }: ViewProps) => {
             className="rounded-md p-1 text-blue-600 transition-colors hover:bg-blue-50"
           >
             <RefreshCw className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -180,10 +186,12 @@ const RoomView = ({ node, open }: ViewProps) => {
                           {resource.occupant.name}
                         </p>
                         <p className="truncate text-xs text-gray-500">
-                          {t('space.ageDiagnosis', {
-                            age: resource.occupant.age,
-                            diagnosis: resource.occupant.diagnosis,
-                          })}
+                          {resource.occupant.age === undefined
+                            ? resource.occupant.diagnosis || '—'
+                            : t('space.ageDiagnosis', {
+                                age: resource.occupant.age,
+                                diagnosis: resource.occupant.diagnosis || '—',
+                              })}
                         </p>
                       </div>
                     </div>

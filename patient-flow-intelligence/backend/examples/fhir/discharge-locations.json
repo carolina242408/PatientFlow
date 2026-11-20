@@ -1,0 +1,29 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          { "system": "https://www.sns.gov.pt/numero-utente", "value": "123456789" },
+          { "system": "urn:hospital:process-number", "value": "P-001" }
+        ],
+        "name": [{ "given": ["Maria"], "family": "Silva" }],
+        "birthDate": "1950-04-12",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Encounter",
+        "status": "finished",
+        "identifier": [{ "system": "urn:hospital:visit-number", "value": "V-2026-0001" }],
+        "period": { "start": "2026-10-20T10:00:00Z", "end": "2026-10-24T09:00:00Z" }
+      }
+    },
+    { "resource": { "resourceType": "Location", "name": "Ward 30004", "physicalType": { "coding": [{ "code": "wa" }] } } },
+    { "resource": { "resourceType": "Location", "name": "Room 7005", "physicalType": { "coding": [{ "code": "ro" }] } } },
+    { "resource": { "resourceType": "Location", "name": "Bed MAC", "physicalType": { "coding": [{ "code": "bd" }] } } }
+  ]
+}

@@ -1,0 +1,58 @@
+# =============================================================================
+# Layout do hospital simulado (editável) - Configurado para 10 camas
+#
+# Cada enfermaria (ward) tem um código de serviço que é usado em:
+#   PV1-3.1  ponto de cuidados   (ex.: 30004^7001^001^...)
+#   PV1-10   serviço hospitalar  (ex.: 30004)
+# tal como nas mensagens de exemplo do hl7-fhir-converter.
+#
+# rooms pode ser:
+#   - um gerador:  {count: 2, beds_per_room: 2, first_number: 7001}
+#   - uma lista explícita: [{number: 7001, label: "SALA 1", beds: 2}, ...]
+# stretchers = macas de recurso (corredor) usadas só em sobrelotação.
+# mixed_sex  = quartos podem misturar sexos (UCI / boxes individuais).
+# =============================================================================
+
+institution:
+  name: "Hospital Sintético do Minho, E.P.E."
+  facility: INST                 # MSH-4 / MSH-6 / EVN-7
+  sending_application: HOS       # MSH-3 e autoridade dos identificadores (NS, processo, episódio)
+  receiving_application: HL7_DEFAULT   # MSH-5
+  servicing_facility: "10004"    # PV1-39
+  financial_entity: { code: "935601", name: SNS }   # IN1-2
+  building: 1
+
+# Urgência: origem dos internamentos urgentes (PV1-6 no A01)
+emergency:
+  code: "10015"
+  name: URGENCIA
+
+# Origem dos internamentos programados (PV1-6 no A01)
+outpatient:
+  code: "10020"
+  name: CONSULTA EXTERNA
+
+wards:
+  - code: "30004"
+    name: MEDICINA INTERNA A
+    specialty: MED
+    floor: 7
+    rooms: { count: 2, beds_per_room: 2, first_number: 7001 }
+    stretchers: 1
+
+  - code: "30006"
+    name: CIRURGIA GERAL
+    specialty: CIR
+    floor: 4
+    rooms: { count: 2, beds_per_room: 2, first_number: 4019 }
+    stretchers: 1
+
+  - code: "30020"
+    name: MEDICINA INTENSIVA
+    specialty: UCI
+    floor: 2
+    mixed_sex: true
+    stretchers: 0
+    rooms:
+      - { number: 2001, label: "BOX 1", beds: 1 }
+      - { number: 2002, label: "BOX 2", beds: 1 }

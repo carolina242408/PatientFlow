@@ -1,18 +1,18 @@
 import type { OrgType } from "../types/tree"
 
-export const PREMISE_TYPES: OrgType[] = ["lhu", "unit", "building", "floor", "ward", "nursery", "room"]
-export const RESOURCE_TYPES: OrgType[] = ["bed", "operating-room", "treatment-chair"]
+export const PREMISE_TYPES: OrgType[] = ["lhu", "unit", "building", "floor", "service", "wing", "ward", "room"]
+export const RESOURCE_TYPES: OrgType[] = ["bed", "treatment-chair"]
 
 export const PARENT_TYPE: Record<OrgType, OrgType | null> = {
   lhu: null,
   unit: "lhu",
   building: "unit",
   floor: "building",
-  ward: "floor",
-  nursery: "ward",
-  room: "nursery",
+  service: "floor",
+  wing: "service",
+  ward: "wing",
+  room: "ward",
   bed: "room",
-  "operating-room": "floor",
   "treatment-chair": "ward",
 }
 

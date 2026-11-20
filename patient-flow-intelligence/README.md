@@ -11,26 +11,46 @@ docker-compose.yml  infraestrutura de desenvolvimento
 
 ## Como correr
 
-Pré-requisitos: Docker, Node 20+, JDK 21+ (`export JAVA_HOME=$(/usr/libexec/java_home -v 21)` no macOS).
+Para desenvolver o backend no host: Docker, JDK 21+ e `JAVA_HOME` configurado.
 
 ```bash
 cp .env.example .env               # credenciais de desenvolvimento
-docker compose up -d                 # Postgres, Keycloak, RabbitMQ, Redis, HAPI FHIR, MinIO, algorithms
-cd backend && ./mvnw spring-boot:run # http://localhost:8080
-cd frontend && npm install && npm run dev   # http://localhost:5173
+docker compose up -d postgresql keycloak algorithms
+cd backend
+./mvnw spring-boot:run              # http://localhost:8080; perfil normal sem seed
 ```
 
-Abre `http://localhost:5173` e entra com `admin/admin` (ROLE_ADMIN) ou `user/user` (ROLE_USER).
+No PowerShell usar `./mvnw.cmd`. O realm de desenvolvimento é importado de
+`keycloak/realm`; gerir as contas/papéis no Keycloak. Um realm já existente
+não é sobrescrito pela importação no arranque. Um gestor precisa do papel
+Keycloak e de um grupo organizacional compatível no claim `groups` do JWT.
+A atribuição faz-se no Keycloak e exige renovar o token;
+`/api/access/grants` mantém apenas registos legados, sem efeito na autorização.
+Ver [SECURITY.md](backend/SECURITY.md).
+
+Criar ULS, unidade ou serviço pela API exige credenciais de administração
+Keycloak no backend. O Compose de desenvolvimento injeta-as a partir de `.env`;
+ao executar no host, exportar `KEYCLOAK_ADMIN_USERNAME` e
+`KEYCLOAK_ADMIN_PASSWORD` antes do arranque, conforme
+[backend/README.md](backend/README.md#executar).
+
+Para executar também o frontend e o backend em contentores, na pasta
+`patient-flow-intelligence`:
+
+```sh
+docker compose up -d --build
+```
+
+Usar este modo ou o backend no host, pois ambos usam a porta 8080.
 
 | Serviço | URL |
 |---|---|
-| Frontend | http://localhost:5173 |
+| Frontend (integração parcial) | http://localhost:5173 |
 | Backend API | http://localhost:8080/api |
 | Keycloak admin | http://localhost:9080 (admin/admin) |
 | algorithms | http://localhost:8000/health |
 | HAPI FHIR | http://localhost:8081 |
 | RabbitMQ UI | http://localhost:15672 (pfi/pfi) |
-| MinIO console | http://localhost:9001 (pfi/pfi12345) |
 
 Credenciais de desenvolvimento em `.env` (criado a partir de `.env.example`, não vai para o git).
 
@@ -49,3 +69,20 @@ cd certs
 ```
 openssl req -x509 -out localhostCertificate.pem -keyout localhostKey.pem -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -extensions EXT -config <(printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
 ```
+O fluxo atual usa diretamente PostgreSQL, Keycloak e algorithms. RabbitMQ, Redis
+e HAPI FHIR existem no Compose alargado, mas não constituem integrações ativas
+do fluxo atual. A definição MinIO está comentada e a consola não é iniciada.
+O backend expõe indicadores, decisões determinísticas `rules-v1` e eventos
+WebSocket. O frontend já consulta hierarquia, camas, ocupantes e episódios;
+o dashboard mantém dados fixos e ainda não consome as APIs analíticas nem os
+eventos WebSocket. Modelos treinados são trabalho futuro.
+
+A hierarquia atual é ULS → unidade → edifício → piso → serviço → ala →
+enfermaria → quarto → cama. A migração V2 foi alterada; não está garantida a
+atualização de bases que tenham aplicado a hierarquia anterior. Os testes Java
+foram removidos nesta fase; os exemplos FHIR para verificação manual estão no
+[README do backend](backend/README.md#exemplos-autónomos).
+
+Contratos: [API/FHIR](backend/README.md), [gestão operacional](backend/OPERATIONS.md),
+[permissões/eventos](backend/SECURITY.md), [indicadores/algoritmos](backend/ANALYTICS.md).
+Trabalho futuro sobre modelos inteligentes: [PLAN.md](backend/PLAN.md).

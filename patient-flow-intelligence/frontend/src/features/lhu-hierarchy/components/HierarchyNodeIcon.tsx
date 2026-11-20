@@ -6,7 +6,6 @@ import {
   HospitalIcon,
   LayersIcon,
   NetworkIcon,
-  SettingsIcon,
   StethoscopeIcon,
   UserIcon,
   type LucideIcon,
@@ -19,11 +18,11 @@ const NODE_ICONS: Record<OrgNode["type"], LucideIcon> = {
   unit: HospitalIcon,
   building: Building2Icon,
   floor: LayersIcon,
+  service: StethoscopeIcon,
+  wing: LayersIcon,
   ward: BedDoubleIcon,
-  nursery: StethoscopeIcon,
   room: DoorClosedIcon,
   bed: BedIcon,
-  "operating-room": SettingsIcon,
   "treatment-chair": UserIcon,
 }
 

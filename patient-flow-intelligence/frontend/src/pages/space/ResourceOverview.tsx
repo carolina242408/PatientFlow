@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/Button'
+import { Badge } from '@/components/Badge'
 import type { ViewProps } from './types'
 import { collectBeds, countBeds, sumResources } from './utils'
 
@@ -6,7 +8,7 @@ import { collectBeds, countBeds, sumResources } from './utils'
 // "Continue to…" list. LHU, unit, building and floor all share this layout.
 const ResourceOverview = ({ node, open }: ViewProps) => {
   const { t } = useTranslation()
-  const beds = countBeds(collectBeds(node))
+  const beds = node.bedCounts ?? countBeds(collectBeds(node))
   const res = sumResources(node)
   const nextLevel = node?.children?.[0]?.level
 
@@ -50,11 +52,9 @@ const ResourceOverview = ({ node, open }: ViewProps) => {
       <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {cards.map((card) => (
           <article key={card.key} className="rounded-2xl border border-gray-200 bg-white p-6">
-            <span
-              className={`inline-block rounded-lg px-3 py-1.5 text-sm font-medium ${card.badge}`}
-            >
+            <Badge className={`rounded-lg border-0 px-3 py-1.5 text-sm font-medium ${card.badge}`}>
               {t(`space.resources.${card.key}`)}
-            </span>
+            </Badge>
             <p className="mt-5 text-4xl font-semibold text-slate-900">{card.total}</p>
             <p className="mt-3 text-sm text-gray-500">
               {card.parts
@@ -73,13 +73,14 @@ const ResourceOverview = ({ node, open }: ViewProps) => {
           <ul className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
             {(node.children ?? []).map((child) => (
               <li key={child.id}>
-                <button
+                <Button
                   type="button"
+                  variant="link"
                   onClick={() => open(child)}
-                  className="text-lg font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
+                  className="h-auto p-0 text-lg font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
                 >
                   {child.name}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

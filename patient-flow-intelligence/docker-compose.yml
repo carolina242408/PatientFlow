@@ -1,7 +1,7 @@
 # Patient Flow Intelligence — infraestrutura de desenvolvimento
 # Uso: docker compose up -d
 # Só infra: docker compose up -d postgresql keycloak
-# Frontend (npm run dev) e backend (./mvnw spring-boot:run) correm localmente.
+# Frontend e backend correm em containers.
 
 name: patient-flow-intelligence
 
@@ -61,9 +61,73 @@ services:
   # ------------------------------------------------------------
   algorithms:
     build: ./algorithms
-    container_name: pfi-algorithms
+    container_name: algorithms
     ports:
       - "8000:8000"
+
+  # ------------------------------------------------------------
+  # Gerador de Dados Sintéticos (Python/FastAPI - HL7 v2.5 + FHIR R4)
+  # ------------------------------------------------------------
+  data-generator:
+    build:
+      context: ../tools/data-generation
+      dockerfile: ./Dockerfile
+    container_name: pfi-data-generator
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../tools/data-generation/pfgen:/app/pfgen:ro
+      - ../tools/data-generation/config:/app/config:ro
+      - ../tools/data-generation/ui:/app/ui:ro
+      - ../tools/data-generation/output:/app/output
+      - ../tools/data-generation/.cache:/app/.cache
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------
+  # Backend Spring Boot
+  # ------------------------------------------------------------
+  backend:
+    build: ./backend
+    container_name: backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgresql:5432/patientflow
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KEYCLOAK_ISSUER_URI: http://localhost:9080/realms/patientflow
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/patientflow/protocol/openid-connect/certs
+      KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8080
+      KEYCLOAK_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      ALGORITHMS_URL: http://algorithms:8000
+      DATA_GENERATOR_URL: http://data-generator:8001
+      HAPI_FHIR_URL: ${HAPI_FHIR_URL:-http://hapi-fhir:8081/fhir}
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
+      INGESTION_SOURCES: ${INGESTION_SOURCES:-http://data-generator:8001/api/hl7/live?delay_ms=500&loop=true}
+      WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../tools/hl7-fhir-converter:/app/converter:ro
+    healthcheck:
+      test: [ "CMD", "java", "-cp", "/app", "Healthcheck" ]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 12
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      algorithms:
+        condition: service_started
+      hapi-fhir-server:
+        condition: service_started
 
   # ------------------------------------------------------------
   # RabbitMQ (mensagens entre serviços)
@@ -123,13 +187,16 @@ services:
     image: hapiproject/hapi:latest
     container_name: hapi-fhir
     ports:
-      - "8081:8080"
+      - "8081:8081"
     environment:
       spring.datasource.url: jdbc:postgresql://hapi-fhir-postgres:5432/hapi
       spring.datasource.username: hapi
       spring.datasource.password: hapi
       spring.datasource.driverClassName: org.postgresql.Driver
       spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
+      server.port: 8081
+      hapi.fhir.server_address: http://localhost:8081/fhir
+      hapi.fhir.tester.home.server_address: http://localhost:8081/fhir
       hapi.fhir.fhir_version: R4
       hapi.fhir.default_encoding: json
       hapi.fhir.allow_multiple_delete: "true"
@@ -138,24 +205,24 @@ services:
       hapi-fhir-postgres:
         condition: service_healthy
 
-  # ------------------------------------------------------------
-  # MinIO (armazenamento S3)
-  # ------------------------------------------------------------
-  minio:
-    image: pgsty/silo:latest
-    container_name: minio
-    command: server /data --console-address ":9001"
-    env_file: .env
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - pfi-minio-data:/data
-    healthcheck:
-      test: [ "CMD", "mc", "ready", "local" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # # ------------------------------------------------------------
+  # # MinIO (armazenamento S3)
+  # # ------------------------------------------------------------
+  # minio:
+  #   image: pgsty/silo:latest
+  #   container_name: minio
+  #   command: server /data --console-address ":9001"
+  #   env_file: .env
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - pfi-minio-data:/data
+  #   healthcheck:
+  #     test: [ "CMD", "mc", "ready", "local" ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   # ------------------------------------------------------------
   # Frontend
@@ -173,6 +240,8 @@ services:
       - /app/node_modules
       - /app/dist
     depends_on:
+      backend:
+        condition: service_healthy
       keycloak:
         condition: service_started
 

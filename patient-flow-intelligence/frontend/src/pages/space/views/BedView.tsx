@@ -1,39 +1,33 @@
 import { useTranslation } from 'react-i18next'
+import { Badge } from '@/components/Badge'
 import type { ViewProps } from '../types'
 
 const BedView = ({ node }: ViewProps) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const lang = i18n.resolvedLanguage
 
-  // Procura a cama específica nos recursos do nó ou utiliza dados por omissão do nó
   const resource = node.resources?.[0]
   const patient = resource?.occupant
 
-  // Dados fictícios/extra para preencher os campos detalhados da vista
   const bedCharacteristics = {
-    id: resource?.id ?? 'BED-301-1',
-    type: 'Electric acute-care bed',
-    location: `${node.name ?? 'Room 301'}`,
-    status: resource?.status ?? 'occupied',
-    equipment: 'Cardiac monitor · Oxygen outlet',
-    connectivity: 'Online',
-    lastMaintenance: '18 Sep 2026',
-    lastSanitization: 'Before admission',
+    id: resource?.id ?? '—',
+    type: '—',
+    location: node.name || '—',
+    status: resource?.status ?? 'available',
+    equipment: '—',
+    connectivity: '—',
+    lastMaintenance: '—',
+    lastSanitization: '—',
   }
 
-  const ehrData = {
-    patientId: 'PT-3011-2026',
-    name: patient?.name ?? 'Emily Rose Parker',
-    ageCondition: patient ? `${patient.age}y · ${patient.diagnosis}` : '36y · Pneumonia',
-    primaryDiagnosis: patient?.diagnosis ?? 'Pneumonia',
-    attendingPhysician: 'Dr. Helena Duarte',
-    admission: patient?.admitted ? `Admitted ${patient.admitted}` : 'Admitted Sep 22',
-    allergies: 'Penicillin',
-    bloodGroup: 'O+',
-    carePlan: 'Continuous cardiac monitoring',
-    status: 'Active admission',
+  const isOccupied = resource?.status === 'occupied' && Boolean(patient)
+  const formatDate = (value?: string) => {
+    if (!value) return '—'
+    const date = new Date(value)
+    return Number.isNaN(date.getTime())
+      ? '—'
+      : new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(date)
   }
-
-  const isOccupied = resource?.status === 'occupied'
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,12 +138,12 @@ const BedView = ({ node }: ViewProps) => {
                   {t('space.bedView.electronicHealthRecord', 'Electronic Health Record')}
                 </p>
                 <h2 className="mt-1 text-2xl font-bold text-slate-900">
-                  {patient ? patient.name : ehrData.name}
+                  {patient?.name}
                 </h2>
               </div>
-              <span className="rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-medium text-emerald-700">
+              <Badge className="rounded-full border-0 bg-emerald-50 px-3.5 py-1 text-xs font-medium text-emerald-700">
                 {t('space.bedView.activeAdmission', 'Active admission')}
-              </span>
+              </Badge>
             </header>
 
             <div className="mt-6">
@@ -163,7 +157,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.patientId', 'Patient ID')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.patientId}
+                    {patient?.id ?? '—'}
                   </p>
                 </div>
 
@@ -172,7 +166,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.ageAndCondition', 'Age and condition')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.ageCondition}
+                    {patient?.age === undefined ? '—' : `${patient.age}y`} · {patient?.diagnosis || '—'}
                   </p>
                 </div>
 
@@ -181,7 +175,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.primaryDiagnosis', 'Primary diagnosis')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.primaryDiagnosis}
+                    {patient?.diagnosis || '—'}
                   </p>
                 </div>
 
@@ -190,7 +184,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.attendingPhysician', 'Attending physician')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.attendingPhysician}
+                    —
                   </p>
                 </div>
 
@@ -199,7 +193,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.admission', 'Admission')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.admission}
+                    {patient?.admitted ? `Admitted ${formatDate(patient.admitted)}` : '—'}
                   </p>
                 </div>
 
@@ -208,7 +202,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.allergies', 'Allergies')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.allergies}
+                    —
                   </p>
                 </div>
 
@@ -217,7 +211,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.bloodGroup', 'Blood group')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.bloodGroup}
+                    —
                   </p>
                 </div>
 
@@ -226,7 +220,7 @@ const BedView = ({ node }: ViewProps) => {
                     {t('space.bedView.carePlan', 'Care plan')}
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                    {ehrData.carePlan}
+                    —
                   </p>
                 </div>
               </div>

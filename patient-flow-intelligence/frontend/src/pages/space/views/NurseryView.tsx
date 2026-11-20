@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/Button'
+import { Badge } from '@/components/Badge'
 import type { ViewProps } from '../types'
 import {
   BED_STATUSES,
@@ -39,11 +41,12 @@ const NurseryView = ({ node, open }: ViewProps) => {
           const percent = c.total ? Math.round((c.occupied / c.total) * 100) : 0
 
           return (
-            <button
+            <Button
               key={room.id}
               type="button"
+              variant="ghost"
               onClick={() => open(room)}
-              className="rounded-2xl border border-gray-200 bg-white p-5 text-left transition-colors hover:border-blue-200 hover:shadow-sm"
+              className="h-auto rounded-2xl border border-gray-200 bg-white p-5 text-left transition-colors hover:border-blue-200 hover:shadow-sm"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -57,11 +60,11 @@ const NurseryView = ({ node, open }: ViewProps) => {
                     })}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                <Badge className="shrink-0 rounded-full border-0 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                   {t('space.breakdown.bed.available', {
                     count: c.available,
                   })}
-                </span>
+                </Badge>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -82,7 +85,7 @@ const NurseryView = ({ node, open }: ViewProps) => {
                   {t('space.breakdown.bed.reserved', { count: c.reserved })}
                 </span>
               </div>
-            </button>
+            </Button>
           )
         })}
       </section>

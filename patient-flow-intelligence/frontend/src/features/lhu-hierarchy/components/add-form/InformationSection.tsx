@@ -5,7 +5,7 @@ import { FormControl, FormField, FormItem, FormLabel } from "@/components/Form"
 import { Input } from "@/components/Input"
 import type { OrgType } from "../../types/tree"
 import type { AddNodeValues } from "../../utils/add-node-schema"
-import { OPERATIONAL_STATUSES, RESPONSIBLE_SERVICES } from "../../utils/form-options"
+import { OPERATIONAL_STATUSES, ROOM_TYPES } from "../../utils/form-options"
 import { FieldMessage } from "./FieldMessage"
 import { FormSection } from "./FormSection"
 import { OptionsSelectField } from "./OptionsSelectField"
@@ -45,7 +45,7 @@ export function InformationSection({ type, children }: { type: OrgType; children
           )}
         />
         <OptionsSelectField name="status" options={OPERATIONAL_STATUSES} />
-        <OptionsSelectField name="service" options={RESPONSIBLE_SERVICES} />
+        {type === "room" && <OptionsSelectField name="roomType" options={ROOM_TYPES} />}
         {children && <div className="md:col-span-2">{children}</div>}
       </div>
     </FormSection>
