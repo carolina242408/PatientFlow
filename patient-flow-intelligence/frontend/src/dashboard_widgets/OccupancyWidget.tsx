@@ -6,6 +6,7 @@ import type { OccupancyRow } from '@/api/operational'
 interface OccupancyWidgetProps {
   translationKey: 'dashboard.perService' | 'dashboard.perWing' | 'dashboard.perUnit'
   rows: OccupancyRow[]
+  criticalThreshold?: number
   isPending: boolean
   isError: boolean
   onExpand: () => void
@@ -14,6 +15,7 @@ interface OccupancyWidgetProps {
 function OccupancyWidget({
   translationKey,
   rows,
+  criticalThreshold,
   isPending,
   isError,
   onExpand,
@@ -28,8 +30,14 @@ function OccupancyWidget({
       onExpand={onExpand}
       onClick={onExpand}
       contentClassName="p-6"
+      dataKind="current"
     >
-      <OccupancyBarChart rows={rows} isPending={isPending} isError={isError} />
+      <OccupancyBarChart
+        rows={rows}
+        criticalThreshold={criticalThreshold}
+        isPending={isPending}
+        isError={isError}
+      />
     </DashboardPanel>
   )
 }

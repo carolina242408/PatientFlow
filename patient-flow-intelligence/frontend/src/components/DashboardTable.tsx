@@ -23,6 +23,7 @@ interface DashboardTableProps<Row> {
   tableClassName: string
   containerClassName?: string
   expanded?: boolean
+  dataKind?: 'current' | 'forecast'
 }
 
 function DashboardTable<Row>({
@@ -32,20 +33,36 @@ function DashboardTable<Row>({
   tableClassName,
   expanded = false,
   containerClassName,
+  dataKind,
 }: DashboardTableProps<Row>) {
+  const headerBg =
+    dataKind === 'forecast'
+      ? 'bg-amber-50'
+      : dataKind === 'current'
+        ? 'bg-blue-50'
+        : 'bg-gray-50'
+  const headerText =
+    dataKind === 'forecast'
+      ? 'text-amber-900'
+      : dataKind === 'current'
+        ? 'text-blue-800'
+        : expanded
+          ? 'text-gray-500'
+          : 'text-gray-400'
+
   return (
     <Table className={tableClassName} containerClassName={containerClassName}>
       <TableHeader>
         <TableRow
-          className={`bg-gray-50 ${
-            expanded ? 'text-sm text-gray-500' : 'text-xs text-gray-400'
-          } font-medium uppercase tracking-wide hover:bg-transparent`}
+          className={`${headerBg} ${
+            expanded ? 'text-sm' : 'text-xs'
+          } ${headerText} font-medium uppercase tracking-wide hover:bg-transparent`}
         >
           {columns.map((column, index) => (
             <TableHead
               key={column.key}
               scope="col"
-              className={`sticky top-0 z-10 bg-gray-50 ${expanded ? 'px-6 py-5' : ` py-4 ${index === 0 ? 'px-6' : 'px-4'}`} ${
+              className={`sticky top-0 z-10 ${headerBg} ${headerText} ${expanded ? 'px-6 py-5' : ` py-4 ${index === 0 ? 'px-6' : 'px-4'}`} ${
                 column.align === 'center' ? 'text-center' : 'text-left'
               }`}
             >

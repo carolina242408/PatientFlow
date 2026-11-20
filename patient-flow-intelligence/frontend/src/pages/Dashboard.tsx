@@ -28,7 +28,6 @@ import {
   fetchDischargeForecast,
   fetchIndicators,
   fetchOccupancy,
-  fetchOccupancyForecast,
   fetchPatientsExceededStay,
   fetchStayByCondition,
   type BedView,
@@ -37,7 +36,7 @@ import PatientsExceededStayWidget from '@/dashboard_widgets/PatientsExceededStay
 
 type Scope = 'LHU' | 'Unit' | 'Service'
 
-const CRITICAL_THRESHOLD = 82
+const CRITICAL_THRESHOLD = 80
 
 const UPCOMING_WINDOW_MS = 72 * 60 * 60 * 1000 // 72h
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
@@ -121,12 +120,12 @@ const Dashboard = () => {
     refetchInterval: 30_000,
   })
   
-  const { data: forecast } = useQuery({
-    queryKey: ['dashboard-forecast', managerScope.root?.id],
-    queryFn: () => fetchOccupancyForecast(managerScope.scope),
-    enabled: Boolean(managerScope.root),
-    refetchInterval: 60_000,
-  })
+  //const { data: forecast } = useQuery({
+  //  queryKey: ['dashboard-forecast', managerScope.root?.id],
+  //  queryFn: () => fetchOccupancyForecast(managerScope.scope),
+  //  enabled: Boolean(managerScope.root),
+  //  refetchInterval: 60_000,
+  //})
   
   const { data: dischargeByDay = [] } = useQuery({
     queryKey: ['dashboard-discharge-forecast', managerScope.root?.id],
@@ -197,9 +196,18 @@ const Dashboard = () => {
     { occupiedBeds: 0, totalBeds: 0 },
   )
 
-  const criticalThreshold = indicators?.thresholds.occupancyCriticalPercent
-    ?? occupancy?.criticalOccupancyPercent
-    ?? CRITICAL_THRESHOLD
+  const savedThreshold = (() => {
+    const raw = localStorage.getItem('patientflow.criticalThreshold')
+    if (raw === null) return null
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) && parsed >= 1 && parsed <= 100 ? parsed : null
+  })()
+
+  const criticalThreshold =
+    savedThreshold ??
+    indicators?.thresholds.occupancyCriticalPercent ??
+    occupancy?.criticalOccupancyPercent ??
+    CRITICAL_THRESHOLD
 
   if (managerScope.isPending) {
     return <div className="p-6">{t('managerHierarchy.loading')}</div>
@@ -219,32 +227,20 @@ const Dashboard = () => {
       id: 'today',
       label: t('dashboard.forecast.todayLabel'),
       value: indicators?.stays.expectedDischarges24h ?? null,
-      detail: t('dashboard.forecast.todayDetail', {
-        confirmed: indicators?.stays.expectedDischarges24h ?? 0,
-        pending: indicators?.waiting.pending ?? 0,
-      }),
-      tone: 'bg-emerald-50 text-emerald-700',
+      tone: 'bg-amber-100/80 text-amber-800',
     },
     {
       id: 'next48Hours',
       label: t('dashboard.forecast.next48Label'),
       value: indicators?.stays.expectedDischarges48h ?? null,
-      detail: t('dashboard.forecast.next48Detail', { count: forecast?.services.totalElements ?? 0 }),
-      tone: 'bg-purple-50 text-purple-700',
-    },
-    {
-      id: 'available',
-      label: t('dashboard.forecast.availableLabel'),
-      value: indicators ? indicators.beds.available + indicators.stays.expectedDischarges48h : null,
-      detail: t('dashboard.forecast.availableDetail', { time: '—' }),
-      tone: 'bg-amber-50 text-amber-700',
+      tone: 'bg-amber-100/80 text-amber-800',
     },
   ]
   const lengthOfStayForecast: HospitalStayForecast[] = stayByCondition.map((item) => ({
         code: item.code,
         name: item.name,
-        minimumDays: Math.ceil(item.meanDays),
-        maximumDays: Math.ceil(item.meanDays),
+        minimumDays: Math.round(item.meanDays),
+        maximumDays: Math.round(item.meanDays),
       }))
 
   const serviceName = managerScope.root?.name ?? '—'
@@ -254,6 +250,7 @@ const Dashboard = () => {
       <OccupancyWidget
         translationKey={profileScope === 'Service' ? 'dashboard.perWing' : 'dashboard.perService'}
         rows={occupancyChartRows}
+        criticalThreshold={criticalThreshold}
         isPending={occupancyPending}
         isError={occupancyError}
         onExpand={() => setExpandedItem('service')}
@@ -263,6 +260,7 @@ const Dashboard = () => {
       <OccupancyWidget
         translationKey="dashboard.perUnit"
         rows={unitOccupancy}
+        criticalThreshold={criticalThreshold}
         isPending={occupancyPending}
         isError={occupancyError}
         onExpand={() => setExpandedItem('unit')}
@@ -336,10 +334,10 @@ const Dashboard = () => {
       {(hasWidget('occupancyRate') || hasWidget('forecast')) && (
         <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-4">
           {hasWidget('occupancyRate') && (
-            <div className="2xl:col-span-1">{widgets.occupancyRate}</div>
+            <div className="2xl:col-span-2">{widgets.occupancyRate}</div>
           )}
           {hasWidget('forecast') && (
-            <div className="2xl:col-span-3">{widgets.forecast}</div>
+            <div className="2xl:col-span-2">{widgets.forecast}</div>
           )}
         </section>
       )}
@@ -410,11 +408,19 @@ const Dashboard = () => {
             </header>
 
             {hasWidget('occupancy') && expandedItem === 'service' && (
-              <OccupancyBarChart rows={occupancyChartRows} expanded />
+              <OccupancyBarChart
+                rows={occupancyChartRows}
+                criticalThreshold={criticalThreshold}
+                expanded
+              />
             )}
 
             {hasWidget('occupancyByUnit') && expandedItem === 'unit' && (
-              <OccupancyBarChart rows={unitOccupancy} expanded />
+              <OccupancyBarChart
+                rows={unitOccupancy}
+                criticalThreshold={criticalThreshold}
+                expanded
+              />
             )}
 
             {hasWidget('dischargeForecast') && expandedItem === 'discharges' && (

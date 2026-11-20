@@ -16,7 +16,7 @@ function DischargeForecastBarChart({
 }: DischargeForecastBarChartProps) {
   const { t } = useTranslation()
   const total = forecast.reduce((sum, item) => sum + item.count, 0)
-  const maxCount = Math.max(1, ...forecast.map((item) => item.count))
+  const maxCount = Math.max(20, ...forecast.map((item) => item.count))
 
   return (
     <>
@@ -30,7 +30,7 @@ function DischargeForecastBarChart({
         {forecast.map((item) => (
           <div key={item.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
             <div
-              className="relative w-full max-w-32 rounded-t-md bg-blue-300"
+              className="relative w-full max-w-32 rounded-t-md bg-amber-500"
               style={{ height: `${(item.count / maxCount) * 100}%` }}
             >
               <span
@@ -57,12 +57,12 @@ function DischargeForecastBarChart({
         ))}
       </div>
       <div
-        className={`flex items-center justify-between rounded-lg bg-blue-50/60 ${
+        className={`flex items-center justify-between rounded-lg bg-amber-50 ${
           expanded ? 'mt-6 px-4 py-3' : 'mt-4 px-3 py-2'
         }`}
       >
         <span className="text-sm text-gray-500">{t('dashboard.forecastChart.total')}</span>
-        <span className="text-sm font-semibold text-blue-600">
+        <span className="text-sm font-semibold text-amber-700">
           {t('dashboard.forecastChart.patients', { count: total })}
         </span>
       </div>

@@ -57,6 +57,7 @@ function HospitalStayByConditionTable({
       tableClassName={`min-w-[480px] border-collapse${expanded ? ' text-base' : ''}`}
       containerClassName={expanded ? 'max-h-[70vh] overflow-y-auto' : 'absolute inset-0 overflow-y-auto'}
       expanded={expanded}
+      dataKind="current"
     />
   )
 }

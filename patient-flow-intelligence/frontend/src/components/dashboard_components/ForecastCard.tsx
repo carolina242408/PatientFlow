@@ -4,7 +4,7 @@ export interface ForecastCardData {
   id: string
   value: number | null
   label: string
-  detail: string
+  detail?: string
   tone: string
 }
 
@@ -15,12 +15,14 @@ interface ForecastCardProps {
 
 function ForecastCard({ forecast, badgeLabel }: ForecastCardProps) {
   return (
-    <article className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5">
-      <Badge
-        className={`inline-flex rounded-md border-0 px-2 py-1 text-xs font-medium ${forecast.tone}`}
-      >
-        {badgeLabel}
-      </Badge>
+    <article className="flex h-full flex-col rounded-xl border border-amber-200 bg-white p-5">
+      <div className="flex justify-end">
+        <Badge
+          className={`inline-flex rounded-md border-0 px-2 py-1 text-xs font-medium ${forecast.tone}`}
+        >
+          {badgeLabel}
+        </Badge>
+      </div>
       <p className="mt-auto pt-2 text-3xl font-semibold text-slate-900">{forecast.value ?? '—'}</p>
       <p className="mt-1 text-sm font-medium text-gray-600">{forecast.label}</p>
       <p className="mt-1 text-xs text-gray-400">{forecast.detail}</p>

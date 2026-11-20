@@ -70,6 +70,7 @@ export default function PatientsExceededStayTable({
       }`}
       containerClassName={expanded ? 'max-h-[70vh] overflow-y-auto' : undefined}
       expanded={expanded}
+      dataKind="current"
     />
   )
 }

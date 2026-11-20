@@ -23,6 +23,7 @@ function HospitalStayByConditionWidget({
       onExpand={onExpand}
       onContentClick={onExpand}
       contentClassName="relative min-h-64 flex-1 cursor-zoom-in"
+      dataKind="current"
     >
       <HospitalStayByConditionTable forecasts={forecasts} />
     </DashboardPanel>

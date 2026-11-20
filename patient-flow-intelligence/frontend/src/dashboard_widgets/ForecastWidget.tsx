@@ -12,7 +12,7 @@ function ForecastWidget({ forecasts }: ForecastWidgetProps) {
 
   return (
     <section className="h-full">
-      <div className="grid h-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid h-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-2">
         {forecasts.map((forecast) => (
           <ForecastCard
             key={forecast.id}

@@ -24,12 +24,13 @@ export default function PatientsExceededStayWidget({
       })}
       description={t('dashboard.exceededStay.body', {
         defaultValue:
-          'These patients stayed longer than the average length‑of‑stay for their diagnosed condition.',
+          'These patients stayed longer than the average length‑of‑stay for their diagnosed condition',
       })}
       expandLabel={t('dashboard.expandTable', { defaultValue: 'Expand table' })}
       onExpand={onExpand}
       onContentClick={onExpand}
       contentClassName="cursor-zoom-in overflow-x-auto"
+      dataKind="current"
     >
       <PatientsExceededStayTable patients={patients} />
     </DashboardPanel>

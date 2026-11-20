@@ -188,7 +188,6 @@
       "chairs": "Treatment chairs"
     },
     "resourceLabel": {
-      "bed": "Bed {{number}}",
       "operatingRoom": "Operating room {{number}}",
       "chair": "Treatment chair {{number}}"
     },
@@ -281,13 +280,13 @@
     "forecast": {
       "badge": "Forecast",
       "todayLabel": "Predicted discharges in the next 24 hours",
-      "todayDetail": "{{confirmed}} confirmed · {{pending}} pending",
-      "next48Label": "Predicted next 48 hours",
-      "next48Detail_one": "Across {{count}} clinical service",
-      "next48Detail_other": "Across {{count}} clinical services",
-      "availableLabel": "Beds available after discharge",
-      "availableDetail": "Estimated by tomorrow at {{time}}"
+      "next48Label": "Predicted discharges in the next 48 hours"
     },
+    "currentDataBadge": "Current Data",
+    "criticalThresholdLabel": "Critical threshold",
+    "tapToAdjust": "Tap to adjust",
+    "decreaseThreshold": "Decrease critical threshold",
+    "increaseThreshold": "Increase critical threshold",
     "perService": {
       "title": "Occupancy per service",
       "body": "Percentage of staffed beds currently occupied"
@@ -302,7 +301,7 @@
     },
     "lengthOfStay": {
       "title": "Estimated hospital stay by condition",
-      "body": "Observed average of administrative discharges in the selected period.",
+      "body": "Observed average of administrative discharges in the selected period",
       "condition": "Condition",
       "code": "Code",
       "estimatedStay": "Estimated length of stay"
@@ -346,7 +345,7 @@
     },
     "exceededStay": {
       "title": "Patients exceeding LOS estimate",
-      "body": "These patients stayed longer than the average length‑of‑stay for their diagnosed condition.",
+      "body": "These patients stayed longer than the average length‑of‑stay for their diagnosed condition",
       "patient": "Patient",
       "code": "Code",
       "condition": "Condition",
@@ -524,6 +523,12 @@
     "language": {
       "title": "Language",
       "body": "Select the preferred language for the interface."
+    },
+    "capacityAlerts": {
+      "title": "Capacity alerts",
+      "body": "Set the occupancy level that changes the dashboard card to a critical alert.",
+      "thresholdLabel": "Critical occupancy threshold",
+      "thresholdHint": "Choose a value between 50% and 100%."
     },
     "popup": {
       "success": {

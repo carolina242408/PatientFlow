@@ -20,6 +20,7 @@ function DischargeForecastWidget({ forecast, onExpand }: DischargeForecastWidget
       onExpand={onExpand}
       onClick={onExpand}
       contentClassName="p-6"
+      dataKind="forecast"
     >
       <DischargeForecastBarChart forecast={forecast} />
     </DashboardPanel>

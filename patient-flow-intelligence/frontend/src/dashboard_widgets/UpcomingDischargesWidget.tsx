@@ -20,6 +20,7 @@ function UpcomingDischargesWidget({ discharges, onExpand }: UpcomingDischargesWi
       onExpand={onExpand}
       onContentClick={onExpand}
       contentClassName="cursor-zoom-in overflow-x-auto"
+      dataKind="forecast"
     >
       <UpcomingDischargesTable discharges={discharges} />
     </DashboardPanel>
