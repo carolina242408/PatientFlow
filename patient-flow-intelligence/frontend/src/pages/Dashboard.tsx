@@ -443,11 +443,7 @@ const Dashboard = () => {
       </dialog>
 
       {hasWidget('upcomingDischarges') && widgets.upcomingDischarges}
-      {hasWidget('exceededStay') && (
-        <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
-          <div>{widgets.exceededStay}</div>
-        </section>
-      )}
+      {hasWidget('exceededStay') && widgets.exceededStay}
     </div>
   )
 }

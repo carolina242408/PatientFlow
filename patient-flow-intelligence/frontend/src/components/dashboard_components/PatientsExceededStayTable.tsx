@@ -65,8 +65,10 @@ export default function PatientsExceededStayTable({
       columns={columns}
       rows={patients}
       getRowKey={({ patientId }) => patientId}
-      tableClassName={`min-w-[600px] border-collapse${expanded ? ' text-base' : ''}`}
-      containerClassName={expanded ? 'max-h-[70vh] overflow-y-auto' : 'absolute inset-0 overflow-y-auto'}
+      tableClassName={`${
+        expanded ? 'min-w-[900px] border-collapse text-base text-left' : 'min-w-[720px] border-collapse text-left'
+      }`}
+      containerClassName={expanded ? 'max-h-[70vh] overflow-y-auto' : undefined}
       expanded={expanded}
     />
   )

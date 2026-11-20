@@ -29,7 +29,7 @@ export default function PatientsExceededStayWidget({
       expandLabel={t('dashboard.expandTable', { defaultValue: 'Expand table' })}
       onExpand={onExpand}
       onContentClick={onExpand}
-      contentClassName="relative min-h-64 flex-1 cursor-zoom-in"
+      contentClassName="cursor-zoom-in overflow-x-auto"
     >
       <PatientsExceededStayTable patients={patients} />
     </DashboardPanel>
