@@ -620,7 +620,7 @@ public class FhirToPostgresTransformer {
         return encNode;
     }
 
-    private static String extractVisitNumber(JsonNode encRes) {
+    static String extractVisitNumber(JsonNode encRes) {
         JsonNode identifiers = encRes.path("identifier");
         if (identifiers.isArray()) {
             for (JsonNode idNode : identifiers.values()) {

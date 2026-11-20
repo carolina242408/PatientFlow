@@ -47,6 +47,7 @@ patientflow:
     url: ${ALGORITHMS_URL:http://localhost:8000}
     connect-timeout: 500ms
     request-timeout: 1s
+    discharge-timeout: ${ALGORITHMS_DISCHARGE_TIMEOUT:30s}
   ingestion:
     enabled: ${INGESTION_ENABLED:false}
     hapi-fhir-url: ${HAPI_FHIR_URL:http://localhost:8081/fhir}
@@ -63,3 +64,10 @@ patientflow:
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+  audit:
+    # Default Time-To-Live (TTL) in days for audit logs in timescaledb.audit_logs.
+    # Can also be updated at runtime via the Admin Audit Console.
+    default-ttl-days: ${AUDIT_LOG_TTL_DAYS:30}
+    min-ttl-days: ${AUDIT_LOG_MIN_TTL_DAYS:1}
+    max-ttl-days: ${AUDIT_LOG_MAX_TTL_DAYS:3650}
+    cleanup-cron: ${AUDIT_CLEANUP_CRON:0 0 * * * *}

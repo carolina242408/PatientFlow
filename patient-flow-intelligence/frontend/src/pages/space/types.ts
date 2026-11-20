@@ -16,13 +16,22 @@ export interface Patient {
   diagnosis: string
   admitted?: string
   id?: string
+  snsNumber?: string
+  hospitalNumber?: string
+  birthDate?: string
+  gender?: string
+  expectedDischargeAt?: string
+  serviceName?: string
+  wardCode?: string
 }
 
 export interface Resource {
   id: string
+  code?: string
   type: ResourceType
   number: number
   status: string
+  location?: string
   occupant?: Patient
 }
 

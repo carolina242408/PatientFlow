@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router'
 import './index.css'
 import './i18n'
 import { KeycloakProvider } from './auth/KeycloakProvider'
+import { NotificationProvider } from './context/NotificationContext'
 import AppRoutes from './routes'
 
 document.documentElement.classList.toggle(
@@ -17,9 +18,11 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <KeycloakProvider>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <NotificationProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </NotificationProvider>
       </QueryClientProvider>
     </KeycloakProvider>
   </StrictMode>,

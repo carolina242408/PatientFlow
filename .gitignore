@@ -8,3 +8,5 @@ __pycache__/
 .vscode
 certs/
 AGENTS.md
+AGENTS.md
+patient-flow-intelligence/algorithms/models/

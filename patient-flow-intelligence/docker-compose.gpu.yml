@@ -1,0 +1,16 @@
+# Optional: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build algorithms backend
+# Requires Docker GPU support and an NVIDIA driver on the host.
+services:
+  algorithms:
+    build:
+      args:
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cu126
+    environment:
+      KUMO_DEVICE: cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
