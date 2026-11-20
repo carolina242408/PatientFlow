@@ -54,6 +54,21 @@ Usar este modo ou o backend no host, pois ambos usam a porta 8080.
 
 Credenciais de desenvolvimento em `.env` (criado a partir de `.env.example`, não vai para o git).
 
+## Keycloak HTTPS configuration
+
+To use HTTPS in Keycloak, you need a certificate. For development, you can generate a self-signed one by running the following commands:
+```
+cd patient-flow-intelligence
+```
+```
+mkdir certs
+```
+```
+cd certs
+```
+```
+openssl req -x509 -out localhostCertificate.pem -keyout localhostKey.pem -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -extensions EXT -config <(printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+```
 O fluxo atual usa diretamente PostgreSQL, Keycloak e algorithms. RabbitMQ, Redis
 e HAPI FHIR existem no Compose alargado, mas não constituem integrações ativas
 do fluxo atual. A definição MinIO está comentada e a consola não é iniciada.
