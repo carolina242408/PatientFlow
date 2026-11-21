@@ -40,11 +40,16 @@ public class Encounter {
     @Column(name = "clinical_discharge_at")
     private Instant clinicalDischargeAt;
 
+    @Column(name = "diagnosis_code")
+    private String diagnosisCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_id")
     private ClinicalService service;
 
     public long getVersion() { return version; }
+    public String getDiagnosisCode() { return diagnosisCode; }
+    public void setDiagnosisCode(String diagnosisCode) { this.diagnosisCode = diagnosisCode; }
     public Instant getExpectedDischargeAt() { return expectedDischargeAt; }
     public void setExpectedDischargeAt(Instant value) { expectedDischargeAt = value; }
     public Instant getClinicalDischargeAt() { return clinicalDischargeAt; }

@@ -20,7 +20,7 @@ const PAGES = [
 ] as const
 
 const SCOPE_LEVELS: Record<AccessScopeType, Level> = {
-  ULS: 'lhu',
+  LHU: 'lhu',
   UNIT: 'unit',
   BUILDING: 'building',
   FLOOR: 'floor',

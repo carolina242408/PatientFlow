@@ -11,7 +11,6 @@ const BedView = ({ node }: ViewProps) => {
 
   const bedCharacteristics = {
     code: resource?.code ?? '—',
-    type: resource?.type ? t(`space.resourceLabel.${resource.type}`, resource.type) : '—',
     location: node.name || '—',
     status: resource?.status ?? 'available',
     locationDetails: resource?.location ?? '—',
@@ -51,14 +50,6 @@ const BedView = ({ node }: ViewProps) => {
         </header>
 
         <div className="mt-6 grid grid-cols-2 gap-y-6 gap-x-8 md:grid-cols-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t('space.bedView.bedType', 'Bed Type')}
-            </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">
-              {bedCharacteristics.type}
-            </p>
-          </div>
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">

@@ -40,10 +40,7 @@ public class KeycloakGroupService {
         if (!type.supportsKeycloakGroup()) return;
 
         String groupName = groupName(type, id, name);
-        String parentGroupId = parentId == null ? null : findGroupId(parentType(type), parentId);
-        if (parentGroupId == null && parentId != null) {
-            parentGroupId = findGroupId(groups(null), "__" + parentId);
-        }
+        String parentGroupId = parentId == null ? null : findGroupId(parentId);
         if (parentId != null && parentGroupId == null) {
             throw new IllegalStateException("Grupo Keycloak pai não encontrado para " + parentId);
         }
@@ -57,11 +54,7 @@ public class KeycloakGroupService {
         return type.name() + "_" + slug + "__" + id;
     }
 
-    private Type parentType(Type type) {
-        return type == Type.UNIT ? Type.ULS : Type.UNIT;
-    }
-
-    private String findGroupId(Type type, UUID id) {
+    private String findGroupId(UUID id) {
         String marker = "__" + id;
         return findGroupId(groups(null), marker);
     }

@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/account", "/api/access/me", "/api/audit/events").authenticated()
                 .requestMatchers("/api/access/grants", "/api/access/grants/**", "/api/audit/**", "/actuator/info").hasAuthority("ADMIN_ROLE")
                 .requestMatchers("/api/**").hasAnyAuthority("ADMIN_ROLE", "MANAGER_ROLE")
+                .requestMatchers("/error").permitAll()
                 .anyRequest().denyAll())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();

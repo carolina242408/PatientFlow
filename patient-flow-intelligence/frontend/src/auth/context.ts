@@ -1,6 +1,13 @@
 import type Keycloak from 'keycloak-js'
 import { createContext, use } from 'react'
 
+export type AccessScopeType = 'LHU' | 'UNIT' | 'BUILDING' | 'FLOOR' | 'SERVICE' | 'WING' | 'WARD'
+
+export interface AccessScope {
+  type: AccessScopeType
+  scopeId: string
+}
+
 export interface KeycloakUser {
   name: string
   username: string
@@ -8,13 +15,6 @@ export interface KeycloakUser {
   roles: string[]
   scopeType: AccessScopeType | null
   scopes: AccessScope[]
-}
-
-export type AccessScopeType = 'ULS' | 'UNIT' | 'BUILDING' | 'FLOOR' | 'SERVICE' | 'WING' | 'WARD'
-
-export interface AccessScope {
-  type: AccessScopeType
-  scopeId: string
 }
 
 export interface KeycloakContextType {
@@ -26,8 +26,8 @@ export const KeycloakContext = createContext<KeycloakContextType | null>(null)
 
 export const hasAdminRole = (roles: string[] = []) =>
   roles.some((role) => {
-    const r = role.toLowerCase()
-    return r === 'admin' || r === 'admin_role'
+    const normalizedRole = role.toLowerCase()
+    return normalizedRole === 'admin' || normalizedRole === 'admin_role'
   })
 
 export const getApplicationUrl = () =>

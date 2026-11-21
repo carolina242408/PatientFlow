@@ -24,6 +24,12 @@ public class AnalyticsController {
     public java.util.List<DischargeForecastDay> dischargeForecast(@ModelAttribute Scope scope) {
         return analytics.dischargeForecast(scope);
     }
+    @GetMapping("/analytics/stay-by-condition")
+    public java.util.List<ConditionStayMean> stayByCondition(@ModelAttribute Scope scope,
+            @RequestParam(required=false) Instant from,
+            @RequestParam(required=false) Instant to) {
+        return analytics.stayByCondition(scope, from, to);
+    }
     @GetMapping("/analytics/occupancy-forecast")
     public Forecast forecast(@ModelAttribute Scope scope,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size) {
         return analytics.forecast(scope,page,size);
@@ -31,4 +37,8 @@ public class AnalyticsController {
     @GetMapping("/admission-requests/{id}/bed-suggestions")
     public BedSuggestions suggestions(@PathVariable UUID id,@RequestParam(required=false) UUID preferredWardId,
             @RequestParam(defaultValue="5") int limit) { return analytics.suggestions(id,preferredWardId,limit); }
+    @GetMapping("/analytics/patients-exceeded-stay")
+    public java.util.List<ExceededStayPatient> patientsExceededStay(@ModelAttribute Scope scope) {
+        return analytics.patientsExceededStay(scope);
+    }
 }

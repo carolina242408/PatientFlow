@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
-import DashboardTable, { type DashboardTableColumn } from './DashboardTable'
+import DashboardTable, { type DashboardTableColumn } from '../DashboardTable'
 
 export interface HospitalStayForecast {
-  condition: string
+  code: string
+  name: string | null
   minimumDays: number
   maximumDays: number
 }
@@ -23,19 +24,28 @@ function HospitalStayByConditionTable({
       key: 'condition',
       header: t('dashboard.lengthOfStay.condition'),
       rowHeader: true,
-      renderCell: ({ condition }) => condition === 'all'
-        ? t('dashboard.lengthOfStay.all')
-        : t(`dashboard.lengthOfStay.conditions.${condition}`),
+      renderCell: ({ name }) =>  name,
+    },
+    {
+      key: 'code',
+      header: t('dashboard.lengthOfStay.code', { defaultValue: 'Code' }),
+      align: 'center',
+      renderCell: ({ code }) => code,
     },
     {
       key: 'estimatedStay',
       header: t('dashboard.lengthOfStay.estimatedStay'),
       align: 'center',
       renderCell: ({ minimumDays, maximumDays }) =>
-        t('dashboard.lengthOfStay.daysRange', {
-          minimum: minimumDays,
-          maximum: maximumDays,
-        }),
+        minimumDays === maximumDays
+          ? t('dashboard.lengthOfStay.meanDays', {
+              days: minimumDays,
+              defaultValue: `${minimumDays} dias`,
+            })
+          : t('dashboard.lengthOfStay.daysRange', {
+              minimum: minimumDays,
+              maximum: maximumDays,
+            }),
     },
   ]
 
@@ -43,9 +53,11 @@ function HospitalStayByConditionTable({
     <DashboardTable
       columns={columns}
       rows={forecasts}
-      getRowKey={({ condition }) => condition}
+      getRowKey={({ code }) => code}
       tableClassName={`min-w-[480px] border-collapse${expanded ? ' text-base' : ''}`}
+      containerClassName={expanded ? 'max-h-[70vh] overflow-y-auto' : 'absolute inset-0 overflow-y-auto'}
       expanded={expanded}
+      dataKind="current"
     />
   )
 }

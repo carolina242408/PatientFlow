@@ -28,7 +28,7 @@
     "auditLogs": "Logs de Auditoria",
     "noScope": "Sem âmbito atribuído",
     "scopeLevels": {
-      "ULS": "ULS",
+      "LHU": "ULS",
       "UNIT": "Unidade",
       "BUILDING": "Edifício",
       "FLOOR": "Piso",
@@ -47,7 +47,7 @@
       "title": "Hierarquia da organização",
       "description": "Explorar o âmbito organizacional atribuído",
       "scopes": {
-        "ULS": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
+        "LHU": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
         "UNIT": { "title": "Hierarquia da unidade", "description": "Explorar a unidade atribuída e os seus espaços." },
         "BUILDING": { "title": "Hierarquia do edifício", "description": "Explorar o edifício atribuído e os seus espaços." },
         "FLOOR": { "title": "Hierarquia do piso", "description": "Explorar o piso atribuído e os seus espaços." },
@@ -281,13 +281,13 @@
     "forecast": {
       "badge": "Previsão",
       "todayLabel": "Altas previstas nas próximas 24 horas",
-      "todayDetail": "{{confirmed}} confirmadas · {{pending}} pendentes",
-      "next48Label": "Previsão para as próximas 48 horas",
-      "next48Detail_one": "Em {{count}} serviço clínico",
-      "next48Detail_other": "Em {{count}} serviços clínicos",
-      "availableLabel": "Camas livres após as altas",
-      "availableDetail": "Estimativa para amanhã às {{time}}"
+      "next48Label": "Altas previstas nas próximas 48 horas"
     },
+    "currentDataBadge": "Dados atuais",
+    "criticalThresholdLabel": "Limite crítico",
+    "tapToAdjust": "Toque para ajustar",
+    "decreaseThreshold": "Diminuir limite crítico",
+    "increaseThreshold": "Aumentar limite crítico",
     "perService": {
       "title": "Ocupação por serviço",
       "body": "Percentagem de camas ativas atualmente ocupadas"
@@ -302,18 +302,10 @@
     },
     "lengthOfStay": {
       "title": "Tempo de internamento estimado por condição",
-      "body": "Média observada das altas administrativas no período selecionado.",
-      "all": "Todos os serviços",
+      "body": "Média observada das altas administrativas no período selecionado",
       "condition": "Condição",
-      "estimatedStay": "Tempo de internamento estimado",
-      "daysRange": "{{minimum}}-{{maximum}} dias",
-      "conditions": {
-        "pneumonia": "Pneumonia",
-        "heartFailure": "Insuficiência cardíaca",
-        "angina": "Angina",
-        "arrhythmia": "Arritmia",
-        "cardiacObservation": "Observação cardíaca"
-      }
+      "code": "Código",
+      "estimatedStay": "Tempo de internamento estimado"
     },
     "forecastChart": {
       "title": "Previsão de altas",
@@ -351,6 +343,16 @@
       "pendingTransport": "Transporte pendente",
       "medicationReview": "Revisão de medicação",
       "clinicalReview": "Revisão clínica"
+    },
+    "exceededStay": {
+      "title": "Pacientes que ultrapassaram a estimativa de permanência",
+      "body": "Estes pacientes ficaram mais tempo do que a média de permanência para a sua condição diagnosticada",
+      "patient": "Paciente",
+      "code": "Código",
+      "condition": "Condição",
+      "actual": "Permanência real (dias)",
+      "mean": "Média esperada (dias)",
+      "diff": "Excesso (dias)"
     }
   },
   "admin": {
@@ -523,6 +525,12 @@
       "title": "Idioma",
       "body": "Seleciona o idioma preferido para a interface."
     },
+    "capacityAlerts": {
+      "title": "Alertas de capacidade",
+      "body": "Define o nível de ocupação que muda o cartão do painel para alerta crítico.",
+      "thresholdLabel": "Limite crítico de ocupação",
+      "thresholdHint": "Escolhe um valor entre 50% e 100%."
+    },
     "popup": {
       "success": {
         "title": "Preferências guardadas",
@@ -563,7 +571,7 @@
       "default": "—"
     },
     "scopeLevels": {
-      "ULS": "Unidade Local de Saúde",
+      "LHU": "Unidade Local de Saúde",
       "UNIT": "Unidade Hospitalar",
       "BUILDING": "Edifício",
       "FLOOR": "Piso",
