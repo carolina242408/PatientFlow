@@ -1,5 +1,5 @@
 {
-  "app": { "name": "PatientFlow", "logoAlt": "PatientFlow logo" },
+  "app": { "name": "PatientFlow", "logoAlt": "PatientFlow logo", "loading": "Loading..." },
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",

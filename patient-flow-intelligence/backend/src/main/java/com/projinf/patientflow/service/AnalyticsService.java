@@ -19,10 +19,12 @@ public class AnalyticsService {
     private final OperationalQueries queries;
     private final AnalyticsSettings settings;
     private final AlgorithmsClient algorithms;
+    private final RedisResponseCache cache;
     private final Clock clock;
     public AnalyticsService(AnalyticsRepository repository,OperationalQueries queries,AnalyticsSettings settings,
-            AlgorithmsClient algorithms,Clock clock) {
-        this.repository=repository; this.queries=queries; this.settings=settings; this.algorithms=algorithms; this.clock=clock;
+            AlgorithmsClient algorithms,RedisResponseCache cache,Clock clock) {
+        this.repository=repository; this.queries=queries; this.settings=settings; this.algorithms=algorithms;
+        this.cache=cache; this.clock=clock;
     }
     public Indicators indicators(Scope scope,Instant from,Instant to) {
         Instant now=clock.instant();
@@ -64,9 +66,12 @@ public class AnalyticsService {
     }
 
     public Occupancy occupancy(Scope scope) {
-        var result = repository.occupancy(scope,clock.instant());
-        return new Occupancy(result.asOf(),result.scope(),settings.occupancyCriticalPercent(),
-            result.services(),result.units(),result.wings());
+        String key=RedisResponseCache.occupancyKey(scope,settings.occupancyCriticalPercent());
+        return cache.getOrLoad(key,Occupancy.class,()->{
+            var result=repository.occupancy(scope,clock.instant());
+            return new Occupancy(result.asOf(),result.scope(),settings.occupancyCriticalPercent(),
+                result.services(),result.units(),result.wings());
+        });
     }
 
     public List<DischargeForecastDay> dischargeForecast(Scope scope) {

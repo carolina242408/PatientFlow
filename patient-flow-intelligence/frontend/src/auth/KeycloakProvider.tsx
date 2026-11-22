@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { LoaderCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/Button'
 import { fetchMyAccess } from '@/api/access'
 import { recordAuditEvent } from '@/api/audit'
@@ -6,6 +8,7 @@ import { getApplicationUrl, KeycloakContext, type KeycloakUser } from './context
 import keycloak, { initKeycloak } from './keycloak'
 
 export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
+  const { t } = useTranslation()
   const [initialized, setInitialized] = useState(false)
   const [user, setUser] = useState<KeycloakUser | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -101,7 +104,16 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   }, [loadUser])
 
   if (!initialized) {
-    return <div className="flex h-screen items-center justify-center font-sans">Loading...</div>
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#fafafa] px-6 font-sans">
+        <div role="status" aria-live="polite" className="flex flex-col items-center text-center">
+          <img src="/assets/app-logo.png" alt="" className="h-16 w-16 object-contain" />
+          <h1 className="mt-4 text-xl font-semibold">{t('app.name')}</h1>
+          <LoaderCircle aria-hidden="true" className="mt-8 h-6 w-6 animate-spin text-blue-600 motion-reduce:animate-none" />
+          <p className="mt-3 text-sm text-gray-500">{t('app.loading')}</p>
+        </div>
+      </main>
+    )
   }
 
   if (error) {
