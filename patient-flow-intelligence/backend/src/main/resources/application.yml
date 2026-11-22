@@ -5,6 +5,10 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/patientflow}
     username: ${DB_USERNAME:pfi}
     password: ${DB_PASSWORD:pfi}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: validate   # o schema é gerido pelo Flyway (src/main/resources/db/migration)
@@ -34,6 +38,7 @@ fhir:
 
 patientflow:
   analytics:
+    cache-ttl: ${ANALYTICS_CACHE_TTL:5s}
     occupancy-warning-percent: ${OCCUPANCY_WARNING_PERCENT:85}
     occupancy-critical-percent: ${OCCUPANCY_CRITICAL_PERCENT:95}
     long-stay-days: ${LONG_STAY_DAYS:14}

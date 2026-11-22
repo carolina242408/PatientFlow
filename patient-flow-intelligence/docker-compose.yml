@@ -119,6 +119,9 @@ services:
       DB_URL: jdbc:postgresql://postgresql:5432/patientflow
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ANALYTICS_CACHE_TTL: ${ANALYTICS_CACHE_TTL:-5s}
       KEYCLOAK_ISSUER_URI: http://localhost:9080/realms/patientflow
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/patientflow/protocol/openid-connect/certs
       KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8080
