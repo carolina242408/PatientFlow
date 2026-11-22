@@ -19,7 +19,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9080/realms/patientflow}
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:https://localhost:9080/realms/patientflow}
 
 server:
   port: 8080
@@ -64,7 +64,7 @@ patientflow:
     allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
     ticket-ttl: 30s
   keycloak:
-    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:http://localhost:9080}
+    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:https://localhost:9080}
     realm: ${KEYCLOAK_ADMIN_REALM:patientflow}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
