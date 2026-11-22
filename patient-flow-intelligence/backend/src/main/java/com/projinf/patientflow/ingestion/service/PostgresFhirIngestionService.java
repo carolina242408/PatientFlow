@@ -4,6 +4,7 @@ import com.projinf.patientflow.event.ChangePublisher;
 import com.projinf.patientflow.repository.HierarchyRepository.Type;
 import com.projinf.patientflow.security.KeycloakGroupService;
 import com.projinf.patientflow.service.AlgorithmsClient;
+import com.projinf.patientflow.service.DischargePredictionQueue;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -82,8 +82,7 @@ public class PostgresFhirIngestionService {
     private final JsonMapper json;
     private final ChangePublisher changes;
     private final KeycloakGroupService keycloakGroups;
-    private final AlgorithmsClient algorithms;
-    private final TransactionTemplate transactions;
+    private final DischargePredictionQueue predictions;
 
     public PostgresFhirIngestionService(
             FhirToPostgresTransformer transformer,
@@ -91,15 +90,13 @@ public class PostgresFhirIngestionService {
             JsonMapper json,
             ChangePublisher changes,
             KeycloakGroupService keycloakGroups,
-            AlgorithmsClient algorithms,
-            TransactionTemplate transactions) {
+            DischargePredictionQueue predictions) {
         this.transformer = transformer;
         this.jdbc = jdbc;
         this.json = json;
         this.changes = changes;
         this.keycloakGroups = keycloakGroups;
-        this.algorithms = algorithms;
-        this.transactions = transactions;
+        this.predictions = predictions;
     }
 
     /**
@@ -314,8 +311,8 @@ public class PostgresFhirIngestionService {
 
     /**
      * Trigger da previsão de alta: quando um bundle admite um paciente e traz um diagnóstico
-     * ({@code Condition}), pede a previsão ao serviço algorithms e grava-a em
-     * {@code encounters.expected_discharge_at}. Não sobrescreve um plano já definido.
+     * ({@code Condition}), publica o pedido de previsão no RabbitMQ. O resultado chega mais tarde a
+     * {@link DischargePredictionQueue#onResult}, que o grava em {@code encounters.expected_discharge_at}.
      */
     public void predictDischarge(JsonNode fhirBundle, PostgresIngestionResult result) {
         var encounterIds = result.events().stream()
@@ -404,7 +401,7 @@ public class PostgresFhirIngestionService {
                         admitted.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH), timePeriod, season, specialty);
             }, encounterId);
             if (inputs.isEmpty() || inputs.getFirst() == null) continue;
-            persistDischargePrediction(encounterId, inputs.getFirst());
+            predictions.request(encounterId, inputs.getFirst());
         }
     }
 
@@ -478,26 +475,6 @@ public class PostgresFhirIngestionService {
                 "INSERT INTO conditions (code, system, name) VALUES (?, ?, ?) ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name",
                 entry.getKey(), entry.getValue()[0], entry.getValue()[1]);
         }
-    }
-
-    private void persistDischargePrediction(UUID encounterId, AlgorithmsClient.DischargeInput input) {
-        // HTTP stays outside the transaction. Discharge has its own model timeout.
-        Instant predicted = algorithms.predictDischarge(input).orElse(null);
-        if (predicted == null) {
-            return;
-        }
-        OffsetDateTime at = predicted.atOffset(ZoneOffset.UTC);
-        // HTTP fica fora da transação; só o UPDATE + evento WebSocket correm dentro dela.
-        transactions.executeWithoutResult(tx -> {
-            int updated = jdbc.update(
-                    "UPDATE encounters SET expected_discharge_at = ?, version = version + 1 "
-                            + "WHERE id = ? AND expected_discharge_at IS NULL AND status = 'IN_PROGRESS' "
-                            + "AND start_period = ? AND start_period <= ?",
-                    at, encounterId, input.admittedAt(), at);
-            if (updated == 1) {
-                changes.changed("DISCHARGE_PLAN_CHANGED", "ENCOUNTER", encounterId);
-            }
-        });
     }
 
     /**

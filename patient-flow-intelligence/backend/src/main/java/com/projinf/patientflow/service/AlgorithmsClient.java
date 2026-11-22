@@ -6,10 +6,8 @@ import java.net.URI;
 import java.net.http.*;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.Flow;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,45 +21,23 @@ public class AlgorithmsClient {
     private final URI base;
     private final boolean enabled;
     private final Duration timeout;
-    private final Duration dischargeTimeout;
     public AlgorithmsClient(JsonMapper json,@Value("${patientflow.algorithms.url:http://localhost:8000}") URI base,
             @Value("${patientflow.algorithms.enabled:true}") boolean enabled,
             @Value("${patientflow.algorithms.connect-timeout:500ms}") Duration connect,
-            @Value("${patientflow.algorithms.request-timeout:1s}") Duration timeout,
-            @Value("${patientflow.algorithms.discharge-timeout:30s}") Duration dischargeTimeout) {
+            @Value("${patientflow.algorithms.request-timeout:1s}") Duration timeout) {
         if(!List.of("http","https").contains(base.getScheme()) || base.getHost()==null || base.getUserInfo()!=null
                 || base.getQuery()!=null || base.getFragment()!=null || connect.isNegative() || connect.isZero()
-                || timeout.isNegative() || timeout.isZero() || dischargeTimeout.isNegative() || dischargeTimeout.isZero())
+                || timeout.isNegative() || timeout.isZero())
             throw new IllegalArgumentException("Configuração algorithms inválida");
         this.json=json; this.base=base; this.enabled=enabled; this.timeout=timeout;
-        this.dischargeTimeout=dischargeTimeout;
         this.client=HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(connect).followRedirects(HttpClient.Redirect.NEVER).build();
     }
     public Decision<RankOutput> rank(RankInput input) { return call("/v1/bed-ranking",input,DecisionRules.rank(input),RankOutput.class); }
     public Decision<ForecastOutput> forecast(ForecastBatch input) { return call("/v1/occupancy-forecast",input,DecisionRules.forecast(input),ForecastOutput.class); }
 
-    /** Previsão de alta. Vazio se o serviço estiver desligado, falhar ou responder mal: a admissão nunca depende disto. */
+    /** Features do pedido de previsão de alta, enviado por RabbitMQ (ver {@link DischargePredictionQueue}). */
     public record DischargeInput(String gender, int age, String diagnosisCode, OffsetDateTime admittedAt,
             int month, String admission_weekday, String time_period, String season, String specialty) {}
-
-    public Optional<Instant> predictDischarge(DischargeInput input) {
-        if(!enabled) return Optional.empty();
-        try {
-            var request=HttpRequest.newBuilder(base.resolve("/v1/discharge-prediction")).timeout(dischargeTimeout).header("Content-Type","application/json")
-                .header("Accept","application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(input))).build();
-            var response=client.send(request,info->new LimitedBody());
-            if(response.statusCode()!=200) return Optional.empty();
-            var output=json.readTree(response.body());
-            if(!output.path("modelVersion").asString("").startsWith("kumo-small-")) return Optional.empty();
-            Instant predicted=OffsetDateTime.parse(output.path("expectedDischargeAt").asString()).toInstant();
-            return predicted.isBefore(input.admittedAt().toInstant()) ? Optional.empty() : Optional.of(predicted);
-        } catch(InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            return Optional.empty();
-        } catch(IOException|RuntimeException unavailable) {
-            return Optional.empty();
-        }
-    }
 
     private <T> Decision<T> call(String path,Object input,T baseline,Class<T> type) {
         if(!enabled) return fallback(baseline,false,"SERVICE_DISABLED");

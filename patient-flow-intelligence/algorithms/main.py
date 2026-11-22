@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import timedelta
 import logging
+import os
 import sys
 from typing import Literal
 from uuid import UUID
@@ -11,6 +12,7 @@ from fastapi.responses import JSONResponse
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 from decision_rules import rank_beds, forecast_occupancy
 from discharge_model import DischargeModel
+import prediction_queue
 
 # Configuração essencial para forçar o Python a mostrar os logs INFO na consola do Docker
 logging.basicConfig(
@@ -25,6 +27,9 @@ logger = logging.getLogger("algorithms")
 async def lifespan(app: FastAPI):
     app.state.discharge_model = DischargeModel()
     logger.info(f"Modelo de alta carregado com sucesso. Versão: {app.state.discharge_model.version}")
+    if rabbitmq_url := os.environ.get("RABBITMQ_URL"):
+        model = app.state.discharge_model
+        prediction_queue.start(rabbitmq_url, lambda message: discharge_prediction_message(message, model))
     try:
         yield
     finally:
@@ -144,6 +149,25 @@ def predict_discharge(data: DischargeInput, model: DischargeModel) -> dict:
         f"Data de Alta Prevista: {expected} | Model Version: {model.version}"
     )
     return {"expectedDischargeAt": expected, "modelVersion": model.version}
+
+
+def discharge_prediction_message(message: dict, model: DischargeModel) -> dict | None:
+    """Pedido vindo do RabbitMQ: {"encounterId", "input": DischargeInput}. None descarta um pedido inválido."""
+    try:
+        encounter_id = str(UUID(message["encounterId"]))
+        data = DischargeInput.model_validate(message["input"])
+        result = predict_discharge(data, model)
+    except BlockingIOError:
+        raise
+    except (KeyError, TypeError, ValueError):
+        logger.warning("Pedido de previsão inválido descartado")
+        return None
+    return {
+        "encounterId": encounter_id,
+        "admittedAt": data.admittedAt.isoformat(),
+        "expectedDischargeAt": result["expectedDischargeAt"].isoformat(),
+        "modelVersion": result["modelVersion"],
+    }
 
 
 @app.post("/v1/discharge-prediction")

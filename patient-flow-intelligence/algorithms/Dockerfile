@@ -20,8 +20,8 @@ ENV HF_HUB_OFFLINE=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     HOME=/tmp
-COPY main.py decision_rules.py discharge_model.py ./
-RUN python -m compileall -q main.py decision_rules.py discharge_model.py kumo_assets.py \
+COPY main.py decision_rules.py discharge_model.py prediction_queue.py ./
+RUN python -m compileall -q main.py decision_rules.py discharge_model.py prediction_queue.py kumo_assets.py \
     && useradd --uid 10001 --no-create-home algorithms
 USER 10001:10001
 EXPOSE 8000

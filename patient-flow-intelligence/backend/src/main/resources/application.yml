@@ -15,6 +15,11 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_DEFAULT_USER:pfi}
+    password: ${RABBITMQ_DEFAULT_PASS:pfi}
   security:
     oauth2:
       resourceserver:
@@ -29,6 +34,9 @@ management:
     web:
       exposure:
         include: health,info
+  health:
+    rabbit:
+      enabled: false   # o backend continua saudável sem o broker; só a previsão de alta fica em espera
 
 fhir:
   systems:
@@ -52,7 +60,6 @@ patientflow:
     url: ${ALGORITHMS_URL:http://localhost:8000}
     connect-timeout: 500ms
     request-timeout: 1s
-    discharge-timeout: ${ALGORITHMS_DISCHARGE_TIMEOUT:30s}
   ingestion:
     enabled: ${INGESTION_ENABLED:false}
     hapi-fhir-url: ${HAPI_FHIR_URL:http://localhost:8081/fhir}
