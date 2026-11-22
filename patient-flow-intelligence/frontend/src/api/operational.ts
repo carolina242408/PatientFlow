@@ -143,6 +143,23 @@ export interface DischargeForecastDay {
   expectedDischarges: number
 }
 
+export interface ConditionStayMean {
+  code: string
+  name: string | null
+  meanDays: number
+  sampleCount: number
+}
+
+export interface ExceededStayPatient {
+  patientId: string
+  patientName: string | null
+  conditionCode: string
+  conditionName: string | null
+  actualDays: number
+  meanDays: number
+  diffDays: number
+}
+
 // ─── Funções de acesso à API ──────────────────────────────────────────────────
 
 /** Occupancy rows aggregated by service, unit, and wing within the authorized scope. */
@@ -171,6 +188,27 @@ export async function fetchDischargeForecast(scope: Scope = {}): Promise<Dischar
   const { data } = await api.get<DischargeForecastDay[]>('/analytics/discharge-forecast', {
     params: scope,
   })
+  return data
+}
+
+export async function fetchStayByCondition(
+  scope: Scope = {},
+  from?: string,
+  to?: string,
+): Promise<ConditionStayMean[]> {
+  const { data } = await api.get<ConditionStayMean[]>('/analytics/stay-by-condition', {
+    params: { ...scope, ...(from ? { from } : {}), ...(to ? { to } : {}) },
+  })
+  return data
+}
+
+export async function fetchPatientsExceededStay(
+  scope: Scope = {}
+): Promise<ExceededStayPatient[]> {
+  const { data } = await api.get<ExceededStayPatient[]>(
+    '/analytics/patients-exceeded-stay',
+    { params: scope }
+  )
   return data
 }
 

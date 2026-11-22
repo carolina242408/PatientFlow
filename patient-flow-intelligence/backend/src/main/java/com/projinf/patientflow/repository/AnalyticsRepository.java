@@ -213,6 +213,109 @@ public class AnalyticsRepository {
                 r.getLong("expected_discharges")));
     }
 
+    public List<ConditionStayMean> stayByCondition(Scope scope, Instant from, Instant to) {
+        validateScope(scope);
+        var p = access.parameters();
+        if (scope.ulsId() != null) p.put("uls", scope.ulsId());
+        if (scope.unitId() != null) p.put("unit", scope.unitId());
+        if (scope.serviceId() != null) p.put("service", scope.serviceId());
+        p.put("from", Timestamp.from(from));
+        p.put("to", Timestamp.from(to));
+        String filter = where(scope, true);
+        return jdbc.query("""
+            SELECT e.diagnosis_code AS condition_code,
+                c.name AS condition_name,
+                avg(EXTRACT(EPOCH FROM (e.end_period - e.start_period)) / 86400.0) AS mean_days,
+                count(*) AS sample_count
+            FROM encounters e
+            LEFT JOIN LATERAL (
+                SELECT bed_id FROM location_allocations la
+                WHERE la.encounter_id=e.id
+                ORDER BY la.assigned_at DESC,la.id DESC LIMIT 1
+            ) a ON true
+            LEFT JOIN beds b ON b.id=a.bed_id
+            LEFT JOIN rooms r ON r.id=b.room_id
+            LEFT JOIN wards w ON w.id=r.ward_id
+            LEFT JOIN wings wi ON wi.id=w.wing_id
+            LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,wi.service_id)
+            LEFT JOIN floors f ON f.id=s.floor_id
+            LEFT JOIN buildings bu ON bu.id=f.building_id
+            LEFT JOIN healthcare_units u ON u.id=bu.unit_id
+            LEFT JOIN conditions c ON c.code=e.diagnosis_code
+            %s
+            AND e.status='FINISHED'
+            AND e.start_period IS NOT NULL
+            AND e.end_period IS NOT NULL
+            AND e.diagnosis_code IS NOT NULL
+            GROUP BY e.diagnosis_code, c.name
+            ORDER BY count(*) DESC, e.diagnosis_code
+            """.formatted(filter), p, (r, n) -> new ConditionStayMean(
+                r.getString("condition_code"),
+                r.getString("condition_name"),
+                round(r.getDouble("mean_days")),
+                r.getLong("sample_count")));
+    }
+
+    public List<ExceededStayPatient> findPatientsExceededStay(Scope scope) {
+        validateScope(scope);
+        var p = access.parameters();
+        if (scope.ulsId() != null) p.put("uls", scope.ulsId());
+        if (scope.unitId() != null) p.put("unit", scope.unitId());
+        if (scope.serviceId() != null) p.put("service", scope.serviceId());
+        String filter = where(scope, true);
+        String sql = """
+            SELECT p.id               AS patient_id,
+                p.full_name           AS patient_name,
+                e.diagnosis_code      AS condition_code,
+                c.name                AS condition_name,
+                EXTRACT(EPOCH FROM (now() - e.start_period)) / 86400.0 AS actual_days,
+                cs.mean_days          AS mean_days,
+                (EXTRACT(EPOCH FROM (now() - e.start_period)) / 86400.0 - cs.mean_days) AS diff_days
+            FROM encounters e
+            LEFT JOIN LATERAL (
+                SELECT bed_id FROM location_allocations la
+                WHERE la.encounter_id=e.id
+                ORDER BY la.assigned_at DESC,la.id DESC LIMIT 1
+            ) a ON true
+            LEFT JOIN beds b ON b.id=a.bed_id
+            LEFT JOIN rooms r ON r.id=b.room_id
+            LEFT JOIN wards w ON w.id=r.ward_id
+            LEFT JOIN wings wi ON wi.id=w.wing_id
+            LEFT JOIN clinical_services s ON s.id=COALESCE(e.service_id,wi.service_id)
+            LEFT JOIN floors f ON f.id=s.floor_id
+            LEFT JOIN buildings bu ON bu.id=f.building_id
+            LEFT JOIN healthcare_units u ON u.id=bu.unit_id
+            LEFT JOIN patients p ON p.id = e.patient_id
+            LEFT JOIN conditions c ON c.code = e.diagnosis_code
+            JOIN (
+                SELECT diagnosis_code,
+                    AVG(EXTRACT(EPOCH FROM (end_period - start_period)) / 86400.0) AS mean_days
+                FROM encounters
+                WHERE status='FINISHED'
+                AND start_period IS NOT NULL
+                AND end_period IS NOT NULL
+                AND diagnosis_code IS NOT NULL
+                GROUP BY diagnosis_code
+            ) cs ON cs.diagnosis_code = e.diagnosis_code
+            %s
+            AND e.status='IN_PROGRESS'
+            AND e.start_period IS NOT NULL
+            AND e.diagnosis_code IS NOT NULL
+            AND EXTRACT(EPOCH FROM (now() - e.start_period)) / 86400.0 > cs.mean_days
+            ORDER BY diff_days DESC
+            """.formatted(filter);
+        return jdbc.query(sql, p,
+            (r, n) -> new ExceededStayPatient(
+                    r.getString("patient_id"),
+                    r.getString("patient_name"),
+                    r.getString("condition_code"),
+                    r.getString("condition_name"),
+                    r.getDouble("actual_days"),
+                    r.getDouble("mean_days"),
+                    r.getDouble("diff_days")
+            ));
+    }
+
     public PageResult<ServiceInput> forecastInputs(Scope scope,Instant from,Instant now,int page,int size,AnalyticsSettings settings) {
         HierarchyRepository.page(page,size);
         var p=parameters(scope,from,now,now,settings);

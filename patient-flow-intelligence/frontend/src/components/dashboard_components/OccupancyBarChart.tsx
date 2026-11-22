@@ -3,16 +3,22 @@ import type { OccupancyRow } from '../../api/operational'
 
 interface OccupancyBarChartProps {
   rows: OccupancyRow[]
+  criticalThreshold?: number
   expanded?: boolean
   isPending?: boolean
   isError?: boolean
 }
 
-const barColor = (occupancy: number) =>
-  occupancy >= 85 ? 'bg-violet-500' : occupancy >= 75 ? 'bg-blue-500' : 'bg-blue-400'
+const barColor = (occupancy: number, criticalThreshold?: number) => {
+  if (criticalThreshold !== undefined && occupancy > criticalThreshold) {
+    return 'bg-red-600'
+  }
+  return occupancy >= 85 ? 'bg-violet-500' : occupancy >= 75 ? 'bg-blue-500' : 'bg-blue-400'
+}
 
 function OccupancyBarChart({
   rows,
+  criticalThreshold,
   expanded = false,
   isPending = false,
   isError = false,
@@ -34,7 +40,7 @@ function OccupancyBarChart({
           return (
             <div key={item.id} className="flex h-full min-w-0 flex-1 items-end justify-center">
               <div
-                className={`relative w-full max-w-32 rounded-t-md ${barColor(occupancy)}`}
+                className={`relative w-full max-w-32 rounded-t-md ${barColor(occupancy, criticalThreshold)}`}
                 style={{ height: `${occupancy}%` }}
               >
                 <span

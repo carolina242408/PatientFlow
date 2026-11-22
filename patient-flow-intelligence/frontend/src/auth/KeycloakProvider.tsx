@@ -13,7 +13,7 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   const loadUser = useCallback(async () => {
     if (!keycloak.tokenParsed) return
 
-    const token = keycloak.tokenParsed
+    const token = keycloak.tokenParsed as Record<string, any>
     const access = await fetchMyAccess()
     setUser({
       name:

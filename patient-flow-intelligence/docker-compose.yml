@@ -95,7 +95,7 @@ services:
     build:
       context: ../tools/data-generation
       dockerfile: ./Dockerfile
-    container_name: pfi-data-generator
+    container_name: data-generator
     ports:
       - "8001:8001"
     volumes:
@@ -135,6 +135,7 @@ services:
       AUDIT_LOG_TTL_DAYS: ${AUDIT_LOG_TTL_DAYS:-30}
       AUDIT_CLEANUP_CRON: ${AUDIT_CLEANUP_CRON:-0 0 * * * *}
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
     networks:
       - default
       - algorithms-private

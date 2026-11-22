@@ -25,6 +25,8 @@ public final class AnalyticsDTO {
     public record Occupancy(Instant asOf,Scope scope,double criticalOccupancyPercent,
             List<OccupancyRow> services,List<OccupancyRow> units,List<OccupancyRow> wings) { }
     public record DischargeForecastDay(String date,int dayOfWeek,long expectedDischarges) { }
+    public record ConditionStayMean(String code,String name,double meanDays,long sampleCount) { }
+    public record ExceededStayPatient(String patientId, String patientName, String conditionCode, String conditionName, double actualDays, double meanDays, double diffDays) {}
 
     // Versioned data-only contract with algorithms: no SNS, name, birth date or access token.
     public record Candidate(UUID bedId,String wardCode,String roomCode,String bedCode,long occupiedInRoom,boolean preferredWard) { }
