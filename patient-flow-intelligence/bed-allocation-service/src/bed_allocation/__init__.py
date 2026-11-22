@@ -1,0 +1,2 @@
+"""Bed allocation microservice."""
+

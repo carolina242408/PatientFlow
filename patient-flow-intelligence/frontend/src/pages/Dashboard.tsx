@@ -33,6 +33,7 @@ import {
   type BedView,
 } from '../api/operational'
 import PatientsExceededStayWidget from '@/dashboard_widgets/PatientsExceededStayWidget'
+import ManualAdmissionWidget from '@/dashboard_widgets/ManualAdmissionWidget'
 
 type Scope = 'LHU' | 'Unit' | 'Service'
 
@@ -299,6 +300,7 @@ const Dashboard = () => {
         onExpand={() => setExpandedItem('exceededStay')}
       />
     ),
+    manualAdmission: <ManualAdmissionWidget />,
   }
 
   return (
@@ -450,6 +452,7 @@ const Dashboard = () => {
 
       {hasWidget('upcomingDischarges') && widgets.upcomingDischarges}
       {hasWidget('exceededStay') && widgets.exceededStay}
+      {hasWidget('manualAdmission') && widgets.manualAdmission}
     </div>
   )
 }

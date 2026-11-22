@@ -9,6 +9,7 @@ export type DashboardWidgetId =
   | 'forecast'
   | 'dischargeForecast'
   | 'exceededStay'
+  | 'manualAdmission'
 
 export const DASHBOARD_WIDGETS_BY_GROUP = {
   LHU: [
@@ -20,6 +21,7 @@ export const DASHBOARD_WIDGETS_BY_GROUP = {
     'hospitalStayByCondition',
     'upcomingDischarges',
     'exceededStay',
+    'manualAdmission',
   ],
   UNIT: [
     'occupancyRate',
@@ -30,6 +32,7 @@ export const DASHBOARD_WIDGETS_BY_GROUP = {
     'hospitalStayByCondition',
     'upcomingDischarges',
     'exceededStay',
+    'manualAdmission',
   ],
   SERVICE: [
     'occupancyRate',
@@ -39,6 +42,7 @@ export const DASHBOARD_WIDGETS_BY_GROUP = {
     'hospitalStayByCondition',
     'upcomingDischarges',
     'exceededStay',
+    'manualAdmission',
   ],
 } as const satisfies Partial<Record<AccessScopeType, readonly DashboardWidgetId[]>>
 
