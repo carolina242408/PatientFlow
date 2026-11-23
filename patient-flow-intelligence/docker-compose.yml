@@ -65,6 +65,7 @@ services:
     environment:
       KUMO_DEVICE: cpu
       KUMO_CONTEXT_ROWS: ${KUMO_CONTEXT_ROWS:-4096}
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/%2F
     volumes:
       - type: bind
         source: ./algorithms/datasetgenerator/ml_hospital_consumption_87k.csv
@@ -130,7 +131,9 @@ services:
       KEYCLOAK_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       ALGORITHMS_URL: http://algorithms:8000
-      ALGORITHMS_DISCHARGE_TIMEOUT: ${ALGORITHMS_DISCHARGE_TIMEOUT:-30s}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       DATA_GENERATOR_URL: http://data-generator:8001
       HAPI_FHIR_URL: ${HAPI_FHIR_URL:-http://hapi-fhir:8081/fhir}
       INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
@@ -190,6 +193,10 @@ services:
     image: rabbitmq:4-management-alpine
     container_name: rabbitmq
     env_file: .env
+    # Também na rede privada do algorithms, que não tem acesso à rede por omissão.
+    networks:
+      - default
+      - algorithms-private
     ports:
       - "5672:5672"
       - "15672:15672"

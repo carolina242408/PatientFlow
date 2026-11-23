@@ -59,10 +59,20 @@ sem prioridade explícita exige-se um único código associado. Dados incompleto
 ou ambíguos não geram previsão. O resultado só é gravado se o encontro continuar
 ativo, com a mesma admissão e sem um plano de alta já definido.
 
-O timeout de alta é separado das regras: `ALGORITHMS_DISCHARGE_TIMEOUT=30s`
-por defeito. A chamada permanece síncrona na ingestão, fora da transação SQL.
-O serviço devolve 503 se o modelo estiver ocupado ou falhar e 422 se os
-parâmetros forem inválidos. A admissão já persistida é preservada nesses casos.
+O pedido e a resposta da previsão de alta passam pelo RabbitMQ, não por HTTP.
+Na admissão, o backend publica `{"encounterId", "input"}` na fila
+`discharge.prediction.requests`; este serviço consome-a (`prediction_queue.py`,
+ativo quando `RABBITMQ_URL` está definido) e publica
+`{"encounterId", "admittedAt", "expectedDischargeAt", "modelVersion"}` em
+`discharge.prediction.results`, que o backend consome e grava. As filas são
+duráveis e as mensagens persistentes: com o modelo em baixo o pedido espera na
+fila, e com o backend em baixo espera o resultado. Um pedido só é confirmado
+depois de o resultado estar publicado. Pedidos inválidos são descartados; com o
+modelo ocupado o pedido volta à fila; outra falha é repetida uma vez.
+
+O endpoint HTTP `POST /v1/discharge-prediction` mantém-se para testes manuais:
+devolve 503 se o modelo estiver ocupado ou falhar e 422 se os parâmetros forem
+inválidos. O backend já não o usa.
 
 ## Execução local
 
