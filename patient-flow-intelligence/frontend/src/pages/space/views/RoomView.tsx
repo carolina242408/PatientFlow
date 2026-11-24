@@ -57,7 +57,6 @@ const RoomView = ({ node, open }: ViewProps) => {
       : new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric' }).format(date)
   }
 
-  // Ex: "6 beds", ou "6 beds, 1 chair" quando a sala possui múltiplos tipos de recursos
   const items = types
     .map((type) => t(`space.counts.${type}`, { count: getResourcesByType(type).length }))
     .join(', ')
@@ -103,31 +102,6 @@ const RoomView = ({ node, open }: ViewProps) => {
         <h2 className="text-sm font-medium text-gray-500">
           {t('space.inRoom', { items, room: node.name })}
         </h2>
-        <ul className="flex flex-wrap gap-2">
-          {types.flatMap((type) => {
-            const resOfType = getResourcesByType(type)
-            // Agrupa e conta por estado para este tipo
-            const countsByStatus = resOfType.reduce<Record<string, number>>((acc, r) => {
-              acc[r.status] = (acc[r.status] ?? 0) + 1
-              return acc
-            }, {})
-
-            return Object.entries(countsByStatus).map(([status, count]) => {
-              const pillStyle =
-                STATUS_STYLES[status as keyof typeof STATUS_STYLES]?.pill ??
-                'bg-gray-100 text-gray-700'
-
-              return (
-                <li
-                  key={`${type}-${status}`}
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${pillStyle}`}
-                >
-                  {t(`space.breakdown.${type}.${status}`, { count })}
-                </li>
-              )
-            })
-          })}
-        </ul>
       </div>
 
       {visible.length === 0 ? (
