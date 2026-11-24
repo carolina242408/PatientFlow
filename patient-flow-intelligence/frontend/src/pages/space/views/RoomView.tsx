@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BedSingle, CalendarDays, RefreshCw, Search } from 'lucide-react'
+import { BedSingle, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
+import { LastUpdatedCard } from '@/components/LastUpdatedCard'
 import type { ResourceType, ViewProps } from '../types'
 import { STATUS_STYLES, initialsOf } from '../utils'
 
@@ -18,7 +18,7 @@ const RoomView = ({ node, open }: ViewProps) => {
   const { t, i18n } = useTranslation()
   const lang = i18n.resolvedLanguage
   const [query, setQuery] = useState('')
-  const [updatedAt, setUpdatedAt] = useState(() => new Date())
+  const [updatedAt] = useState(() => new Date())
 
   const resources = node.resources ?? []
   const q = query.trim().toLowerCase()
@@ -39,15 +39,6 @@ const RoomView = ({ node, open }: ViewProps) => {
       r.occupant?.name.toLowerCase().includes(q) ||
       labelOf(r.type, r.number).toLowerCase().includes(q),
   )
-
-  const lastUpdate = t('space.lastUpdate', {
-    date: new Intl.DateTimeFormat(lang, {
-      month: 'long',
-      day: '2-digit',
-      year: 'numeric',
-    }).format(updatedAt),
-    time: new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(updatedAt),
-  })
 
   const formatAdmitted = (iso?: string) => {
     if (!iso) return '—'
@@ -79,21 +70,7 @@ const RoomView = ({ node, open }: ViewProps) => {
           />
         </label>
 
-        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
-          <CalendarDays aria-hidden="true" className="h-4 w-4 shrink-0" />
-          <span>{lastUpdate}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            // TODO: refetch the room data here
-            onClick={() => setUpdatedAt(new Date())}
-            aria-label={t('space.refresh')}
-            title={t('space.refresh')}
-            className="rounded-md p-1 text-blue-600 transition-colors hover:bg-blue-50"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
+        <LastUpdatedCard timestamp={updatedAt} />
       </div>
 
       <hr className="border-gray-200" />

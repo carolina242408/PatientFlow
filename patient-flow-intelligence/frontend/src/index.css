@@ -73,15 +73,20 @@
 
 .theme-dark [class*="bg-[#f9fafb]"],
 .theme-dark [class*="bg-[#f3f4f6]"],
-.theme-dark thead tr {
+.theme-dark thead tr,
+.theme-dark thead th {
   background-color: #1f2937 !important;
+}
+
+.theme-dark thead th {
+  color: #94a3b8 !important;
 }
 
 .theme-dark :is(.bg-gray-50, .bg-slate-50, .bg-gray-100, .bg-slate-100) {
   background-color: #1f2937 !important;
 }
 
-.theme-dark :is(.bg-blue-50, .bg-blue-50\/60) {
+.theme-dark :is(.bg-blue-50, .bg-blue-50\/40, .bg-blue-50\/60) {
   background-color: #17255444 !important;
 }
 
@@ -244,10 +249,11 @@
 
 .theme-dark :is(
   .bg-emerald-100,
+  .bg-amber-50,
   .bg-amber-100,
+  .bg-amber-100\/80,
   .bg-green-50,
   .bg-green-100,
-  .bg-purple-50,
   .bg-purple-100,
   .bg-violet-50,
   .bg-violet-100
@@ -255,8 +261,8 @@
   background-color: #1e293b !important;
 }
 
-.theme-dark :is(.bg-amber-50) {
-  background-color: #fdaf3b22  !important;
+.theme-dark :is(.bg-purple-50) {
+  background-color: #a855f724 !important;
 }
 
 .theme-dark :is(.bg-red-50) {
@@ -319,7 +325,7 @@
   color: #94a3b8 !important;
 }
 
-.theme-dark :is(.text-blue-600, .text-blue-700) {
+.theme-dark :is(.text-blue-600, .text-blue-700, .text-blue-800) {
   color: #6c8aec !important;
 }
 
@@ -331,7 +337,7 @@
   color: #71f77a !important;
 }
 
-.theme-dark :is(.text-amber-800) {
+.theme-dark :is(.text-amber-700, .text-amber-800, .text-amber-900) {
   color: #fdaf3b !important;
 }
 
