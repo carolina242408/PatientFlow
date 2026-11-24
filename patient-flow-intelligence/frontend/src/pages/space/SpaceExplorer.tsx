@@ -385,10 +385,6 @@ function toSpaceNode(
   bedsByRoom: Map<string, Resource[]>,
   bedCounts?: SpaceNode['bedCounts'],
 ): SpaceNode {
-  if (node.type === 'treatment-chair') {
-    throw new Error(`Unsupported hierarchy type: ${node.type}`)
-  }
-
   const spaceNode: SpaceNode = {
     id: node.id,
     level: node.type,

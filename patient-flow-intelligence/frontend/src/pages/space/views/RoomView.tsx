@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Armchair, BedSingle, CalendarDays, HeartPulse, RefreshCw, Search } from 'lucide-react'
+import { BedSingle, CalendarDays, RefreshCw, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
@@ -9,11 +9,9 @@ import { STATUS_STYLES, initialsOf } from '../utils'
 
 const ICONS: Record<ResourceType, LucideIcon> = {
   bed: BedSingle,
-  operatingRoom: HeartPulse,
-  chair: Armchair,
 }
 
-const ALL_RESOURCE_TYPES: ResourceType[] = ['bed', 'operatingRoom', 'chair']
+const ALL_RESOURCE_TYPES: ResourceType[] = ['bed']
 
 // Room: searchable list of the resources in the room (usually beds)
 const RoomView = ({ node, open }: ViewProps) => {

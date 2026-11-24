@@ -7,7 +7,6 @@ import {
   LayersIcon,
   NetworkIcon,
   StethoscopeIcon,
-  UserIcon,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -23,7 +22,6 @@ const NODE_ICONS: Record<OrgNode["type"], LucideIcon> = {
   ward: BedDoubleIcon,
   room: DoorClosedIcon,
   bed: BedIcon,
-  "treatment-chair": UserIcon,
 }
 
 export function HierarchyNodeIcon({

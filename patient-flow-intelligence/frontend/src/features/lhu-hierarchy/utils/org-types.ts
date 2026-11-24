@@ -1,7 +1,7 @@
 import type { OrgType } from "../types/tree"
 
 export const PREMISE_TYPES: OrgType[] = ["lhu", "unit", "building", "floor", "service", "wing", "ward", "room"]
-export const RESOURCE_TYPES: OrgType[] = ["bed", "treatment-chair"]
+export const RESOURCE_TYPES: OrgType[] = ["bed"]
 
 export const PARENT_TYPE: Record<OrgType, OrgType | null> = {
   lhu: null,
@@ -13,7 +13,6 @@ export const PARENT_TYPE: Record<OrgType, OrgType | null> = {
   ward: "wing",
   room: "ward",
   bed: "room",
-  "treatment-chair": "ward",
 }
 
 export const isResourceType = (type: OrgType) => RESOURCE_TYPES.includes(type)

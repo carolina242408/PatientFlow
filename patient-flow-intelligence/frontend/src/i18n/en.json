@@ -183,21 +183,11 @@
       "room": "Continue to room"
     },
     "resources": {
-      "beds": "Beds",
-      "operatingRoom": "Operating rooms",
-      "chairs": "Treatment chairs"
-    },
-    "resourceLabel": {
-      "operatingRoom": "Operating room {{number}}",
-      "chair": "Treatment chair {{number}}"
+      "beds": "Beds"
     },
     "counts": {
       "bed": "{{count}} bed",
-      "bed_other": "{{count}} beds",
-      "operatingRoom": "{{count}} operating room",
-      "operatingRoom_other": "{{count}} operating rooms",
-      "chair": "{{count}} treatment chair",
-      "chair_other": "{{count}} treatment chairs"
+      "bed_other": "{{count}} beds"
     },
     "status": {
       "occupied": "Occupied",
@@ -229,23 +219,6 @@
         "occupied": "{{count}} occupied",
         "available": "{{count}} available",
         "reserved": "{{count}} reserved"
-      },
-      "operatingRoom": {
-        "inUse": "{{count}} in use",
-        "available": "{{count}} available",
-        "cleaning": "{{count}} cleaning"
-      },
-      "chairs": {
-        "occupied": "{{count}} occupied",
-        "available": "{{count}} available"
-      },
-      "bed": {
-        "occupied": "{{count}} occupied",
-        "occupied_other": "{{count}} occupied",
-        "available": "{{count}} available",
-        "available_other": "{{count}} available",
-        "reserved": "{{count}} reserved",
-        "reserved_other": "{{count}} reserved"
       }
     }
   },

@@ -183,22 +183,14 @@
       "room": "Continuar para o quarto"
     },
     "resources": {
-      "beds": "Camas",
-      "operatingRoom": "Salas de operações",
-      "chairs": "Cadeirões de tratamento"
+      "beds": "Camas"
     },
     "resourceLabel": {
-      "bed": "Cama {{number}}",
-      "operatingRoom": "Sala de operações {{number}}",
-      "chair": "Cadeirão {{number}}"
+      "bed": "Cama {{number}}"
     },
     "counts": {
       "bed": "{{count}} cama",
-      "bed_other": "{{count}} camas",
-      "operatingRoom": "{{count}} sala de operações",
-      "operatingRoom_other": "{{count}} salas de operações",
-      "chair": "{{count}} cadeirão",
-      "chair_other": "{{count}} cadeirões"
+      "bed_other": "{{count}} camas"
     },
     "status": {
       "occupied": "Ocupada",
@@ -230,23 +222,6 @@
         "occupied": "{{count}} ocupadas",
         "available": "{{count}} disponíveis",
         "reserved": "{{count}} reservadas"
-      },
-      "operatingRoom": {
-        "inUse": "{{count}} em uso",
-        "available": "{{count}} disponíveis",
-        "cleaning": "{{count}} em limpeza"
-      },
-      "chairs": {
-        "occupied": "{{count}} ocupados",
-        "available": "{{count}} disponíveis"
-      },
-      "bed": {
-        "occupied": "{{count}} ocupada",
-        "occupied_other": "{{count}} ocupadas",
-        "available": "{{count}} disponível",
-        "available_other": "{{count}} disponíveis",
-        "reserved": "{{count}} reservada",
-        "reserved_other": "{{count}} reservadas"
       }
     }
   },

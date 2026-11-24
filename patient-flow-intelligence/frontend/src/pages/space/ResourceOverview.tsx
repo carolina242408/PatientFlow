@@ -2,14 +2,11 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
 import type { ViewProps } from './types'
-import { collectBeds, countBeds, sumResources } from './utils'
+import { collectBeds, countBeds } from './utils'
 
-// Resource cards (beds, operating rooms, treatment chairs) plus the
-// "Continue to…" list. LHU, unit, building and floor all share this layout.
 const ResourceOverview = ({ node, open }: ViewProps) => {
   const { t } = useTranslation()
   const beds = node.bedCounts ?? countBeds(collectBeds(node))
-  const res = sumResources(node)
   const nextLevel = node?.children?.[0]?.level
 
   const cards = [
@@ -23,33 +20,11 @@ const ResourceOverview = ({ node, open }: ViewProps) => {
         ['reserved', beds.reserved],
       ] as const,
     },
-    {
-      key: 'operatingRoom',
-      total:
-        res.operatingRoom.inUse +
-        res.operatingRoom.available +
-        res.operatingRoom.cleaning,
-      badge: 'bg-emerald-100 text-emerald-700',
-      parts: [
-        ['inUse', res.operatingRoom.inUse],
-        ['available', res.operatingRoom.available],
-        ['cleaning', res.operatingRoom.cleaning],
-      ] as const,
-    },
-    {
-      key: 'chairs',
-      total: res.chair.occupied + res.chair.available,
-      badge: 'bg-blue-100 text-blue-700',
-      parts: [
-        ['occupied', res.chair.occupied],
-        ['available', res.chair.available],
-      ] as const,
-    },
   ]
 
   return (
     <>
-      <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-1">
         {cards.map((card) => (
           <article key={card.key} className="rounded-2xl border border-gray-200 bg-white p-6">
             <Badge className={`rounded-lg border-0 px-3 py-1.5 text-sm font-medium ${card.badge}`}>

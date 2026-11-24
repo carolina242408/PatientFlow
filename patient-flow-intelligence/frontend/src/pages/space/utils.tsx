@@ -9,66 +9,6 @@ export interface Bed {
   occupant?: Resource['occupant']
 }
 
-export interface ResourcesCount {
-  operatingRoom: {
-    inUse: number
-    available: number
-    cleaning: number
-  }
-  chair: {
-    occupied: number
-    available: number
-  }
-}
-
-
-const EMPTY_RESOURCES: ResourcesCount = {
- operatingRoom: { inUse: 0, available: 0, cleaning: 0 },
- chair: { occupied: 0, available: 0 },
-}
-
-/**
- * Soma recursivamente as salas de operação (operatingRoom) e cadeiras (chair)
- * presentes no nó atual e em todos os seus descendentes.
- */
-export const sumResources = (node?: SpaceNode | null): ResourcesCount => {
-  if (!node) return EMPTY_RESOURCES
-  // Recursos próprios do nó atual (filtrados do array resources)
-  const nodeResources = (node.resources ?? []).reduce(
-    (acc, res) => {
-      if (res.type === 'operatingRoom') {
-        if (res.status === 'inUse') acc.operatingRoom.inUse++
-        if (res.status === 'available') acc.operatingRoom.available++
-        if (res.status === 'cleaning') acc.operatingRoom.cleaning++
-      } else if (res.type === 'chair') {
-        if (res.status === 'occupied') acc.chair.occupied++
-        if (res.status === 'available') acc.chair.available++
-      }
-      return acc
-    },
-    {
-      operatingRoom: { inUse: 0, available: 0, cleaning: 0 },
-      chair: { occupied: 0, available: 0 },
-    }
-  )
-
-  // Soma recursiva com os filhos
-  return (node.children ?? []).reduce((acc, child) => {
-    const r = sumResources(child)
-    return {
-      operatingRoom: {
-        inUse: acc.operatingRoom.inUse + r.operatingRoom.inUse,
-        available: acc.operatingRoom.available + r.operatingRoom.available,
-        cleaning: acc.operatingRoom.cleaning + r.operatingRoom.cleaning,
-      },
-      chair: {
-        occupied: acc.chair.occupied + r.chair.occupied,
-        available: acc.chair.available + r.chair.available,
-      },
-    }
-  }, nodeResources)
-}
-
 /**
  * Coleciona todas as camas (resources de tipo 'bed') do nó e sub-nós (recursivo).
  */

@@ -8,7 +8,6 @@ export type OrgType =
   | "ward"
   | "room"
   | "bed"
-  | "treatment-chair"
 
 export type OrgNode = {
   id: string

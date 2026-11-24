@@ -44,11 +44,9 @@ const frontendType = (type: string): OrgType => {
   return mappedType
 }
 
+// Translation between ULS, used by the backend, into LHU, used by the frontend
 const backendType = (type: OrgType) => {
   if (type === "lhu") return "uls"
-  if (type === "treatment-chair") {
-    throw new Error(`O backend ainda não suporta o tipo de recurso ${type}`)
-  }
   return type
 }
 
