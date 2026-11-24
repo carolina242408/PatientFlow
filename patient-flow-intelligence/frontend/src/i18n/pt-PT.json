@@ -720,8 +720,9 @@
     "root": "Raiz da organização",
     "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
     "importExport": {
-      "exportCsv": "Exportar CSV",
-      "exportXlsx": "Exportar Excel",
+      "exportButton": "Exportar",
+      "exportCsv": "CSV (.csv)",
+      "exportXlsx": "Excel (.xlsx)",
       "exporting": "A exportar...",
       "importButton": "Importar CSV / Excel",
       "modalTitle": "Importar hierarquia",
@@ -788,7 +789,7 @@
       "sections": { "parentLocation": "Localização superior", "information": "Informação de {{type}}" },
       "fields": {
         "name": "Nome ou número", "internalCode": "Código interno", "status": "Estado operacional",
-        "notes": "Notas", "roomType": "Tipo de sala"
+        "notes": "Notas"
       },
       "placeholders": { "name": "Nome ou número de {{type}}", "internalCode": "Sugerido automaticamente se vazio", "notes": "Adicionar notas operacionais", "parent": "Selecionar {{type}}" },
       "actions": { "clear": "Limpar", "submit": "Adicionar à hierarquia da ULS" },
@@ -803,10 +804,6 @@
         }
       },
       "validation": { "required": "Este campo é obrigatório", "min": "Tem de ser pelo menos 1" }
-    },
-    "options": {
-      "status": { "operational": "Operacional", "maintenance": "Em manutenção", "inactive": "Inativo" },
-      "roomType": { "INPATIENT_ROOM": "Sala de Internamento", "OPERATING_ROOM": "Bloco operatório", "NURSERY_ROOM": "Sala de berçário" }
     },
     "typeDescriptions": {
       "lhu": "Unidade local de saúde de topo", "unit": "Unidade hospitalar ou de prestação de cuidados", "building": "Edifício físico dentro de uma unidade",

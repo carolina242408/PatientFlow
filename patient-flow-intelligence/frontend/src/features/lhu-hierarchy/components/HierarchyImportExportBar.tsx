@@ -1,6 +1,6 @@
-import { useRef, useState, type ChangeEvent } from "react"
+import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
-import { Download, FileSpreadsheet, Upload, X } from "lucide-react"
+import { ChevronDown, Download, FileSpreadsheet, Upload, X } from "lucide-react"
 import { Button } from "@/components/Button"
 import { OperationPopup } from "@/components/OperationPopup"
 import { fetchAllLHUHierarchyTree } from "../api/hierarchy"
@@ -15,8 +15,28 @@ export function HierarchyImportExportBar() {
   const { t } = useTranslation()
   const importMutation = useImportHierarchy()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const exportMenuRef = useRef<HTMLDivElement | null>(null)
 
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null)
+
+  useEffect(() => {
+    if (!exportMenuOpen) return
+    const handlePointerDown = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setExportMenuOpen(false)
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExportMenuOpen(false)
+    }
+    document.addEventListener("mousedown", handlePointerDown)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [exportMenuOpen])
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedFileName, setSelectedFileName] = useState("")
   const [parsed, setParsed] = useState<ParsedHierarchyFile | null>(null)
@@ -33,6 +53,7 @@ export function HierarchyImportExportBar() {
   }
 
   const handleExport = async (format: "csv" | "xlsx") => {
+    setExportMenuOpen(false)
     setExporting(format)
     try {
       const tree = await fetchAllLHUHierarchyTree()
@@ -102,33 +123,50 @@ export function HierarchyImportExportBar() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 pb-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={exporting !== null}
-          onClick={() => handleExport("csv")}
-          className="gap-1.5"
-        >
-          <Download className="h-4 w-4" />
-          {exporting === "csv"
-            ? t("lhuHierarchy.importExport.exporting")
-            : t("lhuHierarchy.importExport.exportCsv")}
-        </Button>
+        <div ref={exportMenuRef} className="relative">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={exporting !== null}
+            aria-haspopup="menu"
+            aria-expanded={exportMenuOpen}
+            onClick={() => setExportMenuOpen((open) => !open)}
+            className="gap-1.5"
+          >
+            <Download className="h-4 w-4" />
+            {exporting !== null
+              ? t("lhuHierarchy.importExport.exporting")
+              : t("lhuHierarchy.importExport.exportButton")}
+            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+          </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={exporting !== null}
-          onClick={() => handleExport("xlsx")}
-          className="gap-1.5"
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          {exporting === "xlsx"
-            ? t("lhuHierarchy.importExport.exporting")
-            : t("lhuHierarchy.importExport.exportXlsx")}
-        </Button>
+          {exportMenuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 z-20 mt-1.5 w-44 rounded-xl border border-gray-200 bg-white p-1 shadow-lg"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleExport("csv")}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-gray-100"
+              >
+                <Download className="h-4 w-4 text-gray-500" />
+                {t("lhuHierarchy.importExport.exportCsv")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleExport("xlsx")}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-gray-100"
+              >
+                <FileSpreadsheet className="h-4 w-4 text-gray-500" />
+                {t("lhuHierarchy.importExport.exportXlsx")}
+              </button>
+            </div>
+          )}
+        </div>
 
         <Button
           type="button"

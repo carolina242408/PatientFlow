@@ -187,8 +187,10 @@ async function fetchAllOfType(type: (typeof BACKEND_TYPES)[number]): Promise<Org
 }
 
 export async function fetchAllLHUHierarchyTree(): Promise<OrgNode[]> {
-  const responses = await Promise.all(BACKEND_TYPES.map((type) => fetchAllOfType(type)))
-  const nodes = responses.flat()
+  const nodes: OrgNode[] = []
+  for (const type of BACKEND_TYPES) {
+    nodes.push(...(await fetchAllOfType(type)))
+  }
   const childrenByParent = new Map<string | null, OrgNode[]>()
   for (const node of nodes) {
     const children = childrenByParent.get(node.parentId) ?? []
