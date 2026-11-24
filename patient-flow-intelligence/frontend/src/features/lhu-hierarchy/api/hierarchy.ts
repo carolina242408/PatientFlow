@@ -10,6 +10,7 @@ interface HierarchyResponse {
     code: string | null
     serviceId: string | null
   }>
+  totalPages?: number
 }
 
 const BACKEND_TYPES = [
@@ -54,6 +55,7 @@ const mapNodes = (content: HierarchyResponse["content"]): OrgNode[] =>
   content.map((node) => ({
     id: node.id,
     name: node.name,
+    code: node.code,
     type: frontendType(node.type),
     parentId: node.parentId,
     status: "operational",
@@ -147,4 +149,63 @@ export async function updateHierarchyNode(
 
 export async function deleteHierarchyNode(type: OrgType, id: string) {
   await api.delete(`/hierarchy/${backendType(type)}/${id}`)
+}
+
+export interface HierarchyImportRow {
+  uls: string
+  unit?: string
+  building?: string
+  floor?: string
+  service?: string
+  serviceCode?: string
+  wing?: string
+  ward?: string
+  wardCode?: string
+  room?: string
+  bed?: string
+}
+
+export interface HierarchyImportResult {
+  createdCount: number
+  reusedCount: number
+  createdByType: Record<string, number>
+}
+
+async function fetchAllOfType(type: (typeof BACKEND_TYPES)[number]): Promise<OrgNode[]> {
+  const all: OrgNode[] = []
+  let page = 0
+  while (true) {
+    const response = await api.get<HierarchyResponse>(`/hierarchy/${type}`, {
+      params: { page, size: 100 },
+    })
+    all.push(...mapNodes(response.data.content))
+    const totalPages = response.data.totalPages ?? 1
+    page += 1
+    if (page >= totalPages || response.data.content.length === 0) break
+  }
+  return all
+}
+
+export async function fetchAllLHUHierarchyTree(): Promise<OrgNode[]> {
+  const responses = await Promise.all(BACKEND_TYPES.map((type) => fetchAllOfType(type)))
+  const nodes = responses.flat()
+  const childrenByParent = new Map<string | null, OrgNode[]>()
+  for (const node of nodes) {
+    const children = childrenByParent.get(node.parentId) ?? []
+    children.push(node)
+    childrenByParent.set(node.parentId, children)
+  }
+  const attachChildren = (node: OrgNode): OrgNode => {
+    const children = childrenByParent.get(node.id)?.map(attachChildren)
+    return children?.length ? { ...node, children } : node
+  }
+  const knownIds = new Set(nodes.map((node) => node.id))
+  return nodes
+    .filter((node) => node.parentId === null || !knownIds.has(node.parentId))
+    .map(attachChildren)
+}
+
+export async function importHierarchy(rows: HierarchyImportRow[]): Promise<HierarchyImportResult> {
+  const response = await api.post<HierarchyImportResult>("/hierarchy/import", { rows })
+  return response.data
 }

@@ -1,6 +1,7 @@
 package com.projinf.patientflow.dto;
 
 import com.projinf.patientflow.domain.model.BedStatus;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,6 +19,20 @@ public final class OperationalDTO {
     public record HierarchyNode(UUID id, String type, UUID parentId, String name, String code, UUID serviceId) { }
     public record HierarchyWrite(@Size(max = 255) String name, @Size(max = 255) String code,
                                  UUID parentId, UUID serviceId) { }
+    public record HierarchyImportRow(
+            @NotBlank @Size(max = 255) String uls,
+            @Size(max = 255) String unit,
+            @Size(max = 255) String building,
+            @Size(max = 255) String floor,
+            @Size(max = 255) String service,
+            @Size(max = 255) String serviceCode,
+            @Size(max = 255) String wing,
+            @Size(max = 255) String ward,
+            @Size(max = 255) String wardCode,
+            @Size(max = 255) String room,
+            @Size(max = 255) String bed) { }
+    public record HierarchyImportRequest(@NotEmpty List<@Valid HierarchyImportRow> rows) { }
+    public record HierarchyImportResult(int createdCount, int reusedCount, Map<String, Integer> createdByType) { }
     public record PatientWrite(@NotBlank @Size(max = 255) String snsNumber,
             @NotBlank @Size(max = 255) String fullName, @Size(max = 255) String hospitalNumber,
             @PastOrPresent LocalDate birthDate, @Pattern(regexp = "male|female|other|unknown") String gender) { }
