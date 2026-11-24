@@ -4,7 +4,7 @@ import { Badge } from '@/components/Badge'
 import type { ViewProps } from './types'
 import { collectBeds, countBeds } from './utils'
 
-const ResourceOverview = ({ node, open }: ViewProps) => {
+const ResourceOverview = ({ node, open, onPrefetch }: ViewProps) => {
   const { t } = useTranslation()
   const beds = node.bedCounts ?? countBeds(collectBeds(node))
   const nextLevel = node?.children?.[0]?.level
@@ -52,6 +52,8 @@ const ResourceOverview = ({ node, open }: ViewProps) => {
                   type="button"
                   variant="link"
                   onClick={() => open(child)}
+                  onPointerEnter={() => onPrefetch?.(child)}
+                  onFocus={() => onPrefetch?.(child)}
                   className="h-auto p-0 text-lg font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
                 >
                   {child.name}

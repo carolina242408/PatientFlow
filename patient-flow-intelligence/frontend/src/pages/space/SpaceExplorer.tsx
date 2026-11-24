@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { hasAdminRole, useKeycloak } from '@/auth/context'
 import {
   fetchHierarchyChildren,
@@ -9,7 +9,7 @@ import {
   hierarchyChildrenQueryKey,
 } from '@/features/lhu-hierarchy/api/hierarchy'
 import { fetchBedMap, fetchBeds, fetchEncounter, fetchPatient } from '@/api/operational'
-import type { OrgType } from '@/features/lhu-hierarchy/types/tree'
+import type { OrgNode, OrgType } from '@/features/lhu-hierarchy/types/tree'
 import { AdminHierarchyOverview } from '@/features/lhu-hierarchy/components/AdminHierarchyOverview'
 import SpaceNavigation from './SpaceNavigation'
 import { LEVELS, type Level, type Open, type SpaceNode, type ViewProps, type Resource } from './types'
@@ -87,6 +87,7 @@ const SpaceExplorer = ({
   onAddChild,
 }: SpaceExplorerProps) => {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const { user } = useKeycloak()
   const hasApplicationRole = user?.roles.includes('MANAGER_ROLE') === true || hasAdminRole(user?.roles)
   const [selectedRoomId, setSelectedRoomId] = useState<string>()
@@ -104,6 +105,7 @@ const SpaceExplorer = ({
       return nodes
     },
     enabled: hasApplicationRole,
+    staleTime: 30_000,
   })
 
   // Camas detalhadas só são carregadas dentro de um quarto.
@@ -111,6 +113,7 @@ const SpaceExplorer = ({
     queryKey: ['beds-operational', selectedRoomId],
     queryFn: () => fetchBeds({ roomId: selectedRoomId }, undefined, 0, 50),
     enabled: hasApplicationRole && !adminMode && Boolean(selectedRoomId),
+    staleTime: 30_000,
     refetchInterval: 60_000,
   })
 
@@ -150,6 +153,7 @@ const SpaceExplorer = ({
       )
     },
     enabled: hasApplicationRole && !adminMode && Boolean(selectedRoomId && occupiedBeds.length),
+    staleTime: 30_000,
     refetchInterval: 60_000,
   })
 
@@ -242,31 +246,72 @@ const SpaceExplorer = ({
     }
   }, [current?.id, current?.level])
 
-  const currentSummaryScope =
-    current?.level === 'lhu'
-      ? { ulsId: current.id }
-      : current?.level === 'unit'
-        ? { unitId: current.id }
-        : current?.level === 'building'
-          ? { buildingId: current.id }
-          : current?.level === 'floor'
-            ? { floorId: current.id }
-        : current?.level === 'service'
-              ? { serviceId: current.id }
-              : current?.level === 'wing'
-                ? { wingId: current.id }
-                : current?.level === 'ward'
-                  ? { wardId: current.id }
-                  : current?.level === 'room'
-                    ? { roomId: current.id }
-                    : {}
+  const scopeForNode = (level?: Level, id?: string) => {
+    if (!id) return {}
+    switch (level) {
+      case 'lhu':
+        return { ulsId: id }
+      case 'unit':
+        return { unitId: id }
+      case 'building':
+        return { buildingId: id }
+      case 'floor':
+        return { floorId: id }
+      case 'service':
+        return { serviceId: id }
+      case 'wing':
+        return { wingId: id }
+      case 'ward':
+        return { wardId: id }
+      case 'room':
+        return { roomId: id }
+      default:
+        return {}
+    }
+  }
+
+  const currentSummaryScope = scopeForNode(current?.level, current?.id)
   const { data: currentBedSummary } = useQuery({
     queryKey: ['space-bed-summary-current', current?.level, current?.id],
     queryFn: () => fetchBedMap(currentSummaryScope, undefined, 0, 1),
     enabled: hasApplicationRole && !adminMode && Boolean(
       current && ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'room'].includes(current.level),
     ),
+    staleTime: 30_000,
   })
+
+  const prefetchNode = (target: SpaceNode) => {
+    if (!hasApplicationRole || target.level === 'bed') return
+
+    const orgNode: OrgNode = {
+      id: target.id,
+      name: target.name,
+      type: target.level,
+      parentId: current?.id ?? null,
+      status: 'operational',
+    }
+    void queryClient.prefetchQuery({
+      queryKey: hierarchyChildrenQueryKey(orgNode),
+      queryFn: () => fetchHierarchyChildren(orgNode),
+      staleTime: 30_000,
+    })
+
+    if (!adminMode) {
+      void queryClient.prefetchQuery({
+        queryKey: ['space-bed-summary-current', target.level, target.id],
+        queryFn: () => fetchBedMap(scopeForNode(target.level, target.id), undefined, 0, 1),
+        staleTime: 30_000,
+      })
+
+      if (target.level === 'room') {
+        void queryClient.prefetchQuery({
+          queryKey: ['beds-operational', target.id],
+          queryFn: () => fetchBeds({ roomId: target.id }, undefined, 0, 50),
+          staleTime: 30_000,
+        })
+      }
+    }
+  }
 
   const currentOrgNode = current
     ? {
@@ -374,7 +419,7 @@ const SpaceExplorer = ({
       )}
       {childrenError && <div className="text-sm text-red-600">{t('lhuHierarchy.error')}</div>}
       {/* key resets the view state (for example the room search) when the node changes */}
-      <View key={syncedCurrent.id} node={syncedCurrent} open={open} />
+      <View key={syncedCurrent.id} node={syncedCurrent} open={open} onPrefetch={prefetchNode} />
     </div>
   )
 }
