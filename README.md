@@ -15,6 +15,7 @@
 | `patient-flow-intelligence/keycloak/` | Preconfigured `patientflow` realm and custom login theme | — |
 | `tools/data-generation/` | Synthetic hospital patient & ADT event generator | [Data Generation README](tools/data-generation/README.md) |
 | `tools/hl7-fhir-converter/` | HL7 v2 ADT to FHIR R4 Bundle converter | [HL7-FHIR Converter README](tools/hl7-fhir-converter/README.md) |
+| `mock-hierarchy/` | Example `.csv` and `.xlsx` files for admin hierarchy import/export | [mock-hierarchy/](mock-hierarchy/) |
 
 ---
 
@@ -77,6 +78,12 @@ To populate the platform with realistic synthetic patients and live ADT events (
 2. **Simulate live patient flow:** Click **Start Live Stream** to begin generating events. Live generated data will appear at the bottom of the UI.
 
 For installation, SSE/Webhook streaming, and hospital topology configuration, see the [Data Generation README](tools/data-generation/README.md).
+
+---
+
+## Admin Hierarchy Import / Export
+
+The [`mock-hierarchy/`](mock-hierarchy/) directory contains example hierarchy files ([`mock-hierarchy.csv`](mock-hierarchy/mock-hierarchy.csv) and [`mock-hierarchy.xlsx`](mock-hierarchy/mock-hierarchy.xlsx)) showing the expected column structure (`uls`, `unit`, `building`, `floor`, `service`, `serviceCode`, `wing`, `ward`, `wardCode`, `room`, `bed`). Follow these examples as a template when using the **Import / Export** functionality in the admin hierarchy view.
 
 ---
 
