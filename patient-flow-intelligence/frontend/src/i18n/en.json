@@ -185,6 +185,7 @@
     "resources": {
       "beds": "Beds"
     },
+    "bedCountsError": "Could not load bed counts.",
     "counts": {
       "bed": "{{count}} bed",
       "bed_other": "{{count}} beds"
