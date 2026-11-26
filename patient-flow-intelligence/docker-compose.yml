@@ -61,8 +61,10 @@ services:
     build: ./algorithms
     container_name: algorithms
     environment:
-      KUMO_DEVICE: cpu
-      KUMO_CONTEXT_ROWS: ${KUMO_CONTEXT_ROWS:-4096}
+      KUMO_DEVICE: ${KUMO_DEVICE:-auto}
+      # Empty: no cap on GPU, 100000 rows on CPU.
+      KUMO_CONTEXT_ROWS: ${KUMO_CONTEXT_ROWS:-}
+      KUMO_MEMORY_BUDGET_MB: ${KUMO_MEMORY_BUDGET_MB:-}
     volumes:
       - type: bind
         source: ./algorithms/datasetgenerator/ml_hospital_consumption_87k.csv
@@ -83,7 +85,8 @@ services:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" ]
       interval: 15s
       timeout: 10s
-      start_period: 10m
+      # Building a large context on CPU can take over 20 minutes; see algorithms/README.md.
+      start_period: 28m
       retries: 5
 
   # ------------------------------------------------------------

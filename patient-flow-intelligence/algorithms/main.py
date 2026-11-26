@@ -145,4 +145,5 @@ def discharge_prediction(data: DischargeInput, request: Request):
 @app.get("/health")
 def health(request: Request):
     model = request.app.state.discharge_model
-    return {"status": "ok", "modelVersion": model.version, "contextRows": model.context_rows}
+    return {"status": "ok", "modelVersion": model.version, "device": model.device,
+            "contextRows": model.context_rows}

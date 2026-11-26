@@ -43,6 +43,11 @@ docker compose up -d --build
 
 Usar este modo ou o backend no host, pois ambos usam a porta 8080.
 
+O algorithms usa CPU por defeito. Para usar uma GPU NVIDIA, acrescentar
+`COMPOSE_FILE` ao `.env`, uma vez por máquina, e reconstruir com `--build`.
+Ver [algorithms/README.md](algorithms/README.md#cpu-ou-gpu-em-docker), que
+descreve também o risco de tempo de arranque em CPU.
+
 | Serviço | URL |
 |---|---|
 | Frontend (integração parcial) | http://localhost:5173 |
