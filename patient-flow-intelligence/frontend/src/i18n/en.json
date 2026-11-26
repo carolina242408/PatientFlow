@@ -734,7 +734,10 @@
       "importSuccessDescription": "Import complete: {{created}} node(s) created and {{reused}} existing node(s) reused.",
       "importErrorDescription": "Could not import the hierarchy. Please check the file and try again.",
       "exportErrorTitle": "Export failed",
-      "exportErrorDescription": "Could not export the hierarchy."
+      "exportErrorDescription": "Could not export the hierarchy.",
+      "existingHierarchyTitle": "Hierarchy already loaded",
+      "existingHierarchyDescription": "There is already an existing hierarchy in the system. Importing a new file will add new locations to the existing structure. Do you want to continue?",
+      "existingHierarchyConfirm": "Continue to import"
     },
     "admin": {
       "endOfBranch": "End of this hierarchy branch",

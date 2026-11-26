@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
-import { ChevronDown, Download, FileSpreadsheet, Upload, X } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { AlertTriangle, ChevronDown, Download, FileSpreadsheet, Upload, X } from "lucide-react"
 import { Button } from "@/components/Button"
+import { ConfirmationDialog } from "@/components/ConfirmationDialog"
 import { OperationPopup } from "@/components/OperationPopup"
-import { fetchAllLHUHierarchyTree } from "../api/hierarchy"
+import { fetchAllLHUHierarchyTree, fetchHierarchyLevel } from "../api/hierarchy"
 import { useImportHierarchy } from "../hooks/useLHUHierarchy"
 import {
   exportHierarchyFile,
@@ -19,6 +21,13 @@ export function HierarchyImportExportBar() {
 
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null)
+  const [warningOpen, setWarningOpen] = useState(false)
+
+  const { data: rootNodes, refetch: refetchRootNodes } = useQuery({
+    queryKey: ["space-hierarchy", "lhu", undefined],
+    queryFn: () => fetchHierarchyLevel("lhu"),
+    staleTime: 30_000,
+  })
 
   useEffect(() => {
     if (!exportMenuOpen) return
@@ -68,6 +77,19 @@ export function HierarchyImportExportBar() {
     } finally {
       setExporting(null)
     }
+  }
+
+  const handleOpenImport = async () => {
+    let nodes = rootNodes
+    if (nodes === undefined) {
+      const result = await refetchRootNodes()
+      nodes = result.data
+    }
+    if ((nodes?.length ?? 0) > 0) {
+      setWarningOpen(true)
+      return
+    }
+    setModalOpen(true)
   }
 
   const resetModal = () => {
@@ -171,13 +193,27 @@ export function HierarchyImportExportBar() {
         <Button
           type="button"
           size="sm"
-          onClick={() => setModalOpen(true)}
+          onClick={() => void handleOpenImport()}
           className="gap-1.5 bg-[#2563EB] text-white hover:bg-[#1d4ed8]"
         >
           <Upload className="h-4 w-4" />
           {t("lhuHierarchy.importExport.importButton")}
         </Button>
       </div>
+
+      <ConfirmationDialog
+        open={warningOpen}
+        title={t("lhuHierarchy.importExport.existingHierarchyTitle")}
+        description={t("lhuHierarchy.importExport.existingHierarchyDescription")}
+        icon={<AlertTriangle aria-hidden="true" className="h-9 w-9" />}
+        cancelLabel={t("lhuHierarchy.admin.cancel")}
+        confirmLabel={t("lhuHierarchy.importExport.existingHierarchyConfirm")}
+        onClose={() => setWarningOpen(false)}
+        onConfirm={() => {
+          setWarningOpen(false)
+          setModalOpen(true)
+        }}
+      />
 
       {modalOpen && (
         <div

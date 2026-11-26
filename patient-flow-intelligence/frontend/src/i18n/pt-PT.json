@@ -737,7 +737,10 @@
       "importSuccessDescription": "Importação concluída: {{created}} elemento(s) criado(s) e {{reused}} existente(s) reutilizado(s).",
       "importErrorDescription": "Não foi possível importar a hierarquia. Verifique o ficheiro e tente novamente.",
       "exportErrorTitle": "Erro na exportação",
-      "exportErrorDescription": "Não foi possível exportar a hierarquia."
+      "exportErrorDescription": "Não foi possível exportar a hierarquia.",
+      "existingHierarchyTitle": "Já existe uma hierarquia carregada",
+      "existingHierarchyDescription": "Já existe uma hierarquia registada no sistema. Ao importar um novo ficheiro, os novos elementos serão adicionados à estrutura existente. Pretende continuar?",
+      "existingHierarchyConfirm": "Continuar importação"
     },
     "admin": {
       "endOfBranch": "Fim deste ramo da hierarquia",
