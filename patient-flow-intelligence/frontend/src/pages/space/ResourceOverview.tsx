@@ -1,10 +1,17 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
+import { Skeleton } from '@/components/Skeleton'
 import type { ViewProps } from './types'
 import { collectBeds, countBeds } from './utils'
 
-const ResourceOverview = ({ node, open, onPrefetch }: ViewProps) => {
+const ResourceOverview = ({
+  node,
+  open,
+  onPrefetch,
+  bedCountsLoading = false,
+  bedCountsError = false,
+}: ViewProps) => {
   const { t } = useTranslation()
   const beds = node.bedCounts ?? countBeds(collectBeds(node))
   const nextLevel = node?.children?.[0]?.level
@@ -30,12 +37,27 @@ const ResourceOverview = ({ node, open, onPrefetch }: ViewProps) => {
             <Badge className={`rounded-lg border-0 px-3 py-1.5 text-sm font-medium ${card.badge}`}>
               {t(`space.resources.${card.key}`)}
             </Badge>
-            <p className="mt-5 text-4xl font-semibold text-slate-900">{card.total}</p>
-            <p className="mt-3 text-sm text-gray-500">
-              {card.parts
-                .map(([part, count]) => t(`space.breakdown.${card.key}.${part}`, { count }))
-                .join(' · ')}
-            </p>
+            {bedCountsLoading ? (
+              <>
+                <div className="mt-5 h-10" role="status" aria-label={t('app.loading')}>
+                  <Skeleton className="h-9 w-12" />
+                </div>
+                <Skeleton className="mt-3 h-4 w-56" aria-hidden="true" />
+              </>
+            ) : bedCountsError ? (
+              <p className="mt-5 text-sm text-red-600" role="alert">
+                {t('space.bedCountsError')}
+              </p>
+            ) : (
+              <>
+                <p className="mt-5 text-4xl font-semibold text-slate-900">{card.total}</p>
+                <p className="mt-3 text-sm text-gray-500">
+                  {card.parts
+                    .map(([part, count]) => t(`space.breakdown.${card.key}.${part}`, { count }))
+                    .join(' · ')}
+                </p>
+              </>
+            )}
           </article>
         ))}
       </section>

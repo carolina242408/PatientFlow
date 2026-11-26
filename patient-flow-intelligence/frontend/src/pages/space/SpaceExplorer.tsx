@@ -271,7 +271,7 @@ const SpaceExplorer = ({
   }
 
   const currentSummaryScope = scopeForNode(current?.level, current?.id)
-  const { data: currentBedSummary } = useQuery({
+  const currentBedSummaryQuery = useQuery({
     queryKey: ['space-bed-summary-current', current?.level, current?.id],
     queryFn: () => fetchBedMap(currentSummaryScope, undefined, 0, 1),
     enabled: hasApplicationRole && !adminMode && Boolean(
@@ -279,6 +279,9 @@ const SpaceExplorer = ({
     ),
     staleTime: 30_000,
   })
+  const currentBedSummary = currentBedSummaryQuery.data
+  const bedCountsLoading = currentBedSummaryQuery.isPending && currentBedSummaryQuery.isFetching
+  const bedCountsError = currentBedSummaryQuery.isError && !currentBedSummary
 
   const prefetchNode = (target: SpaceNode) => {
     if (!hasApplicationRole || target.level === 'bed') return
@@ -419,7 +422,14 @@ const SpaceExplorer = ({
       )}
       {childrenError && <div className="text-sm text-red-600">{t('lhuHierarchy.error')}</div>}
       {/* key resets the view state (for example the room search) when the node changes */}
-      <View key={syncedCurrent.id} node={syncedCurrent} open={open} onPrefetch={prefetchNode} />
+      <View
+        key={syncedCurrent.id}
+        node={syncedCurrent}
+        open={open}
+        onPrefetch={prefetchNode}
+        bedCountsLoading={bedCountsLoading}
+        bedCountsError={bedCountsError}
+      />
     </div>
   )
 }

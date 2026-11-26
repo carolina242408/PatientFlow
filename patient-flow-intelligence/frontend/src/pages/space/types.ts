@@ -54,4 +54,6 @@ export interface ViewProps {
   node: SpaceNode
   open: Open
   onPrefetch?: (node: SpaceNode) => void
+  bedCountsLoading?: boolean
+  bedCountsError?: boolean
 }

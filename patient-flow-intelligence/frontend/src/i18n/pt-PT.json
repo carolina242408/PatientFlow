@@ -185,6 +185,7 @@
     "resources": {
       "beds": "Camas"
     },
+    "bedCountsError": "Não foi possível carregar o número de camas.",
     "resourceLabel": {
       "bed": "Cama {{number}}"
     },
