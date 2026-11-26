@@ -3,6 +3,7 @@ import SpaceExplorer from "@/pages/space/SpaceExplorer"
 import type { SpaceNode } from "@/pages/space/types"
 import { TabsContent } from "@/components/Tabs"
 import { AddResourceStep } from "../components/AddResourceStep"
+import { HierarchyImportExportBar } from "../components/HierarchyImportExportBar"
 import { ModeTabs, type HierarchyMode } from "../components/ModeTabs"
 import type { OrgType } from "../types/tree"
 
@@ -34,6 +35,7 @@ export function LHUHierarchyPage() {
         if (nextMode === "add") setAddContext(null)
         setMode(nextMode)
       }}
+      actions={<HierarchyImportExportBar />}
     >
       <TabsContent value="structure" className="space-y-5">
         <SpaceExplorer

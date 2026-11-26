@@ -183,22 +183,14 @@
       "room": "Continuar para o quarto"
     },
     "resources": {
-      "beds": "Camas",
-      "operatingRoom": "Salas de operações",
-      "chairs": "Cadeirões de tratamento"
+      "beds": "Camas"
     },
     "resourceLabel": {
-      "bed": "Cama {{number}}",
-      "operatingRoom": "Sala de operações {{number}}",
-      "chair": "Cadeirão {{number}}"
+      "bed": "Cama {{number}}"
     },
     "counts": {
       "bed": "{{count}} cama",
-      "bed_other": "{{count}} camas",
-      "operatingRoom": "{{count}} sala de operações",
-      "operatingRoom_other": "{{count}} salas de operações",
-      "chair": "{{count}} cadeirão",
-      "chair_other": "{{count}} cadeirões"
+      "bed_other": "{{count}} camas"
     },
     "status": {
       "occupied": "Ocupada",
@@ -230,23 +222,6 @@
         "occupied": "{{count}} ocupadas",
         "available": "{{count}} disponíveis",
         "reserved": "{{count}} reservadas"
-      },
-      "operatingRoom": {
-        "inUse": "{{count}} em uso",
-        "available": "{{count}} disponíveis",
-        "cleaning": "{{count}} em limpeza"
-      },
-      "chairs": {
-        "occupied": "{{count}} ocupados",
-        "available": "{{count}} disponíveis"
-      },
-      "bed": {
-        "occupied": "{{count}} ocupada",
-        "occupied_other": "{{count}} ocupadas",
-        "available": "{{count}} disponível",
-        "available_other": "{{count}} disponíveis",
-        "reserved": "{{count}} reservada",
-        "reserved_other": "{{count}} reservadas"
       }
     }
   },
@@ -744,6 +719,29 @@
     "noData": "Ainda não existem espaços ou recursos.",
     "root": "Raiz da organização",
     "modes": { "structure": "Vista de estrutura", "add": "Adicionar espaço ou recurso" },
+    "importExport": {
+      "exportButton": "Exportar",
+      "exportCsv": "CSV (.csv)",
+      "exportXlsx": "Excel (.xlsx)",
+      "exporting": "A exportar...",
+      "importButton": "Importar CSV / Excel",
+      "modalTitle": "Importar hierarquia",
+      "modalDescription": "Carregue um ficheiro .csv ou .xlsx com as colunas da hierarquia (uls, unit, building, floor, service, serviceCode, wing, ward, wardCode, room, bed).",
+      "validRows": "{{count}} linha(s) válida(s) pronta(s) a importar.",
+      "validationErrors": "{{count}} erro(s) de validação encontrado(s):",
+      "rowError": "Linha {{row}}: {{message}}",
+      "parseError": "Não foi possível ler o ficheiro selecionado.",
+      "confirmImport": "Confirmar importação",
+      "importing": "A importar...",
+      "importSuccessTitle": "Hierarquia importada",
+      "importSuccessDescription": "Importação concluída: {{created}} elemento(s) criado(s) e {{reused}} existente(s) reutilizado(s).",
+      "importErrorDescription": "Não foi possível importar a hierarquia. Verifique o ficheiro e tente novamente.",
+      "exportErrorTitle": "Erro na exportação",
+      "exportErrorDescription": "Não foi possível exportar a hierarquia.",
+      "existingHierarchyTitle": "Já existe uma hierarquia carregada",
+      "existingHierarchyDescription": "Já existe uma hierarquia registada no sistema. Ao importar um novo ficheiro, os novos elementos serão adicionados à estrutura existente. Pretende continuar?",
+      "existingHierarchyConfirm": "Continuar importação"
+    },
     "admin": {
       "endOfBranch": "Fim deste ramo da hierarquia",
       "endOfBranchDescription": "Não existem espaços ou recursos descendentes. Adiciona um item para continuar este ramo.",
@@ -794,7 +792,7 @@
       "sections": { "parentLocation": "Localização superior", "information": "Informação de {{type}}" },
       "fields": {
         "name": "Nome ou número", "internalCode": "Código interno", "status": "Estado operacional",
-        "notes": "Notas", "roomType": "Tipo de sala"
+        "notes": "Notas"
       },
       "placeholders": { "name": "Nome ou número de {{type}}", "internalCode": "Sugerido automaticamente se vazio", "notes": "Adicionar notas operacionais", "parent": "Selecionar {{type}}" },
       "actions": { "clear": "Limpar", "submit": "Adicionar à hierarquia da ULS" },
@@ -809,10 +807,6 @@
         }
       },
       "validation": { "required": "Este campo é obrigatório", "min": "Tem de ser pelo menos 1" }
-    },
-    "options": {
-      "status": { "operational": "Operacional", "maintenance": "Em manutenção", "inactive": "Inativo" },
-      "roomType": { "INPATIENT_ROOM": "Sala de Internamento", "OPERATING_ROOM": "Bloco operatório", "NURSERY_ROOM": "Sala de berçário" }
     },
     "typeDescriptions": {
       "lhu": "Unidade local de saúde de topo", "unit": "Unidade hospitalar ou de prestação de cuidados", "building": "Edifício físico dentro de uma unidade",

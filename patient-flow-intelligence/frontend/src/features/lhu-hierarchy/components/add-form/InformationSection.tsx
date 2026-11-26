@@ -5,10 +5,8 @@ import { FormControl, FormField, FormItem, FormLabel } from "@/components/Form"
 import { Input } from "@/components/Input"
 import type { OrgType } from "../../types/tree"
 import type { AddNodeValues } from "../../utils/add-node-schema"
-import { OPERATIONAL_STATUSES, ROOM_TYPES } from "../../utils/form-options"
 import { FieldMessage } from "./FieldMessage"
 import { FormSection } from "./FormSection"
-import { OptionsSelectField } from "./OptionsSelectField"
 
 export function InformationSection({ type, children }: { type: OrgType; children?: ReactNode }) {
   const { t } = useTranslation()
@@ -44,8 +42,6 @@ export function InformationSection({ type, children }: { type: OrgType; children
             </FormItem>
           )}
         />
-        <OptionsSelectField name="status" options={OPERATIONAL_STATUSES} />
-        {type === "room" && <OptionsSelectField name="roomType" options={ROOM_TYPES} />}
         {children && <div className="md:col-span-2">{children}</div>}
       </div>
     </FormSection>

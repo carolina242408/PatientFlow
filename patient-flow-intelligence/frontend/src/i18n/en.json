@@ -183,21 +183,11 @@
       "room": "Continue to room"
     },
     "resources": {
-      "beds": "Beds",
-      "operatingRoom": "Operating rooms",
-      "chairs": "Treatment chairs"
-    },
-    "resourceLabel": {
-      "operatingRoom": "Operating room {{number}}",
-      "chair": "Treatment chair {{number}}"
+      "beds": "Beds"
     },
     "counts": {
       "bed": "{{count}} bed",
-      "bed_other": "{{count}} beds",
-      "operatingRoom": "{{count}} operating room",
-      "operatingRoom_other": "{{count}} operating rooms",
-      "chair": "{{count}} treatment chair",
-      "chair_other": "{{count}} treatment chairs"
+      "bed_other": "{{count}} beds"
     },
     "status": {
       "occupied": "Occupied",
@@ -229,23 +219,6 @@
         "occupied": "{{count}} occupied",
         "available": "{{count}} available",
         "reserved": "{{count}} reserved"
-      },
-      "operatingRoom": {
-        "inUse": "{{count}} in use",
-        "available": "{{count}} available",
-        "cleaning": "{{count}} cleaning"
-      },
-      "chairs": {
-        "occupied": "{{count}} occupied",
-        "available": "{{count}} available"
-      },
-      "bed": {
-        "occupied": "{{count}} occupied",
-        "occupied_other": "{{count}} occupied",
-        "available": "{{count}} available",
-        "available_other": "{{count}} available",
-        "reserved": "{{count}} reserved",
-        "reserved_other": "{{count}} reserved"
       }
     }
   },
@@ -743,6 +716,29 @@
     "noData": "There isn't spaces or resources in this hierarchy yet.",
     "root": "Organization root",
     "modes": { "structure": "Structure overview", "add": "Add premise or resource" },
+    "importExport": {
+      "exportButton": "Export",
+      "exportCsv": "CSV (.csv)",
+      "exportXlsx": "Excel (.xlsx)",
+      "exporting": "Exporting...",
+      "importButton": "Import CSV / Excel",
+      "modalTitle": "Import hierarchy",
+      "modalDescription": "Upload a .csv or .xlsx file with the hierarchy columns (uls, unit, building, floor, service, serviceCode, wing, ward, wardCode, room, bed).",
+      "validRows": "{{count}} valid row(s) ready to import.",
+      "validationErrors": "{{count}} validation error(s) found:",
+      "rowError": "Row {{row}}: {{message}}",
+      "parseError": "Could not read the selected file.",
+      "confirmImport": "Confirm import",
+      "importing": "Importing...",
+      "importSuccessTitle": "Hierarchy imported",
+      "importSuccessDescription": "Import complete: {{created}} node(s) created and {{reused}} existing node(s) reused.",
+      "importErrorDescription": "Could not import the hierarchy. Please check the file and try again.",
+      "exportErrorTitle": "Export failed",
+      "exportErrorDescription": "Could not export the hierarchy.",
+      "existingHierarchyTitle": "Hierarchy already loaded",
+      "existingHierarchyDescription": "There is already an existing hierarchy in the system. Importing a new file will add new locations to the existing structure. Do you want to continue?",
+      "existingHierarchyConfirm": "Continue to import"
+    },
     "admin": {
       "endOfBranch": "End of this hierarchy branch",
       "endOfBranchDescription": "There are no child spaces or resources here. Add an item to continue this branch.",
@@ -793,7 +789,7 @@
       "sections": { "parentLocation": "Parent location", "information": "{{type}} information" },
       "fields": {
         "name": "Name or number", "internalCode": "Internal code", "status": "Operational status",
-        "notes": "Notes", "roomType": "Room Type"
+        "notes": "Notes"
       },
       "placeholders": { "name": "{{type}} name or number", "internalCode": "Automatically suggested if empty", "notes": "Add operational notes", "parent": "Select {{type}}" },
       "actions": { "clear": "Clear", "submit": "Add to LHU hierarchy" },
@@ -808,10 +804,6 @@
         }
       },
       "validation": { "required": "This field is required", "min": "Must be at least 1" }
-    },
-    "options": {
-      "status": { "operational": "Operational", "maintenance": "Under maintenance", "inactive": "Inactive" },
-      "roomType": { "INPATIENT_ROOM": "Inpatient Room", "OPERATING_ROOM": "Operating Room", "NURSERY_ROOM": "Nursery Room" }
     },
     "typeDescriptions": {
       "lhu": "Top-level local health unit", "unit": "Hospital or care delivery unit", "building": "Physical building within a unit",

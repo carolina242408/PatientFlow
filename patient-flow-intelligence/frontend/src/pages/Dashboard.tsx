@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/Button'
+import { LastUpdatedCard } from '@/components/LastUpdatedCard'
 import { useOutletContext } from 'react-router'
 import type { AppOutletContext } from '@/layout/ManagerScopeContext'
 import ManagerScopeSelector from '@/layout/ManagerScopeSelector'
@@ -323,14 +324,7 @@ const Dashboard = () => {
             {t(`dashboard.scopes.${profileScope}.description`, { service: serviceName })}
           </p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
-          {t('dashboard.lastUpdated', {
-            time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
-              hour: '2-digit',
-              minute: '2-digit',
-            }).format(lastUpdatedAt),
-          })}
-        </div>
+        <LastUpdatedCard timestamp={lastUpdatedAt} />
       </section>
 
       {(hasWidget('occupancyRate') || hasWidget('forecast')) && (

@@ -1,0 +1,8 @@
+﻿uls,unit,building,floor,service,serviceCode,wing,ward,wardCode,room,bed
+ULS Mock Teste,Hospital Central,Edifício A,Piso 1,Cardiologia,CARD,Ala Norte,Enfermaria 1A,ENF_1A,Q101,C101-1
+ULS Mock Teste,Hospital Central,Edifício A,Piso 1,Cardiologia,CARD,Ala Norte,Enfermaria 1A,ENF_1A,Q101,C101-2
+ULS Mock Teste,Hospital Central,Edifício A,Piso 1,Cardiologia,CARD,Ala Norte,Enfermaria 1A,ENF_1A,Q102,C102-1
+ULS Mock Teste,Hospital Central,Edifício A,Piso 2,Medicina Interna,MED_INT,Ala Sul,Enfermaria 2B,ENF_2B,Q201,C201-1
+ULS Mock Teste,Hospital Central,Edifício A,Piso 2,Medicina Interna,MED_INT,Ala Sul,Enfermaria 2B,ENF_2B,Q201,C201-2
+ULS Mock Teste,Hospital Pediátrico,Edifício B,Piso 1,Pediatria,PED,Ala Nascente,Berçário 1,BERC_1,B101,BER-1
+ULS Mock Teste,Hospital Pediátrico,Edifício B,Piso 1,Pediatria,PED,Ala Nascente,Berçário 1,BERC_1,B101,BER-2

@@ -3,7 +3,9 @@ import {
   createHierarchyNode,
   deleteHierarchyNode,
   fetchCompleteLHUHierarchy,
+  importHierarchy,
   updateHierarchyNode,
+  type HierarchyImportRow,
 } from "../api/hierarchy"
 import type { OrgType } from "../types/tree"
 
@@ -57,6 +59,14 @@ export function useDeleteHierarchyNode() {
   return useMutation({
     mutationFn: ({ type, id }: { type: OrgType; id: string }) =>
       deleteHierarchyNode(type, id),
+    onSuccess: () => invalidateHierarchyQueries(queryClient),
+  })
+}
+
+export function useImportHierarchy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (rows: HierarchyImportRow[]) => importHierarchy(rows),
     onSuccess: () => invalidateHierarchyQueries(queryClient),
   })
 }

@@ -99,6 +99,21 @@ public class HierarchyRepository {
         return get(type, id);
     }
 
+    public Optional<HierarchyNode> findByParentAndKey(Type type, UUID parentId, String key) {
+        String keyCol = type.nameColumn != null ? type.nameColumn : "code";
+        var params = access.parameters();
+        params.put("key", key);
+        StringBuilder sql = new StringBuilder("SELECT ").append(columns(type))
+            .append(" FROM ").append(type.table).append(" n WHERE ")
+            .append(access.hierarchySql(type, "n.id"))
+            .append(" AND n.").append(keyCol).append(" = :key");
+        if (type.parentColumn != null) {
+            params.put("parentId", parentId);
+            sql.append(" AND n.").append(type.parentColumn).append(" = :parentId");
+        }
+        return named.query(sql.toString(), params, mapper(type)).stream().findFirst();
+    }
+
     public HierarchyNode rename(Type type, UUID id, String name) {
         if (type.nameColumn != null) jdbc.update("UPDATE " + type.table + " SET " + type.nameColumn + " = ? WHERE id = ?", name, id);
         return get(type, id);

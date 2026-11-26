@@ -2,12 +2,10 @@ export type Level = 'lhu' | 'unit' | 'building' | 'floor' | 'service' | 'wing' |
 
 export const LEVELS: Level[] = ['lhu', 'unit', 'building', 'floor', 'service', 'wing', 'ward', 'room', 'bed']
 
-export type ResourceType = 'bed' | 'operatingRoom' | 'chair'
+export type ResourceType = 'bed'
 
 export const STATUS = {
     bed: ['occupied', 'available', 'reserved'],
-    operatingRoom: ['inUse', 'available', 'cleaning'],
-    chair: ['occupied', 'available']
 } as const
 
 export interface Patient {
@@ -55,4 +53,5 @@ export type Open = (...nodes: SpaceNode[]) => void
 export interface ViewProps {
   node: SpaceNode
   open: Open
+  onPrefetch?: (node: SpaceNode) => void
 }

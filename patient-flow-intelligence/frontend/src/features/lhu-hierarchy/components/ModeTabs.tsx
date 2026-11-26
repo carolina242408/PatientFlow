@@ -7,6 +7,7 @@ export type HierarchyMode = "structure" | "add"
 interface ModeTabsProps {
   value: HierarchyMode
   onValueChange: (value: HierarchyMode) => void
+  actions?: ReactNode
   children: ReactNode
 }
 
@@ -16,6 +17,7 @@ const triggerClass =
 export function ModeTabs({
   value,
   onValueChange,
+  actions,
   children,
 }: ModeTabsProps) {
   const { t } = useTranslation()
@@ -28,15 +30,19 @@ export function ModeTabs({
       }}
       className="gap-4"
     >
-      <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b border-gray-200 bg-transparent p-0">
-        <TabsTrigger value="structure" className={triggerClass}>
-          {t("lhuHierarchy.modes.structure")}
-        </TabsTrigger>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200">
+        <TabsList className="h-auto justify-start gap-8 rounded-none border-b-0 bg-transparent p-0">
+          <TabsTrigger value="structure" className={triggerClass}>
+            {t("lhuHierarchy.modes.structure")}
+          </TabsTrigger>
 
-        <TabsTrigger value="add" className={triggerClass}>
-          {t("lhuHierarchy.modes.add")}
-        </TabsTrigger>
-      </TabsList>
+          <TabsTrigger value="add" className={triggerClass}>
+            {t("lhuHierarchy.modes.add")}
+          </TabsTrigger>
+        </TabsList>
+
+        {actions}
+      </div>
 
       {children}
     </Tabs>

@@ -1,26 +1,24 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Armchair, BedSingle, CalendarDays, HeartPulse, RefreshCw, Search } from 'lucide-react'
+import { BedSingle, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
+import { LastUpdatedCard } from '@/components/LastUpdatedCard'
 import type { ResourceType, ViewProps } from '../types'
 import { STATUS_STYLES, initialsOf } from '../utils'
 
 const ICONS: Record<ResourceType, LucideIcon> = {
   bed: BedSingle,
-  operatingRoom: HeartPulse,
-  chair: Armchair,
 }
 
-const ALL_RESOURCE_TYPES: ResourceType[] = ['bed', 'operatingRoom', 'chair']
+const ALL_RESOURCE_TYPES: ResourceType[] = ['bed']
 
 // Room: searchable list of the resources in the room (usually beds)
 const RoomView = ({ node, open }: ViewProps) => {
   const { t, i18n } = useTranslation()
   const lang = i18n.resolvedLanguage
   const [query, setQuery] = useState('')
-  const [updatedAt, setUpdatedAt] = useState(() => new Date())
+  const [updatedAt] = useState(() => new Date())
 
   const resources = node.resources ?? []
   const q = query.trim().toLowerCase()
@@ -42,15 +40,6 @@ const RoomView = ({ node, open }: ViewProps) => {
       labelOf(r.type, r.number).toLowerCase().includes(q),
   )
 
-  const lastUpdate = t('space.lastUpdate', {
-    date: new Intl.DateTimeFormat(lang, {
-      month: 'long',
-      day: '2-digit',
-      year: 'numeric',
-    }).format(updatedAt),
-    time: new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(updatedAt),
-  })
-
   const formatAdmitted = (iso?: string) => {
     if (!iso) return '—'
     const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso)
@@ -59,7 +48,6 @@ const RoomView = ({ node, open }: ViewProps) => {
       : new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric' }).format(date)
   }
 
-  // Ex: "6 beds", ou "6 beds, 1 chair" quando a sala possui múltiplos tipos de recursos
   const items = types
     .map((type) => t(`space.counts.${type}`, { count: getResourcesByType(type).length }))
     .join(', ')
@@ -82,21 +70,7 @@ const RoomView = ({ node, open }: ViewProps) => {
           />
         </label>
 
-        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
-          <CalendarDays aria-hidden="true" className="h-4 w-4 shrink-0" />
-          <span>{lastUpdate}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            // TODO: refetch the room data here
-            onClick={() => setUpdatedAt(new Date())}
-            aria-label={t('space.refresh')}
-            title={t('space.refresh')}
-            className="rounded-md p-1 text-blue-600 transition-colors hover:bg-blue-50"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
+        <LastUpdatedCard timestamp={updatedAt} />
       </div>
 
       <hr className="border-gray-200" />
@@ -105,31 +79,6 @@ const RoomView = ({ node, open }: ViewProps) => {
         <h2 className="text-sm font-medium text-gray-500">
           {t('space.inRoom', { items, room: node.name })}
         </h2>
-        <ul className="flex flex-wrap gap-2">
-          {types.flatMap((type) => {
-            const resOfType = getResourcesByType(type)
-            // Agrupa e conta por estado para este tipo
-            const countsByStatus = resOfType.reduce<Record<string, number>>((acc, r) => {
-              acc[r.status] = (acc[r.status] ?? 0) + 1
-              return acc
-            }, {})
-
-            return Object.entries(countsByStatus).map(([status, count]) => {
-              const pillStyle =
-                STATUS_STYLES[status as keyof typeof STATUS_STYLES]?.pill ??
-                'bg-gray-100 text-gray-700'
-
-              return (
-                <li
-                  key={`${type}-${status}`}
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${pillStyle}`}
-                >
-                  {t(`space.breakdown.${type}.${status}`, { count })}
-                </li>
-              )
-            })
-          })}
-        </ul>
       </div>
 
       {visible.length === 0 ? (

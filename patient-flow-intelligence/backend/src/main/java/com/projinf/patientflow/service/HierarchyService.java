@@ -5,7 +5,11 @@ import com.projinf.patientflow.exception.ConflictException;
 import com.projinf.patientflow.repository.HierarchyRepository;
 import com.projinf.patientflow.repository.HierarchyRepository.Type;
 import com.projinf.patientflow.security.AccessIdentity;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.HashMap;
 import com.projinf.patientflow.security.AccessPolicy;
 import com.projinf.patientflow.security.KeycloakGroupService;
 import java.util.UUID;
@@ -114,5 +118,98 @@ public class HierarchyService {
     private String required(String value, String field) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException(field + " obrigatório");
         return value.trim();
+    }
+
+    public HierarchyImportResult importHierarchy(List<HierarchyImportRow> rows) {
+        access.admin();
+        Map<String, UUID> resolved = new HashMap<>();
+        Map<String, Integer> createdByType = new LinkedHashMap<>();
+        int createdCount = 0;
+        int reusedCount = 0;
+        UUID firstUlsId = null;
+
+        for (int i = 0; i < rows.size(); i++) {
+            int rowNum = i + 1;
+            HierarchyImportRow row = rows.get(i);
+            String[] values = {
+                trimOrNull(row.uls()), trimOrNull(row.unit()), trimOrNull(row.building()),
+                trimOrNull(row.floor()), trimOrNull(row.service()), trimOrNull(row.wing()),
+                trimOrNull(row.ward()), trimOrNull(row.room()), trimOrNull(row.bed())
+            };
+            Type[] types = {
+                Type.ULS, Type.UNIT, Type.BUILDING, Type.FLOOR, Type.SERVICE,
+                Type.WING, Type.WARD, Type.ROOM, Type.BED
+            };
+
+            // Validate no gaps (a child level cannot be present when its parent level is blank)
+            boolean gapFound = false;
+            for (int lvl = 0; lvl < types.length; lvl++) {
+                if (values[lvl] == null) {
+                    gapFound = true;
+                } else if (gapFound) {
+                    throw new IllegalArgumentException(
+                        "Linha " + rowNum + ": nível '" + types[lvl].name().toLowerCase()
+                            + "' preenchido sem o nível pai correspondente");
+                }
+            }
+
+            UUID parentId = null;
+            for (int lvl = 0; lvl < types.length; lvl++) {
+                String value = values[lvl];
+                if (value == null) break;
+
+                Type type = types[lvl];
+                String cacheKey = type.name() + "|" + parentId + "|" + value;
+                UUID existingId = resolved.get(cacheKey);
+                if (existingId != null) {
+                    parentId = existingId;
+                    if (type == Type.ULS && firstUlsId == null) firstUlsId = existingId;
+                    continue;
+                }
+
+                var stored = repository.findByParentAndKey(type, parentId, value);
+                if (stored.isPresent()) {
+                    UUID id = stored.get().id();
+                    resolved.put(cacheKey, id);
+                    parentId = id;
+                    reusedCount++;
+                    if (type == Type.ULS && firstUlsId == null) firstUlsId = id;
+                } else {
+                    String code = switch (type) {
+                        case SERVICE -> nonBlankOrGeneratedCode(row.serviceCode(), value);
+                        case WARD -> nonBlankOrGeneratedCode(row.wardCode(), value);
+                        case ROOM, BED -> value;
+                        default -> null;
+                    };
+                    String name = (type == Type.ROOM || type == Type.BED) ? code : value;
+                    HierarchyNode created = repository.create(
+                        type, new HierarchyWrite(name, code, parentId, null));
+                    ensureKeycloakHierarchyGroup(type, created);
+                    resolved.put(cacheKey, created.id());
+                    parentId = created.id();
+                    createdCount++;
+                    createdByType.merge(type.name().toLowerCase(), 1, Integer::sum);
+                    if (type == Type.ULS && firstUlsId == null) firstUlsId = created.id();
+                }
+            }
+        }
+
+        if (createdCount > 0 && firstUlsId != null) {
+            changes.changed("HIERARCHY_IMPORTED", Type.ULS.name(), firstUlsId);
+            cache.invalidateHierarchy();
+        }
+        return new HierarchyImportResult(createdCount, reusedCount, createdByType);
+    }
+
+    private String trimOrNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String nonBlankOrGeneratedCode(String explicitCode, String fallbackName) {
+        String trimmed = trimOrNull(explicitCode);
+        if (trimmed != null) return trimmed;
+        return fallbackName.trim().toUpperCase().replaceAll("\\s+", "_");
     }
 }

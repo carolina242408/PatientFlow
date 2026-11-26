@@ -61,7 +61,7 @@ const NurseryView = ({ node, open }: ViewProps) => {
                   </p>
                 </div>
                 <Badge className="shrink-0 rounded-full border-0 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                  {t('space.breakdown.bed.available', {
+                  {t('space.breakdown.beds.available', {
                     count: c.available,
                   })}
                 </Badge>
@@ -82,7 +82,7 @@ const NurseryView = ({ node, open }: ViewProps) => {
               <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
                 <span>{t('space.percentOccupied', { percent })}</span>
                 <span>
-                  {t('space.breakdown.bed.reserved', { count: c.reserved })}
+                  {t('space.breakdown.beds.reserved', { count: c.reserved })}
                 </span>
               </div>
             </Button>
