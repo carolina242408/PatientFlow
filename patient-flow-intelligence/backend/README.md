@@ -12,7 +12,7 @@ Na pasta `patient-flow-intelligence`, preparar `.env` a partir de `.env.example`
 e iniciar a infraestrutura:
 
 ```bash
-docker compose up -d postgresql keycloak algorithms
+docker compose up -d postgresql keycloak algorithms redis
 cd backend
 ./mvnw spring-boot:run
 ```
@@ -94,6 +94,8 @@ de desenvolvimento injeta estas credenciais; o Compose MVP não as injeta.
 | `FHIR_SNS_SYSTEM` | `https://www.sns.gov.pt/numero-utente` |
 | `FHIR_HOSPITAL_NUMBER_SYSTEM` | `urn:hospital:process-number` |
 | `FHIR_VISIT_NUMBER_SYSTEM` | `urn:hospital:visit-number` |
+| `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379`; no Docker Compose, `redis` / `6379` |
+| `ANALYTICS_CACHE_TTL` | `5s` |
 | `WS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` |
 
 O backend não carrega automaticamente o `.env` do Docker Compose. Para alterar
@@ -111,6 +113,7 @@ relação pai-filho até à enfermaria. Quartos e camas não têm grupos. O nome
 inclui o UUID para permitir resolução inequívoca. Se houver grupos em vários
 níveis, só se aplica o mais específico, de enfermaria até ULS.
 `V5__analytics_indexes.sql` acrescenta índices para consultas analíticas.
+O uso, âmbito e configuração da cache Redis estão em [REDIS-CACHE.md](REDIS-CACHE.md).
 
 ## Arquitetura e persistência
 

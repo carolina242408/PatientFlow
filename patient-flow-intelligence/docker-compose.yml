@@ -7,10 +7,10 @@ name: patient-flow-intelligence
 
 services:
   # ------------------------------------------------------------
-  # Base de dados principal (backend + Keycloak)
+  # Base de dados principal (backend + Keycloak + TimescaleDB)
   # ------------------------------------------------------------
   postgresql:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: postgresql
     env_file: .env
     ports:
@@ -30,7 +30,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.4
     container_name: keycloak
-    command: [ "start-dev", "--import-realm" ]
+    command: [ "start", "--import-realm" ]
     env_file: .env
     environment:
       KC_DB: postgres
@@ -40,16 +40,18 @@ services:
       KC_HOSTNAME: localhost
       KC_HOSTNAME_PORT: 9080
       KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_SPI_THEME_CACHE_THEMES: "false"
       KC_SPI_THEME_CACHE_TEMPLATES: "false"
       KC_SPI_THEME_STATIC_MAX_AGE: "-1"
+      KC_HTTPS_CERTIFICATE_FILE: "/opt/keycloak/certs/localhostCertificate.pem"
+      KC_HTTPS_CERTIFICATE_KEY_FILE: "/opt/keycloak/certs/localhostKey.pem"
     ports:
-      - "9080:8080"
+      - "9080:8443"
     volumes:
       - ./keycloak/realm:/opt/keycloak/data/import:ro
       - ./keycloak/theme:/opt/keycloak/themes:ro
+      - ./certs:/opt/keycloak/certs
     depends_on:
       postgresql:
         condition: service_healthy
@@ -65,6 +67,7 @@ services:
       # Empty: no cap on GPU, 100000 rows on CPU.
       KUMO_CONTEXT_ROWS: ${KUMO_CONTEXT_ROWS:-}
       KUMO_MEMORY_BUDGET_MB: ${KUMO_MEMORY_BUDGET_MB:-}
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/%2F
     volumes:
       - type: bind
         source: ./algorithms/datasetgenerator/ml_hospital_consumption_87k.csv
@@ -96,7 +99,7 @@ services:
     build:
       context: ../tools/data-generation
       dockerfile: ./Dockerfile
-    container_name: pfi-data-generator
+    container_name: data-generator
     ports:
       - "8001:8001"
     volumes:
@@ -122,18 +125,26 @@ services:
       DB_URL: jdbc:postgresql://postgresql:5432/patientflow
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      KEYCLOAK_ISSUER_URI: http://localhost:9080/realms/patientflow
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/patientflow/protocol/openid-connect/certs
-      KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ANALYTICS_CACHE_TTL: ${ANALYTICS_CACHE_TTL:-5s}
+      KEYCLOAK_ISSUER_URI: https://localhost:9080/realms/patientflow
+      KEYCLOAK_JWK_SET_URI: https://keycloak:8443/realms/patientflow/protocol/openid-connect/certs
+      KEYCLOAK_ADMIN_BASE_URL: https://keycloak:8443
       KEYCLOAK_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       ALGORITHMS_URL: http://algorithms:8000
-      ALGORITHMS_DISCHARGE_TIMEOUT: ${ALGORITHMS_DISCHARGE_TIMEOUT:-30s}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       DATA_GENERATOR_URL: http://data-generator:8001
       HAPI_FHIR_URL: ${HAPI_FHIR_URL:-http://hapi-fhir:8081/fhir}
       INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
       INGESTION_SOURCES: ${INGESTION_SOURCES:-http://data-generator:8001/api/hl7/live?delay_ms=500&loop=true}
+      AUDIT_LOG_TTL_DAYS: ${AUDIT_LOG_TTL_DAYS:-30}
+      AUDIT_CLEANUP_CRON: ${AUDIT_CLEANUP_CRON:-0 0 * * * *}
       WS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
     networks:
       - default
       - algorithms-private
@@ -141,6 +152,7 @@ services:
       - "8080:8080"
     volumes:
       - ../tools/hl7-fhir-converter:/app/converter:ro
+      - ./certs:/app/certs:ro
     healthcheck:
       test: [ "CMD", "java", "-cp", "/app", "Healthcheck" ]
       interval: 10s
@@ -157,6 +169,26 @@ services:
       hapi-fhir-server:
         condition: service_started
 
+  bed-allocation-service:
+    build: ./bed-allocation-service
+    container_name: bed-allocation-service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql:5432/patientflow
+      USE_EXCEL: "false"
+    ports:
+      - "8002:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/api/v1/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      retries: 12
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
   # ------------------------------------------------------------
   # RabbitMQ (mensagens entre serviços)
   # ------------------------------------------------------------
@@ -164,6 +196,10 @@ services:
     image: rabbitmq:4-management-alpine
     container_name: rabbitmq
     env_file: .env
+    # Também na rede privada do algorithms, que não tem acesso à rede por omissão.
+    networks:
+      - default
+      - algorithms-private
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -269,6 +305,8 @@ services:
       - /app/dist
     depends_on:
       backend:
+        condition: service_healthy
+      bed-allocation-service:
         condition: service_healthy
       keycloak:
         condition: service_started

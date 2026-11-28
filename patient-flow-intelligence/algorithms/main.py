@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from datetime import timedelta
 import logging
+import os
+import sys
 from typing import Literal
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, Request
@@ -10,11 +12,24 @@ from fastapi.responses import JSONResponse
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 from decision_rules import rank_beds, forecast_occupancy
 from discharge_model import DischargeModel
+import prediction_queue
+
+# Configuração essencial para forçar o Python a mostrar os logs INFO na consola do Docker
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("algorithms")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.discharge_model = DischargeModel()
+    logger.info(f"Modelo de alta carregado com sucesso. Versão: {app.state.discharge_model.version}")
+    if rabbitmq_url := os.environ.get("RABBITMQ_URL"):
+        model = app.state.discharge_model
+        prediction_queue.start(rabbitmq_url, lambda message: discharge_prediction_message(message, model))
     try:
         yield
     finally:
@@ -123,10 +138,36 @@ class DischargeInput(Contract):
 
 
 def predict_discharge(data: DischargeInput, model: DischargeModel) -> dict:
+    logger.info(f"A receber pedido de predição | Diagnóstico: {data.diagnosisCode} | Especialidade: {data.specialty}")
     features = data.model_dump(exclude={"admittedAt", "diagnosisCode"})
     features["diagnosis_code"] = data.diagnosisCode
     days = model.predict_days(features)
-    return {"expectedDischargeAt": data.admittedAt + timedelta(days=days), "modelVersion": model.version}
+    
+    expected = data.admittedAt + timedelta(days=days)
+    logger.info(
+        f"Predição concluída com sucesso | Dias previstos: {days} | "
+        f"Data de Alta Prevista: {expected} | Model Version: {model.version}"
+    )
+    return {"expectedDischargeAt": expected, "modelVersion": model.version}
+
+
+def discharge_prediction_message(message: dict, model: DischargeModel) -> dict | None:
+    """Pedido vindo do RabbitMQ: {"encounterId", "input": DischargeInput}. None descarta um pedido inválido."""
+    try:
+        encounter_id = str(UUID(message["encounterId"]))
+        data = DischargeInput.model_validate(message["input"])
+        result = predict_discharge(data, model)
+    except BlockingIOError:
+        raise
+    except (KeyError, TypeError, ValueError):
+        logger.warning("Pedido de previsão inválido descartado")
+        return None
+    return {
+        "encounterId": encounter_id,
+        "admittedAt": data.admittedAt.isoformat(),
+        "expectedDischargeAt": result["expectedDischargeAt"].isoformat(),
+        "modelVersion": result["modelVersion"],
+    }
 
 
 @app.post("/v1/discharge-prediction")
@@ -134,11 +175,13 @@ def discharge_prediction(data: DischargeInput, request: Request):
     try:
         return predict_discharge(data, request.app.state.discharge_model)
     except ValueError:
+        logger.warning("Falha de validação nos dados de entrada da predição")
         raise HTTPException(status_code=422, detail="Unsupported prediction features") from None
     except BlockingIOError:
+        logger.error("Discharge predictor is busy")
         raise HTTPException(status_code=503, detail="Discharge predictor is busy") from None
-    except Exception:
-        logging.getLogger(__name__).error("Discharge prediction failed")
+    except Exception as e:
+        logger.error("Discharge prediction failed with error: %s", e)
         raise HTTPException(status_code=503, detail="Discharge prediction unavailable") from None
 
 

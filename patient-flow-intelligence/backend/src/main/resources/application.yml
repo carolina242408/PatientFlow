@@ -5,17 +5,26 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/patientflow}
     username: ${DB_USERNAME:pfi}
     password: ${DB_PASSWORD:pfi}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: validate   # o schema é gerido pelo Flyway (src/main/resources/db/migration)
     open-in-view: false
   flyway:
     enabled: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_DEFAULT_USER:pfi}
+    password: ${RABBITMQ_DEFAULT_PASS:pfi}
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9080/realms/patientflow}
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:https://localhost:9080/realms/patientflow}
 
 server:
   port: 8080
@@ -25,6 +34,9 @@ management:
     web:
       exposure:
         include: health,info
+  health:
+    rabbit:
+      enabled: false   # o backend continua saudável sem o broker; só a previsão de alta fica em espera
 
 fhir:
   systems:
@@ -34,6 +46,7 @@ fhir:
 
 patientflow:
   analytics:
+    cache-ttl: ${ANALYTICS_CACHE_TTL:5s}
     occupancy-warning-percent: ${OCCUPANCY_WARNING_PERCENT:85}
     occupancy-critical-percent: ${OCCUPANCY_CRITICAL_PERCENT:95}
     long-stay-days: ${LONG_STAY_DAYS:14}
@@ -47,7 +60,6 @@ patientflow:
     url: ${ALGORITHMS_URL:http://localhost:8000}
     connect-timeout: 500ms
     request-timeout: 1s
-    discharge-timeout: ${ALGORITHMS_DISCHARGE_TIMEOUT:30s}
   ingestion:
     enabled: ${INGESTION_ENABLED:false}
     hapi-fhir-url: ${HAPI_FHIR_URL:http://localhost:8081/fhir}
@@ -59,8 +71,15 @@ patientflow:
     allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
     ticket-ttl: 30s
   keycloak:
-    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:http://localhost:9080}
+    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:https://localhost:9080}
     realm: ${KEYCLOAK_ADMIN_REALM:patientflow}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+  audit:
+    # Default Time-To-Live (TTL) in days for audit logs in timescaledb.audit_logs.
+    # Can also be updated at runtime via the Admin Audit Console.
+    default-ttl-days: ${AUDIT_LOG_TTL_DAYS:30}
+    min-ttl-days: ${AUDIT_LOG_MIN_TTL_DAYS:1}
+    max-ttl-days: ${AUDIT_LOG_MAX_TTL_DAYS:3650}
+    cleanup-cron: ${AUDIT_CLEANUP_CRON:0 0 * * * *}

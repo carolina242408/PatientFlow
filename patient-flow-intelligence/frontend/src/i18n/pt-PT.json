@@ -1,5 +1,5 @@
 {
-  "app": { "name": "PatientFlow", "logoAlt": "Logótipo PatientFlow" },
+  "app": { "name": "PatientFlow", "logoAlt": "Logótipo PatientFlow", "loading": "A carregar..." },
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
@@ -25,9 +25,10 @@
       "manager": "Área de Gestão"
     },
     "lhuHierarchy": "Hierarquia LHU",
+    "auditLogs": "Logs de Auditoria",
     "noScope": "Sem âmbito atribuído",
     "scopeLevels": {
-      "ULS": "ULS",
+      "LHU": "ULS",
       "UNIT": "Unidade",
       "BUILDING": "Edifício",
       "FLOOR": "Piso",
@@ -40,13 +41,13 @@
     "dashboard": { "title": "Dashboard", "description": "Visão geral do fluxo de pacientes" },
     "service": { "title": "Serviços", "description": "Gerir os serviços do fluxo de pacientes" },
     "unit": { "title": "Unidades", "description": "Gerir a capacidade, alocação de recursos e o fluxo de doentes da unidade." },
-    "admin": { "title": "Consola de administração", "description": "Gerir a administração da aplicação" },
+    "admin": { "title": "Logs de Auditoria e Retenção", "description": "Monitorizar autenticações, páginas visitadas, origens e gerir a retenção no TimescaleDB" },
     "lhu": { "title": "Unidade Local de Saúde", "description": "Gerir o fluxo da Unidade Local de Saúde" },
     "hierarchy": {
       "title": "Hierarquia da organização",
       "description": "Explorar o âmbito organizacional atribuído",
       "scopes": {
-        "ULS": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
+        "LHU": { "title": "Hierarquia da ULS", "description": "Explorar a Unidade Local de Saúde atribuída e os seus espaços." },
         "UNIT": { "title": "Hierarquia da unidade", "description": "Explorar a unidade atribuída e os seus espaços." },
         "BUILDING": { "title": "Hierarquia do edifício", "description": "Explorar o edifício atribuído e os seus espaços." },
         "FLOOR": { "title": "Hierarquia do piso", "description": "Explorar o piso atribuído e os seus espaços." },
@@ -279,14 +280,14 @@
     },
     "forecast": {
       "badge": "Previsão",
-      "todayLabel": "Altas previstas hoje",
-      "todayDetail": "{{confirmed}} confirmadas · {{pending}} pendentes",
-      "next48Label": "Previsão para as próximas 48 horas",
-      "next48Detail_one": "Em {{count}} serviço clínico",
-      "next48Detail_other": "Em {{count}} serviços clínicos",
-      "availableLabel": "Camas livres após as altas",
-      "availableDetail": "Estimativa para amanhã às {{time}}"
+      "todayLabel": "Altas previstas nas próximas 24 horas",
+      "next48Label": "Altas previstas nas próximas 48 horas"
     },
+    "currentDataBadge": "Dados atuais",
+    "criticalThresholdLabel": "Limite crítico",
+    "tapToAdjust": "Toque para ajustar",
+    "decreaseThreshold": "Diminuir limite crítico",
+    "increaseThreshold": "Aumentar limite crítico",
     "perService": {
       "title": "Ocupação por serviço",
       "body": "Percentagem de camas ativas atualmente ocupadas"
@@ -301,22 +302,15 @@
     },
     "lengthOfStay": {
       "title": "Tempo de internamento estimado por condição",
-      "body": "Valores meramente ilustrativos; esta tabela será preenchida pelo modelo de previsão.",
+      "body": "Média observada das altas administrativas no período selecionado",
       "condition": "Condição",
-      "estimatedStay": "Tempo de internamento estimado",
-      "daysRange": "{{minimum}}-{{maximum}} dias",
-      "conditions": {
-        "pneumonia": "Pneumonia",
-        "heartFailure": "Insuficiência cardíaca",
-        "angina": "Angina",
-        "arrhythmia": "Arritmia",
-        "cardiacObservation": "Observação cardíaca"
-      }
+      "code": "Código",
+      "estimatedStay": "Tempo de internamento estimado"
     },
     "forecastChart": {
       "title": "Previsão de altas",
-      "body": "Altas esperadas nos próximos sete dias",
-      "total": "Total em sete dias",
+      "body": "Altas previstas por dia nos próximos sete dias",
+      "total": "Total previsto nos próximos sete dias",
       "patients_one": "{{count}} doente",
       "patients_other": "{{count}} doentes"
     },
@@ -349,9 +343,222 @@
       "pendingTransport": "Transporte pendente",
       "medicationReview": "Revisão de medicação",
       "clinicalReview": "Revisão clínica"
+    },
+    "exceededStay": {
+      "title": "Pacientes que ultrapassaram a estimativa de permanência",
+      "body": "Estes pacientes ficaram mais tempo do que a média de permanência para a sua condição diagnosticada",
+      "patient": "Paciente",
+      "code": "Código",
+      "condition": "Condição",
+      "actual": "Permanência real (dias)",
+      "mean": "Média esperada (dias)",
+      "diff": "Excesso (dias)"
     }
   },
-  "admin": { "title": "Consola de administração", "body": "Área reservada a administradores." },
+  "manualAdmission": {
+    "title": "Admissão manual",
+    "body": "Introduza um paciente e obtenha sugestões de cama.",
+    "open": "Abrir formulário",
+    "submit": "Sugerir cama",
+    "cancel": "Cancelar",
+    "loading": "A calcular sugestões...",
+    "field": {
+      "fullName": "Nome completo",
+      "birthDate": "Data de nascimento",
+      "gender": "Sexo",
+      "service": "Serviço",
+      "priority": "Prioridade",
+      "isolation": "Requer quarto de isolamento",
+      "expectedDischargeAt": "Alta prevista"
+    },
+    "gender": { "female": "Feminino", "male": "Masculino", "unspecified": "Não especificado" },
+    "priority": {
+      "1": "1 — Normal", "2": "2 — Baixa", "3": "3 — Média", "4": "4 — Alta", "5": "5 — Urgente"
+    },
+    "results": {
+      "title": "Sugestões de cama",
+      "direct": "Sugestões diretas",
+      "empty": {
+        "title": "Sem cama compatível",
+        "body": "Camas com alta prevista nas próximas 24 horas:"
+      },
+      "reallocations": "Sugestões de realocação (requerem mover um doente existente)",
+      "freeBed": "Libertar {{bed}} movendo",
+      "priority": "prioridade {{priority}}",
+      "noBed": "— sem cama disponível —",
+      "combinedScore": "Pontuação combinada: {{score}}",
+      "roomEvictionScore": "Pontuação de remoção do quarto: {{score}}",
+      "roomRanking": "Classificação de remoção dos quartos"
+    },
+    "success": {
+      "assigned": "Paciente alocado com sucesso.",
+      "suggested": "Sugestões geradas."
+    },
+    "errors": {
+      "conflict": "A cama já não está disponível. Tente novamente.",
+      "validation": "Verifique os campos obrigatórios.",
+      "generic": "Ocorreu um erro. Tente novamente."
+    },
+    "debug": {
+      "toggle": "Mostrar detalhes de depuração do solver",
+      "title": "Depuração do solver"
+    }
+  },
+  "admin": {
+    "title": "Consola de Auditoria e Retenção",
+    "body": "Área reservada a administradores.",
+    "tabs": {
+      "logs": "Explorador de Logs de Auditoria",
+      "retention": "Política de Retenção (TTL)"
+    },
+    "actions": {
+      "refresh": "Atualizar",
+      "exportCsv": "Exportar CSV"
+    },
+    "kpi": {
+      "totalEvents": "Eventos de Auditoria",
+      "totalStoredSub": "{{count}} registos guardados no TimescaleDB",
+      "logins": "Inícios de Sessão",
+      "uniqueUsersSub": "{{count}} utilizadores únicos ativos",
+      "pageViews": "Páginas Visitadas",
+      "topPageSub": "Mais vista: {{page}}",
+      "noPagesSub": "Sem visitas registadas",
+      "origins": "Origens Únicas (IPs)",
+      "originsSub": "Endereços IP distintos",
+      "retentionTtl": "Retenção Ativa (TTL)",
+      "ttlDaysValue": "{{days}} dias",
+      "configureTtl": "Alterar TTL"
+    },
+    "events": {
+      "LOGIN": "Login",
+      "LOGOUT": "Logout",
+      "PAGE_VIEW": "Visita de Página",
+      "CONFIG_CHANGE": "Alteração de Config."
+    },
+    "roles": {
+      "ADMIN_ROLE": "Administrador (ADMIN_ROLE)",
+      "MANAGER_ROLE": "Gestor (MANAGER_ROLE)"
+    },
+    "time": {
+      "justNow": "Agora mesmo",
+      "minutesAgo": "Há {{count}}m",
+      "hoursAgo": "Há {{count}}h",
+      "daysAgo": "Há {{count}}d"
+    },
+    "filters": {
+      "title": "Pesquisar e Filtrar Registos de Auditoria",
+      "searchPlaceholder": "Pesquisar por utilizador, email, página, endereço IP, origem ou sessão...",
+      "allEvents": "Todos os Tipos de Evento",
+      "allRoles": "Todos os Perfis",
+      "allPages": "Todas as Páginas Visitadas",
+      "allUsers": "Todos os Utilizadores",
+      "ipPlaceholder": "Filtrar por endereço IP (ex: 127.0.0.1)...",
+      "from": "De",
+      "to": "Até",
+      "clearAll": "Limpar filtros",
+      "topVisitedPages": "Páginas mais visitadas",
+      "timePresets": {
+        "ALL": "Todo o período",
+        "1H": "Última 1h",
+        "24H": "Últimas 24h",
+        "7D": "Últimos 7d",
+        "30D": "Últimos 30d",
+        "CUSTOM": "Intervalo personalizado"
+      }
+    },
+    "table": {
+      "title": "Registos de Auditoria",
+      "subtitle": "{{total}} registos encontrados em {{schema}}",
+      "rowsPerPage": "Linhas",
+      "loading": "A carregar logs de auditoria...",
+      "empty": "Não foram encontrados registos de auditoria para os filtros selecionados.",
+      "filterByIp": "Clicar para filtrar por este endereço IP",
+      "inspect": "Detalhes",
+      "pageSummary": "Página {{page}} de {{totalPages}} ({{totalElements}} registos)",
+      "previous": "Anterior",
+      "next": "Seguinte",
+      "columns": {
+        "when": "Quando",
+        "event": "Evento",
+        "who": "Quem (Utilizador e Perfil)",
+        "page": "Página Visitada",
+        "where": "Onde (IP e Origem)",
+        "expires": "Expira (TTL)",
+        "details": "Inspecionar"
+      }
+    },
+    "detailModal": {
+      "title": "Detalhes do Evento de Auditoria",
+      "occurredAt": "Data e Hora (UTC)",
+      "expiresAt": "Expiração Prevista (TTL)",
+      "user": "Utilizador Autenticado",
+      "page": "Página Visitada",
+      "ipAndOrigin": "IP de Origem e Contexto",
+      "sessionAndSub": "Sessão e Subject Keycloak",
+      "userAgent": "User-Agent do Navegador",
+      "metadata": "Metadados Adicionais do Evento (JSONB)",
+      "close": "Fechar"
+    },
+    "retention": {
+      "title": "Política de Time-To-Live (TTL) dos Logs de Auditoria",
+      "subtitle": "Defina por quanto tempo os registos são mantidos em timescaledb.audit_logs antes da expiração e limpeza automática.",
+      "activeBadge": "TTL Ativo: {{days}} dias",
+      "quickPresets": "Predefinições Rápidas de Retenção",
+      "daysOption": "{{days}} dias",
+      "customTtlLabel": "Período de Retenção Personalizado (Dias)",
+      "boundsHint": "Intervalo permitido: {{min}} a {{max}} dias.",
+      "daysUnit": "dias",
+      "configFileTitle": "Valor por Omissão na Configuração",
+      "configFileDesc": "Valor definido em .env e application.yml (patientflow.audit.default-ttl-days):",
+      "runCleanupNow": "Executar Limpeza Agora",
+      "resetButton": "Repor",
+      "saveButton": "Atualizar TTL de Retenção...",
+      "storageTitle": "Estado do Armazenamento TimescaleDB",
+      "storageSubtitle": "Métricas do schema e retenção na base de dados",
+      "meta": {
+        "schema": "Schema da Base de Dados",
+        "table": "Hypertable / Tabela",
+        "engine": "Motor de Armazenamento",
+        "totalRows": "Total de Registos Guardados",
+        "oldestEntry": "Registo Mais Antigo",
+        "newestEntry": "Registo Mais Recente",
+        "updatedBy": "Última Alteração Por",
+        "updatedAt": "Atualizado Em",
+        "lastCleanup": "Última Limpeza Executada"
+      },
+      "preview": {
+        "title": "Pré-visualização de Impacto para TTL de {{days}} dias",
+        "cutoff": "Data de corte: registos anteriores a {{date}} expiram imediatamente.",
+        "toDelete": "{{count}} registos existentes serão eliminados imediatamente",
+        "toKeep": "{{count}} registos serão mantidos"
+      },
+      "confirmStep1": {
+        "title": "Rever Alteração do TTL de Auditoria",
+        "description": "Está prestes a modificar o período de retenção da tabela de logs de auditoria. Reveja o impacto abaixo antes da confirmação final.",
+        "currentTtl": "TTL Atual",
+        "newTtl": "Novo TTL",
+        "impactNote": "Aplicar esta alteração irá eliminar imediatamente {{deleted}} registos expirados e manter {{remaining}} registos.",
+        "cancel": "Cancelar",
+        "proceed": "Continuar para Dupla Confirmação"
+      },
+      "confirmStep2": {
+        "title": "Tem a certeza de que pretende alterar o TTL?",
+        "description": "Esta ação definirá a retenção dos logs de auditoria para {{days}} dias e eliminará permanentemente {{deleted}} registos com mais de {{days}} dias. Os logs eliminados não podem ser recuperados.",
+        "checkboxLabel": "Sim, tenho a certeza. Compreendo que os logs de auditoria com mais de {{days}} dias serão eliminados permanentemente de timescaledb.audit_logs.",
+        "back": "Voltar",
+        "confirmFinal": "Sim, Tenho a Certeza — Atualizar TTL",
+        "applying": "A aplicar..."
+      },
+      "popup": {
+        "updatedTitle": "Política de Retenção Atualizada",
+        "updatedDesc": "TTL dos logs atualizado para {{days}} dias ({{deleted}} registos expirados removidos).",
+        "cleanupTitle": "Limpeza Concluída",
+        "cleanupDesc": "Limpeza de logs expirados concluída ({{deleted}} registos removidos).",
+        "errorTitle": "Falha na Atualização",
+        "errorDesc": "Não foi possível atualizar a política de retenção dos logs de auditoria."
+      }
+    }
+  },
   "settings": {
     "title": "Preferências da interface",
     "body": "Escolhe o aspeto da consola de administração e o idioma que usa.",
@@ -366,6 +573,12 @@
     "language": {
       "title": "Idioma",
       "body": "Seleciona o idioma preferido para a interface."
+    },
+    "capacityAlerts": {
+      "title": "Alertas de capacidade",
+      "body": "Define o nível de ocupação que muda o cartão do painel para alerta crítico.",
+      "thresholdLabel": "Limite crítico de ocupação",
+      "thresholdHint": "Escolhe um valor entre 50% e 100%."
     },
     "popup": {
       "success": {
@@ -407,7 +620,7 @@
       "default": "—"
     },
     "scopeLevels": {
-      "ULS": "Unidade Local de Saúde",
+      "LHU": "Unidade Local de Saúde",
       "UNIT": "Unidade Hospitalar",
       "BUILDING": "Edifício",
       "FLOOR": "Piso",

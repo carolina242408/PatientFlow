@@ -3,8 +3,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          # Validate the external issuer while fetching keys on the internal Docker network.
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://keycloak:8080/realms/patientflow/protocol/openid-connect/certs}
+          # Validate the external issuer while fetching keys on the internal Docker network via TLS.
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://keycloak:8443/realms/patientflow/protocol/openid-connect/certs}
 
 patientflow:
   ingestion:
@@ -12,6 +12,6 @@ patientflow:
     hapi-fhir-url: ${HAPI_FHIR_URL:http://hapi-fhir:8081/fhir}
     sources: ${INGESTION_SOURCES:http://data-generator:8001/api/hl7/live?delay_ms=500&loop=true}
   keycloak:
-    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:http://keycloak:8080}
+    admin-base-url: ${KEYCLOAK_ADMIN_BASE_URL:https://keycloak:8443}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}

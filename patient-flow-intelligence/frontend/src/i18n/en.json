@@ -1,5 +1,5 @@
 {
-  "app": { "name": "PatientFlow", "logoAlt": "PatientFlow logo" },
+  "app": { "name": "PatientFlow", "logoAlt": "PatientFlow logo", "loading": "Loading..." },
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
@@ -25,9 +25,10 @@
       "manager": "Manager Workspace"
     },
     "lhuHierarchy": "LHU Hierarchy",
+    "auditLogs": "Audit Logs",
     "noScope": "No scope assigned",
     "scopeLevels": {
-      "ULS": "LHU",
+      "LHU": "LHU",
       "UNIT": "Unit",
       "BUILDING": "Building",
       "FLOOR": "Floor",
@@ -40,13 +41,13 @@
     "dashboard": { "title": "Dashboard", "description": "Welcome to your patient flow overview" },
     "service": { "title": "Services", "description": "Manage patient flow services" },
     "unit": { "title": "Units", "description": "Manage unit capacity, resource allocation, and patient flow." },
-    "admin": { "title": "Admin Console", "description": "Manage application administration" },
+    "admin": { "title": "Audit Logs & Retention Console", "description": "Monitor logins, page visits, origins, and manage TimescaleDB log retention policies" },
     "lhu": { "title": "Local Health Unit", "description": "Manage Local Health Unit patient flow" },
     "hierarchy": {
       "title": "Organizational Hierarchy",
       "description": "Explore your assigned organizational scope",
       "scopes": {
-        "ULS": { "title": "LHU Hierarchy", "description": "Explore the assigned Local Health Unit and its spaces." },
+        "LHU": { "title": "LHU Hierarchy", "description": "Explore the assigned Local Health Unit and its spaces." },
         "UNIT": { "title": "Unit Hierarchy", "description": "Explore the assigned unit and its spaces." },
         "BUILDING": { "title": "Building Hierarchy", "description": "Explore the assigned building and its spaces." },
         "FLOOR": { "title": "Floor Hierarchy", "description": "Explore the assigned floor and its spaces." },
@@ -187,7 +188,6 @@
       "chairs": "Treatment chairs"
     },
     "resourceLabel": {
-      "bed": "Bed {{number}}",
       "operatingRoom": "Operating room {{number}}",
       "chair": "Treatment chair {{number}}"
     },
@@ -279,14 +279,14 @@
     },
     "forecast": {
       "badge": "Forecast",
-      "todayLabel": "Predicted discharges today",
-      "todayDetail": "{{confirmed}} confirmed · {{pending}} pending",
-      "next48Label": "Predicted next 48 hours",
-      "next48Detail_one": "Across {{count}} clinical service",
-      "next48Detail_other": "Across {{count}} clinical services",
-      "availableLabel": "Beds available after discharge",
-      "availableDetail": "Estimated by tomorrow at {{time}}"
+      "todayLabel": "Predicted discharges in the next 24 hours",
+      "next48Label": "Predicted discharges in the next 48 hours"
     },
+    "currentDataBadge": "Current Data",
+    "criticalThresholdLabel": "Critical threshold",
+    "tapToAdjust": "Tap to adjust",
+    "decreaseThreshold": "Decrease critical threshold",
+    "increaseThreshold": "Increase critical threshold",
     "perService": {
       "title": "Occupancy per service",
       "body": "Percentage of staffed beds currently occupied"
@@ -301,22 +301,15 @@
     },
     "lengthOfStay": {
       "title": "Estimated hospital stay by condition",
-      "body": "Illustrative estimates only; this table will be populated by the forecast model.",
+      "body": "Observed average of administrative discharges in the selected period",
       "condition": "Condition",
-      "estimatedStay": "Estimated length of stay",
-      "daysRange": "{{minimum}}-{{maximum}} days",
-      "conditions": {
-        "pneumonia": "Pneumonia",
-        "heartFailure": "Heart failure",
-        "angina": "Angina",
-        "arrhythmia": "Arrhythmia",
-        "cardiacObservation": "Cardiac observation"
-      }
+      "code": "Code",
+      "estimatedStay": "Estimated length of stay"
     },
     "forecastChart": {
       "title": "Discharge patient prediction",
-      "body": "Expected discharges over the next seven days",
-      "total": "Seven-day total",
+      "body": "Predicted discharges by day over the next seven days",
+      "total": "Predicted total over the next seven days",
       "patients_one": "{{count}} patient",
       "patients_other": "{{count}} patients"
     },
@@ -349,9 +342,222 @@
       "pendingTransport": "Pending transport",
       "medicationReview": "Medication review",
       "clinicalReview": "Clinical review"
+    },
+    "exceededStay": {
+      "title": "Patients exceeding LOS estimate",
+      "body": "These patients stayed longer than the average length‑of‑stay for their diagnosed condition",
+      "patient": "Patient",
+      "code": "Code",
+      "condition": "Condition",
+      "actual": "Actual stay (days)",
+      "mean": "Mean stay (days)",
+      "diff": "Overrun (days)"
     }
   },
-  "admin": { "title": "Admin Console", "body": "Area reserved for administrators." },
+  "manualAdmission": {
+    "title": "Manual admission",
+    "body": "Enter a patient and get bed suggestions.",
+    "open": "Open form",
+    "submit": "Suggest a bed",
+    "cancel": "Cancel",
+    "loading": "Computing suggestions...",
+    "field": {
+      "fullName": "Full name",
+      "birthDate": "Birth date",
+      "gender": "Gender",
+      "service": "Service",
+      "priority": "Priority",
+      "isolation": "Requires isolation room",
+      "expectedDischargeAt": "Expected discharge"
+    },
+    "gender": { "female": "Female", "male": "Male", "unspecified": "Unspecified" },
+    "priority": {
+      "1": "1 — Normal", "2": "2 — Low", "3": "3 — Medium", "4": "4 — High", "5": "5 — Urgent"
+    },
+    "results": {
+      "title": "Bed suggestions",
+      "direct": "Direct suggestions",
+      "empty": {
+        "title": "No compatible bed",
+        "body": "Beds with expected discharge in the next 24 hours:"
+      },
+      "reallocations": "Reallocation suggestions (require moving an existing patient)",
+      "freeBed": "Free {{bed}} by moving",
+      "priority": "priority {{priority}}",
+      "noBed": "— no bed available —",
+      "combinedScore": "Combined score: {{score}}",
+      "roomEvictionScore": "Room eviction score: {{score}}",
+      "roomRanking": "Room eviction ranking"
+    },
+    "success": {
+      "assigned": "Patient allocated successfully.",
+      "suggested": "Suggestions generated."
+    },
+    "errors": {
+      "conflict": "Bed no longer available. Please try again.",
+      "validation": "Check the required fields.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "debug": {
+      "toggle": "Show solver debug details",
+      "title": "Solver debug"
+    }
+  },
+  "admin": {
+    "title": "Audit Logs & Retention Console",
+    "body": "Area reserved for administrators.",
+    "tabs": {
+      "logs": "Audit Log Explorer",
+      "retention": "Retention Policy (TTL)"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "exportCsv": "Export CSV"
+    },
+    "kpi": {
+      "totalEvents": "Audit Events",
+      "totalStoredSub": "{{count}} total stored in TimescaleDB",
+      "logins": "User Logins",
+      "uniqueUsersSub": "{{count}} unique active users",
+      "pageViews": "Page Visits",
+      "topPageSub": "Top: {{page}}",
+      "noPagesSub": "No page visits recorded yet",
+      "origins": "Unique Origins (IPs)",
+      "originsSub": "Distinct client IP addresses",
+      "retentionTtl": "Active Retention (TTL)",
+      "ttlDaysValue": "{{days}} days",
+      "configureTtl": "Change TTL"
+    },
+    "events": {
+      "LOGIN": "Login",
+      "LOGOUT": "Logout",
+      "PAGE_VIEW": "Page Visit",
+      "CONFIG_CHANGE": "Config Change"
+    },
+    "roles": {
+      "ADMIN_ROLE": "Administrator (ADMIN_ROLE)",
+      "MANAGER_ROLE": "Manager (MANAGER_ROLE)"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "filters": {
+      "title": "Search & Filter Audit Trail",
+      "searchPlaceholder": "Search by user, email, page path, IP address, origin, or session ID...",
+      "allEvents": "All Event Types",
+      "allRoles": "All Roles",
+      "allPages": "All Visited Pages",
+      "allUsers": "All Users",
+      "ipPlaceholder": "Filter by IP address (e.g. 127.0.0.1)...",
+      "from": "From",
+      "to": "To",
+      "clearAll": "Reset filters",
+      "topVisitedPages": "Most visited pages",
+      "timePresets": {
+        "ALL": "All Time",
+        "1H": "Last 1h",
+        "24H": "Last 24h",
+        "7D": "Last 7d",
+        "30D": "Last 30d",
+        "CUSTOM": "Custom Range"
+      }
+    },
+    "table": {
+      "title": "Audit Trail Entries",
+      "subtitle": "{{total}} matching records in {{schema}}",
+      "rowsPerPage": "Rows",
+      "loading": "Loading audit logs...",
+      "empty": "No audit logs found matching the selected filters.",
+      "filterByIp": "Click to filter by this IP address",
+      "inspect": "Details",
+      "pageSummary": "Page {{page}} of {{totalPages}} ({{totalElements}} entries)",
+      "previous": "Previous",
+      "next": "Next",
+      "columns": {
+        "when": "When",
+        "event": "Event",
+        "who": "Who (User & Role)",
+        "page": "Page Visited",
+        "where": "Where (IP & Origin)",
+        "expires": "Expires (TTL)",
+        "details": "Inspect"
+      }
+    },
+    "detailModal": {
+      "title": "Audit Event Details",
+      "occurredAt": "Occurred At (UTC)",
+      "expiresAt": "Scheduled Expiration (TTL)",
+      "user": "Authenticated User",
+      "page": "Visited Page",
+      "ipAndOrigin": "Origin IP & Client Context",
+      "sessionAndSub": "Session & Keycloak Subject",
+      "userAgent": "Browser User-Agent",
+      "metadata": "Additional Event Metadata (JSONB)",
+      "close": "Close"
+    },
+    "retention": {
+      "title": "Audit Log Time-To-Live (TTL) Policy",
+      "subtitle": "Configure how long audit entries are retained in timescaledb.audit_logs before automatic expiration and cleanup.",
+      "activeBadge": "Active TTL: {{days}} days",
+      "quickPresets": "Quick Retention Presets",
+      "daysOption": "{{days}} days",
+      "customTtlLabel": "Custom Retention Period (Days)",
+      "boundsHint": "Allowed range: {{min}} to {{max}} days.",
+      "daysUnit": "days",
+      "configFileTitle": "Environment & Config Default",
+      "configFileDesc": "Default fallback defined in .env and application.yml (patientflow.audit.default-ttl-days):",
+      "runCleanupNow": "Run Expired Cleanup Now",
+      "resetButton": "Reset",
+      "saveButton": "Update Retention TTL...",
+      "storageTitle": "TimescaleDB Storage Status",
+      "storageSubtitle": "Database schema & retention metrics",
+      "meta": {
+        "schema": "Database Schema",
+        "table": "Hypertable / Table",
+        "engine": "Storage Engine",
+        "totalRows": "Total Stored Entries",
+        "oldestEntry": "Oldest Log Entry",
+        "newestEntry": "Newest Log Entry",
+        "updatedBy": "Last Policy Update By",
+        "updatedAt": "Policy Updated At",
+        "lastCleanup": "Last Cleanup Executed"
+      },
+      "preview": {
+        "title": "Impact Preview for {{days}}-day TTL Policy",
+        "cutoff": "Cutoff timestamp: entries older than {{date}} will expire immediately.",
+        "toDelete": "{{count}} existing entries will be purged immediately",
+        "toKeep": "{{count}} entries will be retained"
+      },
+      "confirmStep1": {
+        "title": "Review Audit Log TTL Change",
+        "description": "You are about to modify the retention period for the audit logs table. Please review the change below before final confirmation.",
+        "currentTtl": "Current TTL",
+        "newTtl": "New TTL",
+        "impactNote": "Applying this change will immediately purge {{deleted}} expired log entries and keep {{remaining}} entries.",
+        "cancel": "Cancel",
+        "proceed": "Continue to Final Check"
+      },
+      "confirmStep2": {
+        "title": "Are you sure you want to change the TTL?",
+        "description": "This action will set the audit log retention policy to {{days}} days and permanently delete {{deleted}} records older than {{days}} days. Deleted audit logs cannot be recovered.",
+        "checkboxLabel": "Yes, I am sure. I understand that audit logs older than {{days}} days will be permanently purged from timescaledb.audit_logs.",
+        "back": "Go Back",
+        "confirmFinal": "Yes, I'm Sure — Update TTL",
+        "applying": "Applying..."
+      },
+      "popup": {
+        "updatedTitle": "Retention Policy Updated",
+        "updatedDesc": "Audit log TTL updated to {{days}} days ({{deleted}} expired entries purged).",
+        "cleanupTitle": "Audit Cleanup Complete",
+        "cleanupDesc": "Expired audit log cleanup completed ({{deleted}} entries removed).",
+        "errorTitle": "Update Failed",
+        "errorDesc": "Could not update the audit log retention policy. Please try again."
+      }
+    }
+  },
   "settings": {
     "title": "Interface preferences",
     "body": "Choose how the admin console looks and which language it uses.",
@@ -366,6 +572,12 @@
     "language": {
       "title": "Language",
       "body": "Select the preferred language for the interface."
+    },
+    "capacityAlerts": {
+      "title": "Capacity alerts",
+      "body": "Set the occupancy level that changes the dashboard card to a critical alert.",
+      "thresholdLabel": "Critical occupancy threshold",
+      "thresholdHint": "Choose a value between 50% and 100%."
     },
     "popup": {
       "success": {
@@ -407,7 +619,7 @@
       "default": "—"
     },
     "scopeLevels": {
-      "ULS": "Local Health Unit",
+      "LHU": "Local Health Unit",
       "UNIT": "Hospital Unit",
       "BUILDING": "Building",
       "FLOOR": "Floor",

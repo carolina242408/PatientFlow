@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation } from 'react-router'
 import { useKeycloak, type AccessScopeType } from '../auth/context'
+import { recordAuditEvent } from '@/api/audit'
 import { fetchHierarchyNode } from '@/features/lhu-hierarchy/api/hierarchy'
 import type { Level } from '@/pages/space/types'
 import Sidebar from './Sidebar'
@@ -19,7 +20,7 @@ const PAGES = [
 ] as const
 
 const SCOPE_LEVELS: Record<AccessScopeType, Level> = {
-  ULS: 'lhu',
+  LHU: 'lhu',
   UNIT: 'unit',
   BUILDING: 'building',
   FLOOR: 'floor',
@@ -64,6 +65,22 @@ const AppLayout = () => {
   const pageDescription = page === 'manager-hierarchy' && isManagerRoute
     ? t(`pages.hierarchy.scopes.${hierarchyScope}.description`)
     : t(`pages.${page}.description`)
+  const lastLoggedPageRef = useRef<{ path: string; ts: number } | null>(null)
+
+  useEffect(() => {
+    if (!user) return
+    const now = Date.now()
+    const prev = lastLoggedPageRef.current
+    if (prev && prev.path === pathname && now - prev.ts < 1500) {
+      return
+    }
+    lastLoggedPageRef.current = { path: pathname, ts: now }
+    void recordAuditEvent({
+      eventType: 'PAGE_VIEW',
+      pagePath: pathname,
+      pageTitle: pageName,
+    })
+  }, [pathname, pageName, user])
   const scopeFilter = activeRoot
     ? {
         ulsId: activeRoot.type === 'lhu' ? activeRoot.id : undefined,
